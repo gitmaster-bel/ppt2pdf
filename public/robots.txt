@@ -1,2 +1,81 @@
-User-agent: *
+# ── ZIVOX robots.txt ──────────────────────────────────────────────────────────
+# Allow Google & Bing to index content pages for SEO traffic.
+# Block ALL bots from API routes and internal paths to protect Vercel quota.
+
+# ── Google & Bing: allow content, block internals ───────────────────────────
+User-agent: Googlebot
+Allow: /
+Allow: /watch/
+Allow: /movies
+Allow: /tv
+Allow: /anime
+Allow: /person/
+Allow: /collection/
+Allow: /discover
+Allow: /search
+Allow: /blog/
+Allow: /about
+Allow: /guide
+Allow: /providers
+Disallow: /api/
+Disallow: /profile
+Disallow: /support
+Disallow: /_next/
+
+User-agent: Bingbot
+Allow: /
+Allow: /watch/
+Allow: /movies
+Allow: /tv
+Allow: /anime
+Allow: /person/
+Allow: /collection/
+Disallow: /api/
+Disallow: /profile
+Disallow: /_next/
+
+# ── Block aggressive crawlers that don't respect rate limits ─────────────────
+User-agent: AhrefsBot
 Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+# ── All other bots: block API, allow content ─────────────────────────────────
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /profile
+Disallow: /_next/
+
+Sitemap: https://zivox-streaming.vercel.app/sitemap.xml

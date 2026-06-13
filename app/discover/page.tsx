@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Media } from '@/types/tmdb';
-import { discoverMedia } from '@/app/actions';
+
 import { MediaCard } from '@/components/media/MediaCard';
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 import { FilterPill } from '@/components/ui/FilterPill';
@@ -68,11 +68,16 @@ export default function DiscoverPage() {
       return params;
     };
 
+    const fetchDiscover = (t: string, p: Record<string, string>) => {
+      const searchParams = new URLSearchParams(p);
+      return fetch(`/api/discover?type=${t}&${searchParams.toString()}`).then(res => res.json());
+    };
+
     if (type === 'all') {
       Promise.all([
-        discoverMedia('movie', buildParams('movie')),
-        discoverMedia('tv', buildParams('tv')),
-        discoverMedia('tv', buildParams('anime'))
+        fetchDiscover('movie', buildParams('movie')),
+        fetchDiscover('tv', buildParams('tv')),
+        fetchDiscover('tv', buildParams('anime'))
       ]).then(([moviesRes, tvRes, animeRes]) => {
         const mItems = (moviesRes.results || []).map((i: any) => ({ ...i, media_type: 'movie' }));
         const tItems = (tvRes.results || []).map((i: any) => ({ ...i, media_type: 'tv' }));
@@ -99,7 +104,7 @@ export default function DiscoverPage() {
       }).catch(() => setLoading(false));
     } else {
       const requestType = type === 'anime' ? 'tv' : type;
-      discoverMedia(requestType as 'movie' | 'tv', buildParams(type)).then(res => {
+      fetchDiscover(requestType, buildParams(type)).then(res => {
         const items = res.results || [];
         setResults(items.map((i: any) => ({ ...i, media_type: type === 'anime' ? 'tv' : type })));
         setTotalPages(Math.min(res.total_pages || 1, 500));

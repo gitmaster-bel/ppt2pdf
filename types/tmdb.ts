@@ -40,6 +40,9 @@ export interface MediaDetails extends Media {
   videos?: {
     results: { id: string; key: string; name: string; site: string; type: string }[];
   };
+  production_companies?: { id: number; name: string; logo_path: string | null; origin_country: string }[];
+  networks?: { id: number; name: string; logo_path: string | null; origin_country: string }[];
+  vote_count: number;
 }
 
 export interface Season {

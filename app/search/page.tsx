@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense, useRef } from 'react';
 import { Media } from '@/types/tmdb';
 import { Search, History, Sparkles, X, LayoutGrid, Film, Tv, ArrowDownUp } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { searchMedia, getSearchSuggestions } from '@/app/actions';
+import { getSearchSuggestions } from '@/app/actions';
 import { storage } from '@/lib/storage';
 import { usePreferences } from '@/hooks/usePreferences';
 import { MediaCard } from '@/components/media/MediaCard';
@@ -89,10 +89,11 @@ function SearchPageContent() {
         router.replace(`/search?q=${encodeURIComponent(trimmed)}`);
       }
       
-      searchMedia(trimmed, 1, preferences.adultContent)
+      fetch(`/api/search?q=${encodeURIComponent(trimmed)}&page=1&include_adult=${preferences.adultContent}`)
+        .then(res => res.json())
         .then(res => {
           setResults(res.results || []);
-          setTotalPages(res.total_pages);
+          setTotalPages(res.total_pages || 1);
           setHasMore(res.page < res.total_pages);
           setLoading(false);
           if (res.results && res.results.length > 0) {
@@ -123,7 +124,8 @@ function SearchPageContent() {
     setLoadingMore(true);
     const nextPage = page + 1;
     
-    searchMedia(trimmed, nextPage, preferences.adultContent)
+    fetch(`/api/search?q=${encodeURIComponent(trimmed)}&page=${nextPage}&include_adult=${preferences.adultContent}`)
+      .then(res => res.json())
       .then(res => {
         if (res.results && res.results.length > 0) {
           setResults(prev => {
@@ -134,7 +136,7 @@ function SearchPageContent() {
           });
         }
         setPage(nextPage);
-        setHasMore(nextPage < res.total_pages);
+        setHasMore(nextPage < (res.total_pages || 1));
         setLoadingMore(false);
       })
       .catch(err => {

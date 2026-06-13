@@ -6,7 +6,7 @@ import { BackButton } from '@/components/ui/BackButton';
 import { Metadata } from 'next';
 import { getSiteUrl } from '@/lib/utils';
 
-export const revalidate = 86400; // 24h ISR — person data rarely changes
+export const revalidate = 2592000; // 30 day ISR — person data rarely changes
 
 // ─── Pre-render Top 200 People ────────────────────────────────────────────────
 // This converts /person/[id] from 0% cached (25K live renders) to ~95%+ cached.

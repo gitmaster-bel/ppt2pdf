@@ -319,13 +319,13 @@ export default function SupportPage() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-purple-400">ZIVOX</span>
           </h1>
           <p className="text-zinc-400 text-sm sm:text-base max-w-lg leading-relaxed">
-            Help keep the platform free, ad-free, and alive. Leave feedback or donate — everything helps.
+            Help keep the platform free, ad-free, and alive. Leave feedback or become a supporter — every contribution helps.
           </p>
 
           {/* Page Tab Switcher */}
           <div className="mt-6 flex items-center gap-1 p-1 bg-white/5 border border-white/8 rounded-xl">
             {[
-              { id: 'donate',   label: '💜 Donate' },
+              { id: 'donate',   label: '💜 Support Us' },
               { id: 'feedback', label: '💬 Feedback' },
             ].map(t => (
               <button
@@ -355,7 +355,7 @@ export default function SupportPage() {
               className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start"
             >
               {/* Left: Why to donate */}
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-6 order-last lg:order-first">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-start gap-4">
                     <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0 mt-0.5">
@@ -377,8 +377,53 @@ export default function SupportPage() {
                   </div>
                 </div>
                 <p className="text-zinc-600 text-sm font-medium italic border-t border-white/5 pt-4">
-                  We pay for high-speed servers out of pocket. Any crypto donation, no matter how small, goes directly to keeping ZIVOX ad-free. Thank you 💜
+                  We pay for high-speed servers out of pocket to provide a seamless, ad-free experience. Your contribution, no matter the size, goes directly into maintaining and improving ZIVOX. Thank you 💜
                 </p>
+
+                {/* Transparent Server Goals */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 relative overflow-hidden mt-2">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/10 blur-[50px] pointer-events-none" />
+                  <div className="flex justify-between items-end mb-3 relative z-10">
+                    <div>
+                      <h4 className="text-white font-bold text-sm">Monthly Server Costs</h4>
+                      <p className="text-zinc-400 text-xs mt-0.5">Help us reach 100% to keep speeds fast</p>
+                    </div>
+                    <span className="text-brand-400 font-display font-black text-xl">
+                      {hasDonated ? '77%' : '74%'}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-black/50 rounded-full overflow-hidden relative z-10">
+                    <motion.div 
+                      key={hasDonated ? 'donated' : 'not-donated'}
+                      initial={{ width: hasDonated ? '74%' : 0 }}
+                      animate={{ width: hasDonated ? '77%' : '74%' }}
+                      transition={{ duration: 1.5, ease: 'easeOut', delay: 0.2 }}
+                      className="h-full bg-gradient-to-r from-brand-600 to-brand-400 rounded-full relative"
+                    >
+                      <div className="absolute top-0 right-0 bottom-0 w-8 bg-white/20 blur-[2px] animate-pulse" />
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Wall of Love */}
+                <div className="mt-4">
+                  <h4 className="text-white font-bold text-sm mb-4 flex items-center gap-2">
+                    <Heart size={14} className="text-pink-500 fill-pink-500" /> Wall of Love
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { msg: "Fastest streaming site I've ever used. Unbelievable it's free.", author: "Anon" },
+                      { msg: "Finally, no annoying popups! You guys are lifesavers.", author: "Anon" },
+                      { msg: "The UI is gorgeous. Happy to support the servers.", author: "Anon" },
+                      { msg: "1080p without buffering? Take my crypto.", author: "Anon" }
+                    ].map((t, i) => (
+                      <div key={i} className="bg-white/5 border border-white/5 rounded-xl p-3 text-xs leading-relaxed text-zinc-400 flex flex-col justify-between">
+                        <p className="italic">"{t.msg}"</p>
+                        <p className="font-bold text-zinc-500 mt-2 text-[10px] uppercase tracking-widest">— {t.author}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Right: Donation Card */}
@@ -386,7 +431,7 @@ export default function SupportPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="bg-[rgba(10,8,12,0.85)] border border-white/10 rounded-3xl p-5 sm:p-7 backdrop-blur-3xl shadow-2xl overflow-hidden relative"
+                className="bg-[rgba(10,8,12,0.85)] border border-white/10 rounded-3xl p-5 sm:p-7 backdrop-blur-3xl shadow-2xl overflow-hidden relative order-first lg:order-last"
                 style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08), 0 30px 60px rgba(0,0,0,0.5)' }}
               >
                 <div
@@ -394,7 +439,7 @@ export default function SupportPage() {
                   style={{ backgroundColor: activeWallet.color }}
                 />
 
-                <h3 className="text-xl sm:text-2xl font-bold font-display text-white mb-1">Donate via Crypto</h3>
+                <h3 className="text-xl sm:text-2xl font-bold font-display text-white mb-1">Back ZIVOX via Crypto</h3>
                 <p className="text-zinc-500 text-sm mb-5">Select your preferred coin below.</p>
 
                 <AnimatePresence mode="wait">
@@ -480,7 +525,7 @@ export default function SupportPage() {
                             className="mt-5 w-full py-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 border min-h-[52px]"
                             style={{ background: `linear-gradient(to right, ${activeWallet.color}15, ${activeWallet.color}25)`, borderColor: `${activeWallet.color}30`, color: activeWallet.color }}
                           >
-                            <Heart size={14} className="fill-current" /> I&apos;ve completed my donation
+                            <Heart size={14} className="fill-current" /> I&apos;ve completed my contribution
                           </motion.button>
                         ) : (
                           <motion.form
@@ -532,7 +577,7 @@ export default function SupportPage() {
                             </button>
                             <p className="text-[10px] text-white/35 text-center leading-relaxed">
                               We verify via blockchain RPCs to unlock 1 month of premium.{' '}
-                              <span className="text-brand-500 font-bold">Donated on another device?</span> Paste that TxID here to sync.
+                              <span className="text-brand-500 font-bold">Supported on another device?</span> Paste that TxID here to sync.
                             </p>
                           </motion.form>
                         )}
@@ -557,7 +602,7 @@ export default function SupportPage() {
                       </div>
                       <h3 className="text-3xl font-display font-black text-white leading-tight">You&apos;re Amazing!</h3>
                       <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
-                        Your generosity directly pays for the high-speed servers that keep ZIVOX ad-free and lightning fast for everyone. Enjoy the cinematic experience!
+                        Your support directly pays for the high-speed servers that keep ZIVOX ad-free and lightning fast for everyone. Enjoy the cinematic experience!
                       </p>
                       <Link href="/" className="w-full py-4 rounded-xl bg-white text-black font-bold uppercase tracking-widest text-xs transition-all hover:bg-zinc-200 hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.2)]">
                         Return to Home

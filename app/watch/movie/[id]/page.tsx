@@ -2,33 +2,27 @@ import { Metadata } from 'next';
 import { tmdb, getImageUrl } from '@/lib/tmdb';
 import { MovieClient } from './MovieClient';
 import { MediaGrid } from '@/components/media/MediaGrid';
-import { LegalBanner } from '@/components/ui/LegalBanner';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { generateSlug, getSiteUrl } from '@/lib/utils';
 
-export const revalidate = 86400; // 24 hour ISR
+export const revalidate = 2592000; // 30 day ISR — Drastically reduces Vercel ISR writes
 
-// ─── Pre-render Top 500 Movies ────────────────────────────────────────────────
-// Previously only ~80 IDs were pre-built → 2.1% cache rate on 80K requests.
-// Now pre-building 500 IDs covers the vast majority of real user traffic,
-// serving static HTML at zero function invocation cost.
+// ─── Pre-render Top 50 Movies ──────────────────────────────────────────────────
+// Pre-building 50 top IDs keeps ISR Write costs minimal. Less popular titles
+// are served by on-demand ISR (still fast, just generated on first request).
 export async function generateStaticParams() {
   try {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) return [];
 
-    // 5 pages each of popular + top_rated = up to 500 unique movies
+    // 1 page each of popular + top_rated = up to 40 unique movies
     const fetches = await Promise.allSettled([
-      ...([1, 2, 3, 4, 5].map((page) =>
-        fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}&page=${page}`, {
-          next: { revalidate: 86400 },
-        }).then((r) => r.json())
-      )),
-      ...([1, 2, 3, 4, 5].map((page) =>
-        fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${TMDB_API_KEY}&page=${page}`, {
-          next: { revalidate: 86400 },
-        }).then((r) => r.json())
-      )),
+      fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}&page=1`, {
+        next: { revalidate: 86400 },
+      }).then((r) => r.json()),
+      fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${TMDB_API_KEY}&page=1`, {
+        next: { revalidate: 86400 },
+      }).then((r) => r.json()),
     ]);
 
     const allMovies: Array<{ id: number; title?: string }> = [];
@@ -38,8 +32,8 @@ export async function generateStaticParams() {
       }
     }
 
-    // Deduplicate and cap at 500
-    const unique = [...new Map(allMovies.map((m) => [m.id, m])).values()].slice(0, 500);
+    // Deduplicate and cap at 50
+    const unique = [...new Map(allMovies.map((m) => [m.id, m])).values()].slice(0, 50);
 
     return unique.map((movie) => ({
       id: generateSlug(movie.id.toString(), movie.title || ''),
@@ -174,7 +168,6 @@ export default async function WatchMovie({ params }: { params: Promise<{ id: str
           <MediaGrid title="More Like This" items={similar} />
         </div>
       )}
-      <LegalBanner />
     </div>
   );
 }

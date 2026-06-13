@@ -14,7 +14,7 @@ import { Logo } from '@/components/ui/Logo';
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
   { href: '/movies', label: 'Movies' },
-  { href: '/tv', label: 'Series' },
+  { href: '/tv', label: 'TV Shows' },
   { href: '/anime', label: 'Anime' },
   { href: '/schedule', label: 'Schedule' },
 ];
@@ -30,7 +30,7 @@ const BROWSE_ITEMS = [
 const MOBILE_DOCK_ITEMS = [
   { href: '/', label: 'Home', Icon: Home },
   { href: '/movies', label: 'Movies', Icon: Film },
-  { href: '/tv', label: 'Series', Icon: Tv },
+  { href: '/tv', label: 'TV Shows', Icon: Tv },
   { href: '/anime', label: 'Anime', Icon: Sparkles },
   { href: '/discover', label: 'Discover', Icon: Compass },
   { href: '/schedule', label: 'Schedule', Icon: CalendarDays },
@@ -229,6 +229,19 @@ export function Navbar() {
                 </div>
               </div>
             </div>
+            
+            {/* Separator */}
+            <div className="w-[1px] h-5 bg-white/10 mx-2 hidden lg:block"></div>
+
+            {/* Prominent Search Bar */}
+            <Link
+              href="/search"
+              onClick={clearIframes}
+              className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-brand-500/30 transition-all duration-300 group shadow-[0_0_15px_rgba(255,255,255,0.02)] hover:shadow-[0_0_25px_rgba(255,165,80,0.15)]"
+            >
+              <Search size={15} strokeWidth={2.5} className="text-white/60 group-hover:text-brand-400 transition-colors" />
+              <span className="text-xs font-medium tracking-wide text-white/60 group-hover:text-white transition-colors">Search...</span>
+            </Link>
           </div>
 
           {/* Action Icons (Right) */}
@@ -274,14 +287,7 @@ export function Navbar() {
               </AnimatePresence>
             </div>
             <DonationButton />
-            <Link
-              href="/search"
-              onClick={clearIframes}
-              className="text-white/60 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95"
-              aria-label="Search"
-            >
-              <Search size={17} strokeWidth={2} />
-            </Link>
+
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="text-white/60 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95"

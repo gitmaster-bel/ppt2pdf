@@ -117,14 +117,14 @@ export function SupportPopupModal({ isOpen, onComplete, title, mediaType }: Supp
             Enjoying the {mediaType === 'movie' ? 'movie' : 'show'}?
           </h2>
           <p className="text-sm text-zinc-400 mb-6 leading-relaxed relative z-10">
-            ZIVOX is completely free and ad-free. Please support us by sharing or donating! <br/><br/>
+            ZIVOX delivers a premium, ad-free cinematic experience entirely for free. Help us maintain our servers and keep the platform ad-free by supporting our mission. <br/><br/>
             <span className="text-white font-bold block mb-1">🎁 Your Rewards:</span>
             <span className="block text-brand-400">Share with a friend → <span className="text-white">2 Full Days</span> uninterrupted</span>
-            <span className="block text-brand-400">Crypto Donation → <span className="text-white">1 Full Month</span> uninterrupted</span>
+            <span className="block text-brand-400">Become a Supporter → <span className="text-white">1 Full Month</span> uninterrupted</span>
           </p>
           
           <p className="text-[10px] text-zinc-500 mb-6 relative z-10 italic">
-            Note: Premium access is per-device. If you already donated on another device within the past month, click "Support via Crypto" and paste your Transaction ID to sync your premium access here.
+            Note: Premium access is per-device. If you already supported us on another device within the past month, click "Back Our Project" and paste your Transaction ID to sync your premium access here.
           </p>
 
           <div className="flex flex-col w-full gap-3 relative z-10">
@@ -160,7 +160,7 @@ export function SupportPopupModal({ isOpen, onComplete, title, mediaType }: Supp
               onClick={handleDonate}
               className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold transition-all bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 active:scale-95"
             >
-              <Wallet size={18} /> Support via Crypto
+              <Wallet size={18} /> Back Our Project
             </button>
           </div>
 

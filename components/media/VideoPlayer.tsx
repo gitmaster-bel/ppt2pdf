@@ -50,6 +50,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialCountdown, setTutorialCountdown] = useState(15);
   const [showSupportPopup, setShowSupportPopup] = useState(false);
+  const [showValueToast, setShowValueToast] = useState(false);
   const hasSupportedRef = useRef(false);
 
   const [testingSources, setTestingSources] = useState(!initialServer);
@@ -108,6 +109,14 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         hasSupportedRef.current = !isNaN(expiry) && Date.now() < expiry;
       } else {
         hasSupportedRef.current = false;
+      }
+
+      // ── Value Saved Toast ──
+      if (!hasSupportedRef.current && visits > 0 && visits % 3 === 0) {
+        setTimeout(() => {
+          setShowValueToast(true);
+          setTimeout(() => setShowValueToast(false), 8000); // Show for 8 seconds
+        }, 10000); // 10 seconds into the video
       }
     } catch (e) {}
 
@@ -615,7 +624,8 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="flex flex-col w-full relative bg-void-950 rounded-2xl overflow-hidden border border-zinc-800/60"
       style={{
-        boxShadow: '0 0 150px -20px var(--brand-ambient), 0 0 40px -10px var(--brand-glow)'
+        boxShadow: '0 0 80px -20px var(--brand-ambient), 0 0 30px -10px var(--brand-glow)',
+        contain: 'layout style',
       }}
     >
       <PlayerToasts key={id} serverName={source.publicName} serverIsNoAds={source.noAds} isPaused={showTutorial} />
@@ -700,6 +710,26 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
               className="fixed top-20 left-1/2 -translate-x-1/2 z-[9998] bg-black/80 text-white px-5 py-2.5 rounded-full font-bold tracking-widest text-xs backdrop-blur-md pointer-events-none border border-white/10"
             >
               {toastMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Value Saved Toast (Quantify Value) */}
+      {mounted && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showValueToast && (
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              className="fixed top-24 right-4 z-[9998] bg-[#0a080c] border border-brand-500/30 text-white p-4 sm:p-5 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] max-w-[320px] pointer-events-auto"
+            >
+              <h4 className="font-bold text-sm text-brand-400 mb-1.5 flex items-center gap-1.5 leading-tight"><Sparkles size={14} /> You just saved ~15 mins of ads!</h4>
+              <p className="text-[11px] text-zinc-400 leading-relaxed mb-4 font-medium">If you love the uninterrupted ZIVOX experience, please consider backing us.</p>
+              <Link href="/support" className="inline-flex items-center justify-center bg-brand-500 text-black px-3 py-2.5 rounded-xl text-[10px] font-black w-full uppercase tracking-widest hover:bg-brand-400 transition-colors shadow-lg active:scale-95">Buy us a coffee ☕</Link>
+              <button onClick={() => setShowValueToast(false)} className="absolute top-3 right-3 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-md p-1"><X size={12}/></button>
             </motion.div>
           )}
         </AnimatePresence>,
@@ -1320,13 +1350,22 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
             <iframe
               key={`iframe-${currentSourceId}-${useSandbox ? 'sandbox' : 'nosandbox'}`}
               src={embedUrl}
-              className={`absolute inset-0 w-full h-full border-0 transition-all duration-700 ${
+              className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-700 ${
                 isConnecting
                   ? 'opacity-0 pointer-events-none'
                   : showSupportPopup
-                    ? 'grayscale blur-[4px] pointer-events-none opacity-40'
+                    ? 'opacity-40 pointer-events-none'
                     : 'pointer-events-auto opacity-100'
               }`}
+              style={{
+                // Promote to own GPU compositing layer — isolates it from
+                // backdrop-blur / box-shadow repaints in parent stacking contexts.
+                // This is the key fix for windowed buffering/lag.
+                willChange: 'transform',
+                transform: 'translateZ(0)',
+                // Only apply blur filter when strictly needed (support popup)
+                ...((!isConnecting && showSupportPopup) ? { filter: 'blur(4px) grayscale(1)' } : {})
+              }}
               allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen
               sandbox={sandboxAttrs}

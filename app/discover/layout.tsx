@@ -8,5 +8,5 @@ export const metadata = {
 };
 
 export default function DiscoverLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <div className="w-full flex flex-col">{children}</div>;
 }

@@ -2,32 +2,26 @@ import { Metadata } from 'next';
 import { tmdb, getImageUrl } from '@/lib/tmdb';
 import { TvPlayer } from './TvPlayer';
 import { MediaGrid } from '@/components/media/MediaGrid';
-import { LegalBanner } from '@/components/ui/LegalBanner';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { generateSlug, getSiteUrl } from '@/lib/utils';
 
-export const revalidate = 86400; // 24 hour ISR
+export const revalidate = 604800; // 7 day ISR — Reduces Vercel ISR writes while keeping episodes updated
 
-// ─── Pre-render Top 500 TV Shows ─────────────────────────────────────────────
-// Previously only ~80 IDs were pre-built → 3.1% cache rate on 17K requests.
-// Pre-building 500 IDs converts most requests to zero-cost static HTML.
+// ─── Pre-render Top 50 TV Shows ─────────────────────────────────────────────
+// Pre-building 50 top IDs keeps ISR Write costs minimal on Vercel Hobby.
 export async function generateStaticParams() {
   try {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) return [];
 
-    // 5 pages each of popular + top_rated TV = up to 500 unique shows
+    // 1 page each of popular + top_rated = up to 40 unique shows
     const fetches = await Promise.allSettled([
-      ...([1, 2, 3, 4, 5].map((page) =>
-        fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${TMDB_API_KEY}&page=${page}`, {
-          next: { revalidate: 86400 },
-        }).then((r) => r.json())
-      )),
-      ...([1, 2, 3, 4, 5].map((page) =>
-        fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${TMDB_API_KEY}&page=${page}`, {
-          next: { revalidate: 86400 },
-        }).then((r) => r.json())
-      )),
+      fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${TMDB_API_KEY}&page=1`, {
+        next: { revalidate: 86400 },
+      }).then((r) => r.json()),
+      fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${TMDB_API_KEY}&page=1`, {
+        next: { revalidate: 86400 },
+      }).then((r) => r.json()),
     ]);
 
     const allShows: Array<{ id: number; name?: string; title?: string }> = [];
@@ -37,8 +31,8 @@ export async function generateStaticParams() {
       }
     }
 
-    // Deduplicate and cap at 500
-    const unique = [...new Map(allShows.map((s) => [s.id, s])).values()].slice(0, 500);
+    // Deduplicate and cap at 50
+    const unique = [...new Map(allShows.map((s) => [s.id, s])).values()].slice(0, 50);
 
     return unique.map((show) => ({
       id: generateSlug(show.id.toString(), show.name || show.title || ''),
@@ -173,9 +167,6 @@ export default async function WatchTv({ params }: { params: Promise<{ id: string
           <MediaGrid title="More Like This" items={similar} />
         </div>
       )}
-      <div className="mt-8">
-        <LegalBanner />
-      </div>
     </div>
   );
 }

@@ -152,12 +152,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               position: 'absolute',
               top: '-25%',
               left: '50%',
-              transform: 'translateX(-50%)',
+              transform: 'translateX(-50%) translateZ(0)',
               width: '70%',
               height: '65%',
               background: 'radial-gradient(ellipse at center, var(--brand-ambient) 0%, transparent 70%)',
-              filter: 'blur(60px)',
+              filter: 'blur(40px)',
               animation: 'purple-beam 18s ease-in-out infinite',
+              willChange: 'transform, opacity',
             }}
           />
           {/* Top-left deep accent — always present for depth */}
@@ -170,6 +171,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               height: '50%',
               background: 'radial-gradient(ellipse at center, var(--brand-ambient) 0%, transparent 70%)',
               animation: 'purple-beam 24s ease-in-out infinite reverse',
+              willChange: 'transform, opacity',
             }}
           />
           {/* Top-right complementary accent */}
@@ -182,6 +184,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               height: '45%',
               background: 'radial-gradient(ellipse at center, color-mix(in srgb, var(--brand-ambient) 60%, transparent) 0%, transparent 60%)',
               animation: 'purple-beam 20s ease-in-out infinite 2s',
+              willChange: 'transform, opacity',
             }}
           />
           {/* Bottom brand warm glow */}

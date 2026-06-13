@@ -177,7 +177,7 @@ export function DonationModal({ isOpen, onClose, onSuccess }: DonationModalProps
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                Support Zivox TV
+                Back ZIVOX
               </h2>
               <button 
                 onClick={onClose}
@@ -187,7 +187,7 @@ export function DonationModal({ isOpen, onClose, onSuccess }: DonationModalProps
               </button>
             </div>
             <p className="text-white/40 text-xs mb-6">
-              No platform fees. 100% goes directly to the creator.
+              100% of your contribution goes directly to server and infrastructure costs.
             </p>
 
             {/* Coin Tabs */}
@@ -295,7 +295,7 @@ export function DonationModal({ isOpen, onClose, onSuccess }: DonationModalProps
                       color: activeWallet.color
                     }}
                   >
-                    I have completed my donation
+                    I have completed my contribution
                   </motion.button>
                 ) : (
                   <motion.form
@@ -328,7 +328,7 @@ export function DonationModal({ isOpen, onClose, onSuccess }: DonationModalProps
                     </button>
                     <p className="text-[9px] text-white/40 text-center mt-2 leading-relaxed">
                       We check transactions via blockchain RPCs to unlock 1 month of premium. <br/>
-                      <span className="text-brand-500 font-bold">Already donated on another device within the last 30 days?</span> Paste that TxID here to sync your premium access!
+                      <span className="text-brand-500 font-bold">Already supported us on another device within the last 30 days?</span> Paste that TxID here to sync your premium access!
                     </p>
                   </motion.form>
                 )}

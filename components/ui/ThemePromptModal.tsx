@@ -24,8 +24,9 @@ export function ThemePromptModal() {
     const showTimer = setTimeout(() => {
       try {
         const hasDismissed = localStorage.getItem('zivox_theme_prompt_dismissed');
-        // Only show if they haven't dismissed it or selected a theme via this prompt yet
-        if (!hasDismissed) {
+        const visits = parseInt(localStorage.getItem('player_visits') || '0', 10);
+        // Only show if they haven't dismissed it AND they've visited the player at least 3 times
+        if (!hasDismissed && visits >= 3) {
           setIsVisible(true);
         }
       } catch (e) {}

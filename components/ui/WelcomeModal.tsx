@@ -111,10 +111,10 @@ export function WelcomeModal() {
 
             {/* Modal Container */}
             <motion.div
-              initial={{ opacity: 0, y: 60, rotateX: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              initial={{ opacity: 0, scale: 0.95, y: 40, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 0.95, y: 20, filter: 'blur(8px)' }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="relative w-full max-w-4xl bg-void-950 border border-white/10 rounded-3xl md:rounded-[32px] overflow-hidden shadow-[0_30px_100px_-20px_color-mix(in srgb, var(--brand-500) 30%, transparent)] flex flex-col md:flex-row z-10 max-h-[95vh] overflow-y-auto custom-scrollbar"
             >
               {/* Left Column: Visuals & Movie Pitch */}
@@ -186,19 +186,22 @@ export function WelcomeModal() {
                   </div>
 
                   {/* Donation Box */}
-                  <div className="flex items-start gap-3 md:gap-4 p-4 md:p-5 rounded-xl md:rounded-2xl bg-brand-500/5 border border-brand-500/20 backdrop-blur-sm relative overflow-hidden group/donate">
+                  <div 
+                    onClick={() => setShowDonationModal(true)}
+                    className="flex items-start gap-3 md:gap-4 p-4 md:p-5 rounded-xl md:rounded-2xl bg-brand-500/5 hover:bg-brand-500/10 border border-brand-500/20 backdrop-blur-sm relative overflow-hidden group/donate cursor-pointer transition-colors"
+                  >
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-500/0 via-brand-500/10 to-brand-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     <div className="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-brand-500/10 text-brand-400 shrink-0">
                       <Heart size={20} className="md:w-[22px] md:h-[22px] fill-brand-400/20" />
                     </div>
                     <div className="pr-2 md:pr-4 relative z-10">
                       <h4 className="text-white font-bold text-sm md:text-[15px] flex items-center gap-2">
-                        Keep ZIVOX Alive <span className="text-[9px] md:text-[10px] bg-brand-500/20 text-brand-400 px-1.5 md:px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Optional</span>
+                        Back Our Mission <span className="text-[9px] md:text-[10px] bg-brand-500/20 text-brand-400 px-1.5 md:px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Optional</span>
                       </h4>
-                      <p className="text-zinc-400 text-xs mt-1 md:mt-1.5 leading-relaxed hidden sm:block">We refuse to run ads. We pay heavily out of pocket to keep our servers lightning fast. If you love this project, consider making a small donation to help us survive.</p>
-                      <button type="button" onClick={(e) => { e.preventDefault(); setShowDonationModal(true); }} className="inline-flex items-center gap-1.5 md:gap-2 mt-1 sm:mt-2 md:mt-4 text-xs font-bold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer">
-                        <Coffee size={14} /> Donate to Server Costs <span aria-hidden="true">→</span>
-                      </button>
+                      <p className="text-zinc-400 text-xs mt-1 md:mt-1.5 leading-relaxed hidden sm:block">We provide a premium, ad-free experience at zero cost to you. To maintain our high-speed servers and keep ZIVOX free of invasive ads, we rely on community support. If you value what we do, please consider backing us.</p>
+                      <div className="inline-flex items-center gap-1.5 md:gap-2 mt-1 sm:mt-2 md:mt-4 text-xs font-bold text-white/60 group-hover/donate:text-white group-hover/donate:drop-shadow-[0_0_10px_var(--brand-500)] transition-all">
+                        <Coffee size={14} className="text-brand-500" /> Become a Supporter <span aria-hidden="true" className="group-hover/donate:translate-x-1 transition-transform duration-300">→</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -213,13 +216,13 @@ export function WelcomeModal() {
                   </Link>
                   <button
                     onClick={handleShare}
-                    className="w-full sm:flex-1 py-3 md:py-4 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-300 hover:text-purple-200 font-bold text-xs md:text-sm transition-colors flex items-center justify-center gap-2"
+                    className="w-full sm:flex-1 py-3 md:py-4 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-300 hover:text-purple-200 font-bold text-xs md:text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Share2 size={16} className="text-purple-400" /> Share Site
                   </button>
                   <button
                     onClick={closeModal}
-                    className="w-full sm:flex-1 py-3 md:py-4 rounded-xl bg-premium-gradient-dark hover:bg-premium-gradient border border-brand-500/50 text-white font-bold text-xs md:text-sm transition-colors shadow-[0_0_20px_color-mix(in srgb, var(--brand-500) 20%, transparent)]"
+                    className="w-full sm:flex-1 py-3 md:py-4 rounded-xl bg-premium-gradient-dark hover:bg-premium-gradient border border-brand-500/50 text-white font-bold text-xs md:text-sm transition-colors shadow-[0_0_20px_color-mix(in srgb, var(--brand-500) 20%, transparent)] cursor-pointer"
                   >
                     Enter Platform
                   </button>

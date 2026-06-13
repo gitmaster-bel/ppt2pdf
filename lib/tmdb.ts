@@ -21,12 +21,12 @@ export async function fetchTMDB<T>(
   const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
   // ── Revalidation strategy ────────────────────────────────────────────────
-  // - Search endpoints: revalidate=0 (always fresh, user-specific)
+  // - Search endpoints: 3600s (1h) — saves massive TMDB and Vercel quota
   // - Trending/popular/discover: 86400s (24h) — data changes daily at most
   // - Details pages: 86400s (24h) — safe to cache, ISR handles freshness
   // This is what converts 121K live TMDB calls → cached CDN responses.
   const isSearch = path.startsWith('/search');
-  const revalidateSeconds = isSearch ? 0 : 86400;
+  const revalidateSeconds = isSearch ? 3600 : 86400;
 
   const executeFetch = async (baseUrl: string, isFallback = false): Promise<T> => {
     const url = `${baseUrl}${path}?${queryString}`;

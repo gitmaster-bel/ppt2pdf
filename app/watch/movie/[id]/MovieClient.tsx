@@ -20,7 +20,7 @@ import { YoutubeBackgroundPlayer } from '@/components/media/YoutubeBackgroundPla
 import { UpcomingBanner, type UpcomingMeta } from '@/components/media/UpcomingBanner';
 
 
-// ─── Content State Detection ──────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Content State Detection ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 const UNRELEASED_STATUSES = new Set([
   'Planned', 'Rumored', 'In Production', 'Post Production', 'Announced',
@@ -49,7 +49,7 @@ function detectMovieState(movie: MediaDetails): {
   };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export function MovieClient({ movie }: { movie: MediaDetails }) {
   const router = useRouter();
@@ -117,23 +117,23 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
       </div>
 
       <div className="flex flex-col gap-8">
-        {/* ── UPCOMING: show UpcomingBanner ── */}
+        {/* ΓöÇΓöÇ UPCOMING: show UpcomingBanner ΓöÇΓöÇ */}
         {isUpcoming ? (
           <UpcomingBanner media={movie} meta={meta} />
         ) : (
-          /* ── RELEASED: normal player UI ── */
+          /* ΓöÇΓöÇ RELEASED: normal player UI ΓöÇΓöÇ */
           <div className="flex-1 flex flex-col gap-6">
-            {/* Sticky player on mobile — stays visible while scrolling info */}
+            {/* Sticky player on mobile ΓÇö stays visible while scrolling info */}
             <div className="sticky top-[56px] md:static z-30 md:z-auto">
               <div className="relative w-full max-w-5xl mx-auto">
                 {/* Dynamic YouTube-style ambient backlight */}
                 <div
-                  className={`absolute inset-[-5%] md:inset-[-10%] blur-[80px] md:blur-[120px] opacity-100 transition-colors duration-1000 ease-in-out pointer-events-none z-[-1] ${isPlaying ? 'hidden' : 'opacity-100'}`}
-                  style={{ backgroundColor: bgColor }}
+                  className={`absolute inset-[-5%] md:inset-[-8%] blur-[40px] md:blur-[60px] opacity-100 transition-colors duration-1000 ease-in-out pointer-events-none z-[-1] ${isPlaying ? 'hidden' : 'opacity-100'}`}
+                  style={{ backgroundColor: bgColor, willChange: 'background-color', transform: 'translateZ(0)' }}
                 />
                 <div
-                  className={`relative w-full rounded-2xl overflow-hidden border border-zinc-800 bg-void-950 group ${
-                    !isPlaying ? 'aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'min-h-[300px] flex flex-col'
+                  className={`relative w-full border border-zinc-800 bg-void-950 group ${
+                    !isPlaying ? 'rounded-2xl overflow-hidden aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'min-h-[300px] flex flex-col'
                   }`}
                   onClick={() => !isPlaying && setIsPlaying(true)}
                 >
@@ -181,7 +181,7 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
               </div>
             </div>
 
-            {/* Info panel — collapses cleanly with max-height transition (no layout glitch) */}
+            {/* Info panel ΓÇö collapses cleanly with max-height transition (no layout glitch) */}
             <div
               style={{
                 overflow: 'hidden',
@@ -263,9 +263,9 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
                   href={`/collection/${generateSlug(movie.belongs_to_collection.id.toString(), movie.belongs_to_collection.name)}`}
                   className="inline-flex items-center gap-2 text-sm font-bold bg-brand-500/10 hover:bg-brand-500/15 border border-brand-500/25 px-4 py-2 rounded-full text-brand-400 hover:text-brand-300 transition-all w-fit shadow-md mt-2 active:scale-95"
                 >
-                  <span>🎬</span>
+                  <span>≡ƒÄ¼</span>
                   <span>Part of <span className="text-white">{movie.belongs_to_collection.name}</span></span>
-                  <span className="text-brand-500/60 text-xs">→</span>
+                  <span className="text-brand-500/60 text-xs">ΓåÆ</span>
                 </Link>
               )}
             </div>
@@ -273,7 +273,7 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
         )}
       </div>
 
-      {/* Cast & About section — also collapses when playing */}
+      {/* Cast & About section ΓÇö also collapses when playing */}
       <div
         style={{
           overflow: 'hidden',

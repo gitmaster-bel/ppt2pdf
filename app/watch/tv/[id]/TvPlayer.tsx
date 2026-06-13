@@ -24,16 +24,16 @@ import { YoutubeBackgroundPlayer } from '@/components/media/YoutubeBackgroundPla
 import { UpcomingBanner, type UpcomingMeta, type UpcomingReason } from '@/components/media/UpcomingBanner';
 
 
-// ─── TV Content State Engine ──────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ TV Content State Engine ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 //
 // State matrix:
 //
-// 1. fully_upcoming    → no seasons have aired (first_air_date > today OR status says so)
-// 2. show_new_season   → ≥1 aired season exists, but newest season hasn't aired yet
-// 3. mid_season        → current season partially aired (next_episode_to_air exists)
-// 4. available         → fully available, normal player
+// 1. fully_upcoming    ΓåÆ no seasons have aired (first_air_date > today OR status says so)
+// 2. show_new_season   ΓåÆ ΓëÑ1 aired season exists, but newest season hasn't aired yet
+// 3. mid_season        ΓåÆ current season partially aired (next_episode_to_air exists)
+// 4. available         ΓåÆ fully available, normal player
 //
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 type TvContentState =
   | 'fully_upcoming'
@@ -56,7 +56,7 @@ function detectTvState(show: MediaDetails): TvStateResult {
 
   const firstAirDate = show.first_air_date ? new Date(show.first_air_date + 'T00:00:00') : null;
 
-  // ── 1. Fully upcoming: no air date or air date is in the future ──
+  // ΓöÇΓöÇ 1. Fully upcoming: no air date or air date is in the future ΓöÇΓöÇ
   const isFullyUpcoming =
     !firstAirDate ||
     firstAirDate > today ||
@@ -90,7 +90,7 @@ function detectTvState(show: MediaDetails): TvStateResult {
     };
   }
 
-  // ── 2. New season upcoming: some seasons aired, but upcoming season exists ──
+  // ΓöÇΓöÇ 2. New season upcoming: some seasons aired, but upcoming season exists ΓöÇΓöÇ
   if (airedSeasons.length > 0 && futureSeasons.length > 0) {
     const nextSeason = futureSeasons.sort((a, b) => a.season_number - b.season_number)[0];
     return {
@@ -105,7 +105,7 @@ function detectTvState(show: MediaDetails): TvStateResult {
     };
   }
 
-  // ── 3. Mid-season: currently airing with next episode coming ──
+  // ΓöÇΓöÇ 3. Mid-season: currently airing with next episode coming ΓöÇΓöÇ
   // TMDB provides `next_episode_to_air` on the show details object
   const nextEp = (show as any).next_episode_to_air;
   if (nextEp && nextEp.air_date) {
@@ -124,7 +124,7 @@ function detectTvState(show: MediaDetails): TvStateResult {
     }
   }
 
-  // ── 4. Fully available ──
+  // ΓöÇΓöÇ 4. Fully available ΓöÇΓöÇ
   return {
     state: 'available',
     meta: { reason: 'show_fully_upcoming' }, // unused
@@ -132,7 +132,7 @@ function detectTvState(show: MediaDetails): TvStateResult {
   };
 }
 
-// ─── Main TvPlayer ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Main TvPlayer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function TvPlayerContent({ show }: { show: MediaDetails }) {
   const searchParams = useSearchParams();
@@ -274,12 +274,12 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
           </>
         )}
       </div>
-      {/* ── FULLY UPCOMING: UpcomingBanner only ── */}
+      {/* ΓöÇΓöÇ FULLY UPCOMING: UpcomingBanner only ΓöÇΓöÇ */}
       {tvState === 'fully_upcoming' && (
         <UpcomingBanner media={show} meta={meta} />
       )}
 
-      {/* ── HAS AIRED CONTENT: Normal player (+ optional new-season banner) ── */}
+      {/* ΓöÇΓöÇ HAS AIRED CONTENT: Normal player (+ optional new-season banner) ΓöÇΓöÇ */}
       {tvState !== 'fully_upcoming' && (
         <>
           {/* New season banner on top */}
@@ -289,19 +289,19 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
 
           {/* Mid-season "next episode" info will now be integrated directly into the player below */}
 
-          {/* ── Player section ── */}
+          {/* ΓöÇΓöÇ Player section ΓöÇΓöÇ */}
           <div className={`flex gap-8 transition-all duration-500 ${isPlaying ? 'flex-col items-center' : 'flex-col xl:flex-row'}`}>
             <div className={`flex flex-col gap-6 w-full ${isPlaying ? 'xl:w-full' : 'flex-1'}`}>
               {/* Sticky player on mobile */}
               <div className="sticky top-[56px] md:static z-30 md:z-auto">
               <div className="relative w-full max-w-5xl mx-auto">
                 <div
-                  className={`absolute inset-[-5%] md:inset-[-10%] blur-[80px] md:blur-[120px] opacity-100 transition-colors duration-1000 ease-in-out pointer-events-none z-[-1] ${isPlaying ? 'hidden' : 'opacity-100'}`}
-                  style={{ backgroundColor: bgColor }}
+                  className={`absolute inset-[-5%] md:inset-[-8%] blur-[40px] md:blur-[60px] opacity-100 transition-colors duration-1000 ease-in-out pointer-events-none z-[-1] ${isPlaying ? 'hidden' : 'opacity-100'}`}
+                  style={{ backgroundColor: bgColor, willChange: 'background-color', transform: 'translateZ(0)' }}
                 />
                 <div
-                  className={`relative w-full rounded-2xl overflow-hidden border border-zinc-800 bg-void-950 group ${
-                    !isPlaying ? 'aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'min-h-[300px] flex flex-col'
+                  className={`relative w-full border border-zinc-800 bg-void-950 group ${
+                    !isPlaying ? 'rounded-2xl overflow-hidden aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'min-h-[300px] flex flex-col'
                   }`}
                   onClick={() => !isPlaying && setIsPlaying(true)}
                 >
@@ -362,7 +362,7 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
               </div>
               </div>
 
-              {/* Info panel — smooth max-height collapse, no layout glitch */}
+              {/* Info panel ΓÇö smooth max-height collapse, no layout glitch */}
               <div
                 style={{
                   overflow: 'hidden',
@@ -549,7 +549,7 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
             )}
           </div>
 
-          {/* Cast & About section — also collapses when playing */}
+          {/* Cast & About section ΓÇö also collapses when playing */}
           <div
             style={{
               overflow: 'hidden',

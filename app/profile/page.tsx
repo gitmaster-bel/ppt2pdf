@@ -6,7 +6,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { Trash2, User, Heart, Bell, Download, Upload } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Media } from "@/types/tmdb";
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
 
@@ -15,6 +15,21 @@ export default function ProfilePage() {
   const { watchlist, toggleWatchlist } = useWatchlist();
   const { favorites, toggleFavorite } = useFavorites();
   const { notifications, toggleNotification } = useNotifications();
+  const [isSupporter, setIsSupporter] = useState(false);
+
+  useEffect(() => {
+    try {
+      const supportVal = localStorage.getItem('has_supported_zivox');
+      if (supportVal === 'true') {
+        setIsSupporter(true);
+      } else if (supportVal) {
+        const expiry = parseInt(supportVal, 10);
+        if (!isNaN(expiry) && Date.now() < expiry) {
+          setIsSupporter(true);
+        }
+      }
+    } catch(e) {}
+  }, []);
 
   const handleRemove = (id: string, type: 'history'|'watchlist'|'favorites'|'notifications') => {
     if (type === 'history') {
@@ -105,8 +120,13 @@ export default function ProfilePage() {
           <User size={40} className="text-white" />
         </div>
         <div className="flex-1">
-          <h1 className="text-4xl md:text-5xl font-display font-black tracking-tight text-white mb-2">
+          <h1 className="text-4xl md:text-5xl font-display font-black tracking-tight text-white mb-2 flex items-center justify-center sm:justify-start gap-3 flex-wrap">
             My Profile
+            {isSupporter && (
+              <span className="text-[10px] sm:text-xs bg-brand-500/10 border border-brand-500/20 text-brand-400 px-2.5 py-1 rounded-full uppercase tracking-widest font-bold flex items-center gap-1.5 shadow-[0_0_15px_color-mix(in_srgb,var(--brand-500)_30%,transparent)]">
+                <Heart size={12} className="fill-brand-400" /> Supporter
+              </span>
+            )}
           </h1>
           <p className="text-zinc-400 font-medium">
             Manage your watch history and saved list

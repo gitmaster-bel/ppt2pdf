@@ -155,7 +155,20 @@ export async function getSearchSuggestions(): Promise<Media[]> {
 
 
 export async function discoverMedia(type: "movie" | "tv", params: Record<string, string>) {
-  return await tmdb.discover(type, params);
+  // Cache discover results at the data layer — same query params within 30 min hit this cache.
+  // This dramatically reduces function invocations from the /discover page.
+  const apiKey = process.env.TMDB_API_KEY;
+  if (!apiKey) return { results: [], total_pages: 1, total_results: 0 };
+  const qs = new URLSearchParams({ ...params, api_key: apiKey }).toString();
+  try {
+    const res = await fetch(`https://api.themoviedb.org/3/discover/${type}?${qs}`, {
+      next: { revalidate: 1800 }, // 30 min data-layer cache
+    });
+    if (!res.ok) return { results: [], total_pages: 1, total_results: 0 };
+    return res.json();
+  } catch {
+    return { results: [], total_pages: 1, total_results: 0 };
+  }
 }
 
 export async function getTopRatedAction(type: "movie" | "tv") {

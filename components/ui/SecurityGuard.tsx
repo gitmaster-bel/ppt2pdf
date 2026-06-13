@@ -6,8 +6,6 @@ export function SecurityGuard() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Disabled for testing
-    return;
     const noop = () => {};
     const methods = [
       'log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir', 

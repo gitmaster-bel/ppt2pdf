@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Github, Twitter } from 'lucide-react';
+import { Github, Twitter, Heart } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 
@@ -55,25 +55,8 @@ export function Footer() {
             </p>
             {/* Social */}
             <div className="flex items-center gap-3 mt-1">
-              {[
-                { Icon: Github, href: '#', label: 'GitHub' },
-                { Icon: Twitter, href: '#', label: 'Twitter' },
-              ].map(({ Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-                  style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}
-                >
-                  <Icon size={15} className="text-white/50 hover:text-white" />
-                </a>
-              ))}
               <a
-                href="https://discord.gg/"
+                href="https://discord.gg/9bYvTbQ6n"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Discord"
@@ -100,8 +83,13 @@ export function Footer() {
                 <li key={label}>
                   <Link
                     href={href}
-                    className="text-sm text-white/45 hover:text-white/90 transition-colors duration-200"
+                    className={`text-sm transition-all duration-300 flex items-center gap-2 w-fit group ${
+                      label === 'Support Us' 
+                        ? 'text-white/80 hover:text-white font-bold hover:drop-shadow-[0_0_10px_var(--brand-500)]' 
+                        : 'text-white/45 hover:text-white/90'
+                    }`}
                   >
+                    {label === 'Support Us' && <Heart size={12} className="fill-brand-500 text-brand-500 group-hover:scale-125 transition-transform duration-300" />}
                     {label}
                   </Link>
                 </li>
