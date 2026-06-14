@@ -3,79 +3,25 @@ import { MediaGrid } from '@/components/media/MediaGrid';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { BackButton } from '@/components/ui/BackButton';
-import { Metadata } from 'next';
-import { getSiteUrl } from '@/lib/utils';
 
-export const revalidate = 2592000; // 30 day ISR — person data rarely changes
 
-// ─── Pre-render Top 200 People ────────────────────────────────────────────────
-// This converts /person/[id] from 0% cached (25K live renders) to ~95%+ cached.
-// The most-visited person pages are served as static HTML — zero function cost.
-export async function generateStaticParams() {
-  try {
-    const TMDB_API_KEY = process.env.TMDB_API_KEY;
-    if (!TMDB_API_KEY) return [];
+export const revalidate = false; // Infinite cache — person data never changes. Zero ISR Writes.
 
-    // Fetch 4 pages of popular people = ~80 each = ~320 unique actors/directors
-    const pages = await Promise.allSettled(
-      [1, 2, 3, 4].map((page) =>
-        fetch(
-          `https://api.themoviedb.org/3/person/popular?api_key=${TMDB_API_KEY}&page=${page}`,
-          { next: { revalidate: 86400 } }
-        ).then((r) => r.json())
-      )
-    );
+// generateStaticParams REMOVED — no pre-building, zero build-time ISR Writes.
 
-    const people: { id: number }[] = [];
-    for (const result of pages) {
-      if (result.status === 'fulfilled' && result.value?.results) {
-        people.push(...result.value.results);
-      }
-    }
-
-    // Deduplicate and return top 200
-    const unique = [...new Map(people.map((p) => [p.id, p])).values()].slice(0, 200);
-    return unique.map((p) => ({ id: p.id.toString() }));
-  } catch {
-    return [];
-  }
-}
-
-// ─── Metadata ─────────────────────────────────────────────────────────────────
+// ─── Metadata (title only — no SEO) ──────────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+}) {
   const { id } = await params;
   const rawId = id.split('-')[0];
   const person = await tmdb.getPerson(rawId);
-  const siteUrl = getSiteUrl();
-
-  if (!person) return { title: 'Person Not Found | ZIVOX' };
-
-  const title = `${person.name} — Movies & TV Shows | ZIVOX`;
-  const description =
-    person.biography
-      ? person.biography.slice(0, 157) + (person.biography.length > 157 ? '...' : '')
-      : `Watch movies and TV shows featuring ${person.name} on ZIVOX.`;
-  const image = getImageUrl(person.profile_path, 'w500');
 
   return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      images: [{ url: image, width: 500, height: 750, alt: person.name }],
-      url: `${siteUrl}/person/${rawId}`,
-    },
-    twitter: {
-      card: 'summary',
-      title,
-      description,
-      images: [image],
-    },
+    title: person?.name ? `${person.name}` : 'Person',
+    robots: { index: false, follow: false },
   };
 }
 

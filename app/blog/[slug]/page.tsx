@@ -1,11 +1,6 @@
-import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { blogPosts, getBlogPostBySlug } from '@/lib/blog';
-import { JsonLd } from '@/components/seo/JsonLd';
 import { BackButton } from '@/components/ui/BackButton';
-import { getSiteUrl } from '@/lib/utils';
-
-const siteUrl = getSiteUrl();
 
 export async function generateStaticParams() {
   return blogPosts.map((post) => ({
@@ -13,29 +8,12 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const post = getBlogPostBySlug(slug);
-  
-  if (!post) return { title: 'Post Not Found' };
-
   return {
-    title: `${post.title} — ZIVOX Blog`,
-    description: post.description,
-    openGraph: {
-      title: post.title,
-      description: post.description,
-      type: 'article',
-      publishedTime: post.date,
-      authors: [post.author],
-      images: [{ url: post.coverImage, width: 1200, height: 630, alt: post.title }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.title,
-      description: post.description,
-      images: [post.coverImage],
-    },
+    title: post ? post.title : 'Post Not Found',
+    robots: { index: false, follow: false },
   };
 }
 
@@ -47,45 +25,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     notFound();
   }
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: post.title,
-    description: post.description,
-    image: post.coverImage,
-    datePublished: post.date,
-    author: {
-      '@type': 'Organization',
-      name: post.author,
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'ZIVOX',
-      logo: {
-        '@type': 'ImageObject',
-        url: `${siteUrl}/logo.png`, // Assuming a default logo
-      },
-    },
-  };
-
-  const breadcrumbLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl}/blog` },
-      { '@type': 'ListItem', position: 3, name: post.title, item: `${siteUrl}/blog/${post.slug}` },
-    ],
-  };
 
   return (
     <div className="flex flex-col min-h-screen pb-28 md:pb-20 pt-28 max-w-3xl mx-auto px-4 w-full">
       <div className="mb-8">
         <BackButton />
       </div>
-      
-      <JsonLd data={jsonLd} />
-      <JsonLd data={breadcrumbLd} />
 
       <article className="w-full">
         {/* Header */}

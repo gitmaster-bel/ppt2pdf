@@ -22,7 +22,7 @@ export const NORMAL_SANDBOX = "allow-scripts allow-same-origin allow-forms allow
 export const TIER_1_SANDBOX = NORMAL_SANDBOX;
 export const TIER_2_SANDBOX = NORMAL_SANDBOX;
 
-// TOP 7 — shown as "Server 1" through "Server 7" on the player top bar
+// TOP 8 — shown as "Server 1" through "Server 8" on the player top bar
 // Their real names are only revealed inside the Settings modal
 export const sources: Source[] = [
   {
@@ -131,6 +131,67 @@ export const sources: Source[] = [
         ? `https://embed.smashystream.com/playere.php?tmdb=${id}&color=${themeHex || '7c3aed'}`
         : `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}&color=${themeHex || '7c3aed'}`
   },
+  {
+    id: "vidnest",
+    name: "VidNest",
+    publicName: "Server 8 ⚡",
+    type: "iframe",
+    tier: 1,
+    feature: "Very fast",
+    hasPopups: false,
+    noAds: false,
+    autoDisableSandbox: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://vidnest.fun/movie/${id}`
+        : `https://vidnest.fun/tv/${id}/${season}/${episode}`
+  },
+  {
+    id: "vidlux",
+    name: "VidLux",
+    publicName: "Server 9",
+    type: "iframe",
+    tier: 1,
+    feature: "Good, fast, Ad-free",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://vidlux.xyz/embed/movie/${id}`
+        : `https://vidlux.xyz/embed/tv/${id}/${season}/${episode}`
+  },
+  {
+    id: "screenscape",
+    name: "ScreenScape",
+    publicName: "Server 10",
+    type: "iframe",
+    tier: 1,
+    feature: "Fast, many dubs available, Ad-free",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://screenscape.me/embed?tmdb=${id}&type=movie`
+        : `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
+  },
+  {
+    id: "1embed",
+    name: "1Embed.cc",
+    publicName: "Server 11",
+    type: "iframe",
+    tier: 1,
+    feature: "Good UI, smooth playback, Ad-free",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://1embed.cc/embed/movie/${id}?color=${themeHex || '7c3aed'}&auto_play=1`
+        : `https://1embed.cc/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}&auto_play=1`
+  },
 
   // ── Additional Servers (shown with real names) ───────────────────────────
   {
@@ -205,8 +266,8 @@ export const sources: Source[] = [
     sandboxFlags: TIER_1_SANDBOX,
     url: (type, id, season, episode, themeHex) =>
       type === "movie"
-        ? `https://vixsrc.to/movie/${id}`
-        : `https://vixsrc.to/tv/${id}/${season}/${episode}`
+        ? `https://vixsrc.to/embed/movie/${id}`
+        : `https://vixsrc.to/embed/tv/${id}/${season}/${episode}`
   },
   {
     id: "embedmaster",
@@ -267,21 +328,6 @@ export const sources: Source[] = [
       type === "movie"
         ? `https://www.nontongo.win/embed/movie/${id}`
         : `https://www.nontongo.win/embed/tv/${id}/${season}/${episode}`
-  },
-  {
-    id: "vidnest",
-    name: "VidNest",
-    publicName: "VidNest",
-    type: "iframe",
-    tier: 1,
-    feature: "Ad-free, professional-grade, multi-server",
-    hasPopups: false,
-    noAds: false,
-    sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
-      type === "movie"
-        ? `https://vidnest.fun/movie/${id}`
-        : `https://vidnest.fun/tv/${id}/${season}/${episode}`
   },
   {
     id: "vidcore",
@@ -416,11 +462,57 @@ export const sources: Source[] = [
     url: (type, id, season, episode, themeHex) =>
       type === "movie"
         ? `https://www.2embed.cc/embed/${id}?color=${themeHex || '7c3aed'}`
-        : `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}&color=${themeHex || '7c3aed'}`
+        : `https://www.2embed.cc/embedtv/${id}?s=${season}&e=${episode}&color=${themeHex || '7c3aed'}`
+  },
+  {
+    id: "bcine",
+    name: "BCine",
+    publicName: "BCine",
+    type: "iframe",
+    tier: 2,
+    feature: "Reliable fallback proxy",
+    hasPopups: true,
+    noAds: false,
+    sandboxFlags: TIER_2_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://bcine.ru/embed/movie/${id}`
+        : `https://bcine.ru/embed/tv/${id}/${season}/${episode}`
+  },
+  {
+    id: "vidsync",
+    name: "VidSync",
+    publicName: "VidSync",
+    type: "iframe",
+    tier: 2,
+    feature: "Fast, okay reliability, but has too many ads",
+    hasPopups: true,
+    noAds: false,
+    autoDisableSandbox: true,
+    sandboxFlags: TIER_2_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://vidsync.xyz/embed/movie/${id}`
+        : `https://vidsync.xyz/embed/tv/${id}/${season}/${episode}`
+  },
+  {
+    id: "vidsrcxyz",
+    name: "VidSrc.xyz",
+    publicName: "VidSrc.xyz",
+    type: "iframe",
+    tier: 2,
+    feature: "Alternative VidSrc mirror",
+    hasPopups: true,
+    noAds: false,
+    sandboxFlags: TIER_2_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://vidsrc.xyz/embed/movie/${id}?color=${themeHex || '7c3aed'}`
+        : `https://vidsrc.xyz/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
   }
 ];
 
-export const TOP_7_IDS = ["cinemaos", "cinesrc", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "smashystream"];
+export const TOP_8_IDS = ["cinemaos", "cinesrc", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "smashystream", "vidnest"];
 
 export const getSource = (id?: string): Source =>
   sources.find((s) => s.id === id) || sources[0];
@@ -429,7 +521,7 @@ export const getSource = (id?: string): Source =>
 // Real server IDs are NEVER exposed in shared links.
 // ?server=alpha, ?server=beta etc. are what users see.
 const SERVER_CODENAMES: Record<string, string> = {
-  // Top 7 — greek alphabet
+  // Top 8
   'cinemaos':     'alpha',
   'cinesrc':      'beta',
   'vidsrcwtf1':   'nova',
@@ -437,7 +529,11 @@ const SERVER_CODENAMES: Record<string, string> = {
   'autoembed':    'echo',
   'vidsrcwtf2':   'sigma',
   'smashystream': 'omega',
-  // Additional servers — planet names
+  'vidnest':      'nebula',
+  'vidlux':       'lyra',
+  'screenscape':  'orion',
+  '1embed':       'flare',
+  // Additional servers
   'mappletv':     'mars',
   '111movies':    'saturn',
   'rivestream':   'venus',
@@ -447,7 +543,6 @@ const SERVER_CODENAMES: Record<string, string> = {
   'vidzee':       'comet',
   'vidfast':      'pulsar',
   'nontongo':     'quasar',
-  'vidnest':      'nebula',
   'vidcore':      'zenith',
   'vidsrcwtf3':   'nexus',
   'vidsrcwtf4':   'apex',
@@ -457,6 +552,9 @@ const SERVER_CODENAMES: Record<string, string> = {
   'vidsrcto':     'prism',
   'videasy':      'pixel',
   '2embed':       'surge',
+  'bcine':        'aura',
+  'vidsync':      'pulse',
+  'vidsrcxyz':    'spark',
 };
 
 // Reverse lookup: codename → real id

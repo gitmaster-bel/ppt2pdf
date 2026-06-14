@@ -1,10 +1,10 @@
-import { Metadata } from 'next';
+
 import Link from 'next/link';
 import { ShieldAlert, ArrowLeft, Mail, AlertTriangle, ExternalLink } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'DMCA & Copyright Policy — ZIVOX',
-  description: 'Digital Millennium Copyright Act (DMCA) and copyright policy for ZIVOX.',
+export const metadata = {
+  title: 'DMCA & Copyright Policy',
+  robots: { index: false, follow: false },
 };
 
 export default function DmcaPage() {

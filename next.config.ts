@@ -30,6 +30,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
         ],
       },
       // Static assets — immutable, 1 year TTL
@@ -59,14 +60,14 @@ const nextConfig: NextConfig = {
       {
         source: '/',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+          { key: 'Cache-Control', value: 'public, s-maxage=86400, stale-while-revalidate=604800' },
         ],
       },
       // ── HOME DATA API ─────────────────────────────────────────────────────────
       {
         source: '/api/home-data',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+          { key: 'Cache-Control', value: 'public, s-maxage=86400, stale-while-revalidate=604800' },
         ],
       },
       // ── WATCH PAGES ─────────────────────────────────────────────────────────
@@ -132,7 +133,7 @@ const nextConfig: NextConfig = {
       {
         source: '/discover',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=900, stale-while-revalidate=3600' },
+          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
         ],
       },
       // ── SEARCH ───────────────────────────────────────────────────────────────
@@ -144,14 +145,7 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'private, no-cache' },
         ],
       },
-      // ── API ROUTES ───────────────────────────────────────────────────────────
-      // Block bots from all API routes, override specific ones below
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
-        ],
-      },
+
       // Discover API — cache aggressively
       {
         source: '/api/discover',

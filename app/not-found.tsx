@@ -3,7 +3,7 @@ import { Home, Film, Tv, Sparkles, Search, Compass } from 'lucide-react';
 
 export const metadata = {
   title: 'Page Not Found',
-  description: 'The page you are looking for does not exist. Browse movies, TV shows, and anime on ZIVOX.',
+  robots: { index: false, follow: false },
 };
 
 const quickLinks = [

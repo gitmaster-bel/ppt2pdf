@@ -1,10 +1,10 @@
-import { Metadata } from 'next';
+
 import Link from 'next/link';
 import { ShieldCheck, ArrowLeft, Mail, Database, HardDrive, EyeOff } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy — ZIVOX',
-  description: 'Privacy Policy explaining how ZIVOX handles user data locally.',
+export const metadata = {
+  title: 'Privacy Policy',
+  robots: { index: false, follow: false },
 };
 
 export default function PrivacyPage() {

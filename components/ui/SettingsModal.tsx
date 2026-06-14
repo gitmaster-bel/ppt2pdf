@@ -415,22 +415,25 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm"
-            onClick={onClose}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[301] w-[95%] max-w-4xl h-[80vh] max-h-[800px] bg-void-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
-          >
+        <motion.div
+          key="settings-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+      {isOpen && (
+        <motion.div
+          key="settings-modal"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[301] w-[95%] max-w-4xl h-[80vh] max-h-[800px] bg-void-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
+        >
             {/* Left Sidebar Navigation */}
             <div className="w-full md:w-[280px] shrink-0 bg-black/40 border-b md:border-b-0 md:border-r border-zinc-800 flex flex-col relative z-10">
               <div className="p-6 pb-4 flex items-center justify-between md:block">
@@ -513,7 +516,6 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               </div>
             </div>
           </motion.div>
-        </>
       )}
     </AnimatePresence>
   );

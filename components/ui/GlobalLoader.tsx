@@ -72,6 +72,7 @@ export function GlobalLoader() {
     <AnimatePresence>
       {isLoading && (
         <motion.div
+          key="global-loader"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 1.15, filter: "blur(10px)" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}

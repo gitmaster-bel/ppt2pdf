@@ -1,17 +1,12 @@
 import { tmdb } from '@/lib/tmdb';
-import { JsonLd } from '@/components/seo/JsonLd';
 import { AnimeDashboard } from '@/components/media/AnimeDashboard';
 import { Media } from '@/types/tmdb';
 
-export const revalidate = 3600;
+export const revalidate = 21600; // 6h
 
 export const metadata = {
-  title: 'Watch Anime Free Online — Sub & Dub in HD — ZIVOX',
-  description: 'Stream zivox anime series for free in HD quality on Zivox. Watch free anime online with Japanese audio, subtitles, and dubbed options without ads.',
-  openGraph: {
-    title: 'Watch Anime Free Online — Sub & Dub in HD — ZIVOX',
-    description: 'Stream zivox anime series for free in HD quality on Zivox. Watch free anime online with Japanese audio, subtitles, and dubbed options without ads.',
-  },
+  title: 'Anime',
+  robots: { index: false, follow: false },
 };
 
 function deduplicate(items: Media[]) {
@@ -44,53 +39,7 @@ async function AnimeDataFetcher() {
   ]);
 
   return (
-    <>
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          "name": "Watch Anime Online",
-          "description": "Watch the latest and most popular anime series online for free in HD quality on ZIVOX.",
-          "url": "https://zivox.com/anime"
-        }}
-      />
       <AnimeDashboard trendingAnime={trending} topRatedAnime={topRated} />
-      
-      {/* Semantic SEO Block for Anime Page */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full mt-12 mb-8 relative z-20">
-        <div className="bg-void-900/50 border border-zinc-800/50 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
-          <h2 className="text-xl md:text-2xl font-bold font-display text-white mb-4">Watch Anime Free Online — Subbed & Dubbed in HD</h2>
-          <div className="prose prose-sm prose-invert max-w-none text-zinc-400 space-y-4">
-            <p>
-              Welcome to the ultimate Anime hub on ZIVOX. Our platform provides fans with a massive library to <strong className="text-white">watch anime free online</strong> in brilliant HD quality. From legendary Shonen battle series to slice-of-life, mecha, and isekai, ZIVOX brings you the best of Japanese animation without any registration or subscription fees.
-            </p>
-            <p>
-              We understand that anime fans have different preferences, which is why we offer both original Japanese audio with precise English subtitles (Sub), as well as high-quality English dubs (Dub). Catch up on trending simulcasts, or dive into completed masterpieces from decades past.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div>
-                <h3 className="text-white font-bold text-base mb-2">Anime Features</h3>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li><strong>Sub & Dub Available:</strong> Seamlessly switch between audio formats.</li>
-                  <li><strong>Ad-Free Experience:</strong> Enjoy uninterrupted episodes.</li>
-                  <li><strong>Fast Servers:</strong> Lightning-fast streaming for action-packed sequences.</li>
-                  <li><strong>Extensive Catalog:</strong> Browse thousands of shows across 20+ genres.</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-base mb-2">Popular Anime Categories</h3>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li><a href="/genre/action" className="hover:text-white transition-colors">Action & Shonen</a></li>
-                  <li><a href="/genre/fantasy" className="hover:text-white transition-colors">Isekai & Fantasy</a></li>
-                  <li><a href="/genre/romance" className="hover:text-white transition-colors">Romance & Slice of Life</a></li>
-                  <li><a href="/genre/animation" className="hover:text-white transition-colors">Trending Anime Movies</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
   );
 }
 

@@ -1,10 +1,10 @@
-import { Metadata } from 'next';
+
 import Link from 'next/link';
 import { Scale, ArrowLeft, Mail, FileText, CheckCircle2 } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Terms of Service — ZIVOX',
-  description: 'Terms of Service and acceptable use policy for ZIVOX.',
+export const metadata = {
+  title: 'Terms of Service',
+  robots: { index: false, follow: false },
 };
 
 export default function TermsPage() {

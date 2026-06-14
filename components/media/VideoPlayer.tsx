@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getSource, sources, TOP_7_IDS, encodeServer, decodeServer } from '@/lib/sources';
+import { getSource, sources, TOP_8_IDS, encodeServer, decodeServer } from '@/lib/sources';
 import { Settings, Check, X, Heart, Server, Shield, ShieldOff, Play, Maximize, ExternalLink, RotateCcw, Share2, Copy, Twitter, Facebook, MessageCircle, ArrowUp, ArrowUpRight, Sparkles, Globe } from 'lucide-react';
 import { ShareModal } from '@/components/ui/ShareModal';
 import Link from 'next/link';
@@ -412,9 +412,6 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
           addToHistory({ id, type, title, poster: poster || null, timestamp: now, season, episode, progress: nextP, release_date: releaseYear });
         }
         if (onProgress) onProgress(nextP);
-        if (type === 'tv' && hasNextEpisode && nextP >= 95) {
-          setShowNextOverlay(true);
-        }
         return nextP;
       });
     }, 10000);
@@ -479,19 +476,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     }
   }, []);
 
-  // Prevent iframe from stealing keyboard focus so our shortcuts (like 'f') always work
-  useEffect(() => {
-    const handleBlur = () => {
-      // Small delay allows the initial click (e.g. play/pause) to register in the iframe first
-      setTimeout(() => {
-        if (document.activeElement?.tagName === 'IFRAME') {
-          window.focus();
-        }
-      }, 50);
-    };
-    window.addEventListener('blur', handleBlur);
-    return () => window.removeEventListener('blur', handleBlur);
-  }, []);
+  // Removed `handleBlur` focus-stealing effect so iframe can handle its own keyboard shortcuts
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -553,9 +538,9 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   }, []);
 
   // Top 7 servers — shown with publicName (Server 1..7), real name in settings
-  const top7Sources = sources.filter(s => TOP_7_IDS.includes(s.id) && !favoriteServers.includes(s.id));
+  const top7Sources = sources.filter(s => TOP_8_IDS.includes(s.id) && !favoriteServers.includes(s.id));
   const favoriteSources = sources.filter(s => favoriteServers.includes(s.id));
-  const remainingSources = sources.filter(s => !TOP_7_IDS.includes(s.id) && !favoriteServers.includes(s.id));
+  const remainingSources = sources.filter(s => !TOP_8_IDS.includes(s.id) && !favoriteServers.includes(s.id));
 
   const toggleFavServer = (e: React.MouseEvent, serverId: string) => {
     e.stopPropagation();
@@ -622,7 +607,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="flex flex-col w-full relative bg-void-950 rounded-2xl overflow-hidden border border-zinc-800/60"
+      className={`flex flex-col w-full relative bg-void-950 overflow-hidden ${isFullscreen ? 'rounded-none border-none' : 'rounded-2xl border border-zinc-800/60'}`}
       style={{
         boxShadow: '0 0 80px -20px var(--brand-ambient), 0 0 30px -10px var(--brand-glow)',
         contain: 'layout style',
@@ -807,7 +792,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
                         const renderServerCard = (s: typeof sources[0]) => {
                           const isActive = currentSourceId === s.id;
                           const isFav = favoriteServers.includes(s.id);
-                          const isTop7 = TOP_7_IDS.includes(s.id);
+                          const isTop7 = TOP_8_IDS.includes(s.id);
                           const displayName = s.publicName;
                           
                           // Build description
@@ -1147,7 +1132,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
            Tapping switches instantly. A note below points to full settings.
       ─────────────────────────────────────────────────────────────────────── */}
       {!isFullscreen && (() => {
-        const top7 = sources.filter(s => TOP_7_IDS.includes(s.id));
+        const top7 = sources.filter(s => TOP_8_IDS.includes(s.id));
         // Multilingual servers — always surface these for dubbed/subbed content
         const multilingualIds = new Set(['peachify', 'vidsrcwtf2']);
 
@@ -1156,8 +1141,8 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         // - Tablet (768-1023px): show 5 servers
         // - Desktop (≥1024px): show all 7 always
 
-        // Build ordered list: current server first, then rest in TOP_7_IDS order
-        const currentInTop7 = TOP_7_IDS.includes(currentSourceId);
+        // Build ordered list: current server first, then rest in TOP_8_IDS order
+        const currentInTop7 = TOP_8_IDS.includes(currentSourceId);
         const orderedStrip = currentInTop7
           ? [
               top7.find(s => s.id === currentSourceId)!,
@@ -1282,7 +1267,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       })()}
 
 
-      <div className={`relative w-full bg-black transition-all ${isFullscreen ? 'flex-1 h-full' : isPortrait ? 'aspect-[4/3] min-h-[380px] sm:aspect-video' : 'aspect-video'}`}>
+      <div className={`relative w-full bg-black transition-all ${isFullscreen ? 'flex-1 h-full' : 'aspect-video w-full'}`}>
 
         {testingSources ? (
           <div className="absolute inset-0 z-40 bg-void-950 flex flex-col items-center justify-center p-4 text-center overflow-hidden">
@@ -1366,8 +1351,8 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
                 // Only apply blur filter when strictly needed (support popup)
                 ...((!isConnecting && showSupportPopup) ? { filter: 'blur(4px) grayscale(1)' } : {})
               }}
-              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
               sandbox={sandboxAttrs}
             />
 

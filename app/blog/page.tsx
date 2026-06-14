@@ -1,43 +1,14 @@
-import { Metadata } from 'next';
 import Link from 'next/link';
 import { blogPosts } from '@/lib/blog';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { getSiteUrl } from '@/lib/utils';
 
-const siteUrl = getSiteUrl();
-
-export const metadata: Metadata = {
-  title: 'Blog & Guides — ZIVOX',
-  description: 'Read the latest guides, movie recommendations, anime reviews, and streaming news on the ZIVOX Blog.',
-  openGraph: {
-    title: 'Blog & Guides — ZIVOX',
-    description: 'Read the latest guides, movie recommendations, anime reviews, and streaming news on the ZIVOX Blog.',
-    type: 'website',
-  },
+export const metadata = {
+  title: 'Blog',
+  robots: { index: false, follow: false },
 };
 
 export default function BlogIndex() {
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Blog',
-    name: 'ZIVOX Blog',
-    description: 'News, guides, and reviews for movies, TV shows, and anime.',
-    url: `${siteUrl}/blog`,
-    blogPost: blogPosts.map(post => ({
-      '@type': 'BlogPosting',
-      headline: post.title,
-      datePublished: post.date,
-      author: {
-        '@type': 'Organization',
-        name: post.author,
-      },
-      url: `${siteUrl}/blog/${post.slug}`,
-    })),
-  };
-
   return (
     <div className="flex flex-col min-h-screen pb-28 md:pb-20 pt-28 max-w-7xl mx-auto px-4 w-full">
-      <JsonLd data={jsonLd} />
       
       <div className="mb-12 text-center">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-black tracking-tighter text-white drop-shadow-xl mb-4">

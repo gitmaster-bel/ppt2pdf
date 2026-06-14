@@ -1,8 +1,5 @@
-import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { tmdb } from '@/lib/tmdb';
-import { getSiteUrl } from '@/lib/utils';
-import { JsonLd } from '@/components/seo/JsonLd';
 import { BackButton } from '@/components/ui/BackButton';
 import Image from 'next/image';
 import nextDynamic from 'next/dynamic';
@@ -10,7 +7,7 @@ import nextDynamic from 'next/dynamic';
 const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow));
 const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row));
 
-export const revalidate = 3600;
+export const revalidate = 86400; // 24h
 
 const MOODS_MAP: Record<string, { label: string, genre: string, image: string, color: string, desc: string }> = {
   'feel-good': { label: 'Feel Good', genre: '35', image: '/lgotja3xMoJZbynwHfcQcJAEMWH.jpg', color: '#f59e0b', desc: 'Comedy & Laughter' },
@@ -23,24 +20,12 @@ const MOODS_MAP: Record<string, { label: string, genre: string, image: string, c
   'mystery': { label: 'Mystery', genre: '9648', image: '/zTnAnYIn0Iv3cn0ZHlzLhou3ybm.jpg', color: '#f97316', desc: 'Whodunit puzzles' },
 };
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const mood = MOODS_MAP[slug];
-  
-  if (!mood) return { title: 'Mood Not Found' };
-  
-  const title = `${mood.label} Movies - Stream on ZIVOX`;
-  const description = `Dive into our hand-picked collection of ${mood.label.toLowerCase()} movies. Stream in premium HD quality for free on ZIVOX.`;
-
   return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      images: [{ url: `https://image.tmdb.org/t/p/w1280${mood.image}` }],
-    },
+    title: mood ? `${mood.label} Movies` : 'Mood',
+    robots: { index: false, follow: false },
   };
 }
 
@@ -60,17 +45,8 @@ export default async function MoodPage({ params }: { params: Promise<{ slug: str
     tmdb.discover('movie', { with_genres: mood.genre, sort_by: 'vote_average.desc', 'vote_count.gte': '3000' })
   ]);
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: `${mood.label} Movies Collection`,
-    description: `A premium collection of the best ${mood.label.toLowerCase()} movies available to stream on ZIVOX.`,
-    url: `${getSiteUrl()}/mood/${slug}`,
-  };
-
   return (
     <div className="flex flex-col min-h-screen pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-20 bg-[#050505] -mt-[72px]">
-      <JsonLd data={jsonLd} />
       
       {/* Mood Hero Header */}
       <div className="relative w-full h-[60vh] md:h-[70vh] flex flex-col justify-end overflow-hidden">

@@ -1,16 +1,9 @@
-import { Metadata } from 'next';
-import { JsonLd } from '@/components/seo/JsonLd';
 import Link from 'next/link';
 import { Shield, Zap, Monitor, Heart, Play, Search, Sparkles, Server } from 'lucide-react';
-import { getSiteUrl } from '@/lib/utils';
 
-export const metadata: Metadata = {
-  title: 'About ZIVOX — Free Premium Streaming Platform',
-  description: 'ZIVOX is a free, ad-free streaming platform for watching movies, TV shows, and anime in HD. Learn about our features, safety, and how ZIVOX works.',
-  openGraph: {
-    title: 'About ZIVOX — Free Premium Streaming Platform',
-    description: 'Learn about ZIVOX: free HD streaming, 15+ servers, no ads, auto-play, watch history, and more.',
-  },
+export const metadata = {
+  title: 'About',
+  robots: { index: false, follow: false },
 };
 
 const faqs = [
@@ -49,34 +42,6 @@ const faqs = [
 ];
 
 export default function AboutPage() {
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.map(faq => ({
-      '@type': 'Question',
-      name: faq.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.answer,
-      },
-    })),
-  };
-
-  const orgJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'ZIVOX',
-    url: getSiteUrl(),
-    description: 'Free premium streaming platform for movies, TV shows, and anime in HD quality.',
-    applicationCategory: 'EntertainmentApplication',
-    operatingSystem: 'Web',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-    },
-  };
-
   const features = [
     { icon: Server, title: '15+ Streaming Servers', desc: 'Automatic source testing finds the best quality stream with zero effort.' },
     { icon: Shield, title: 'Sandbox Protection', desc: 'Built-in security shields block popups, redirects, and malicious scripts.' },
@@ -88,8 +53,6 @@ export default function AboutPage() {
 
   return (
     <div className="flex flex-col min-h-screen pb-28 md:pb-20 pt-28 max-w-4xl mx-auto px-4 w-full">
-      <JsonLd data={faqJsonLd} />
-      <JsonLd data={orgJsonLd} />
 
       {/* Hero */}
       <div className="text-center mb-16">

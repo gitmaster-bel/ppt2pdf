@@ -207,8 +207,8 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
                     <span className="border border-zinc-700 bg-void-900 px-1.5 py-0.5 rounded text-[10px] uppercase">HD</span>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {movie.genres?.map((g: { id: number; name: string }) => (
-                      <span key={g.id} className="text-xs font-medium text-zinc-300 bg-void-900 border border-zinc-800 px-2 py-1 rounded-md">{g.name}</span>
+                    {movie.genres?.map((g: { id: number; name: string }, i: number) => (
+                      <span key={g.id || `genre-${i}`} className="text-xs font-medium text-zinc-300 bg-void-900 border border-zinc-800 px-2 py-1 rounded-md">{g.name}</span>
                     ))}
                   </div>
 

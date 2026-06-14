@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { tmdb } from '@/lib/tmdb';
 
+export const runtime = 'edge';
+
 // ─── Home Data API Route ──────────────────────────────────────────────────────
 //
 // RATIONALE: The home page was firing 12+ parallel TMDB fetches on EVERY render

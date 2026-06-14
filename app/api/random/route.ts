@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tmdb } from '@/lib/tmdb';
 import { generateSlug } from '@/lib/utils';
 
+export const runtime = 'edge';
+
 export async function GET(request: NextRequest) {
   try {
     const page = Math.floor(Math.random() * 20) + 1;

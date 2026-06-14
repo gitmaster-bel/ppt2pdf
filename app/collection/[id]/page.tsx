@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+
 import { tmdb, getImageUrl } from '@/lib/tmdb';
 import { MediaGrid } from '@/components/media/MediaGrid';
 import { generateSlug } from '@/lib/utils';
@@ -7,29 +7,16 @@ import { BackButton } from '@/components/ui/BackButton';
 import { CollectionShareButton } from '@/components/ui/CollectionShareButton';
 import { COLLECTION_CATEGORIES } from '@/lib/collectionsData';
 
-export const revalidate = 86400; // 24h ISR — collection metadata rarely changes
+export const revalidate = false; // Infinite cache — collection data is static. Zero ISR Writes.
 
-// ─── Pre-render All Curated Collections ──────────────────────────────────────
-// Previously 666 requests were at 0% cache. Pre-rendering every known collection
-// ID converts them all to static HTML served at zero compute cost.
-export async function generateStaticParams() {
-  // Flatten all IDs from every category and deduplicate
-  const allIds = [...new Set(Object.values(COLLECTION_CATEGORIES).flat())];
-  return allIds.map((id) => ({
-    id: id.toString(),
-  }));
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const rawId = id.split('-')[0];
   const collection = await tmdb.getCollection(rawId);
   
-  if (!collection) return { title: 'Collection Not Found' };
-  
   return {
-    title: `${collection.name} - ZIVOX`,
-    description: collection.overview,
+    title: collection?.name || 'Collection',
+    robots: { index: false, follow: false },
   };
 }
 

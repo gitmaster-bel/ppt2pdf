@@ -98,7 +98,7 @@ export function WelcomeModal() {
     <>
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-12" style={{ perspective: '1200px' }}>
+          <div key="overlay" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-12" style={{ perspective: '1200px' }}>
             {/* Backdrop with extreme blur and vignette */}
             <motion.div
               initial={{ opacity: 0 }}

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Metadata } from 'next';
+
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { PROVIDERS } from '@/lib/providers';
@@ -18,22 +18,12 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const provider = PROVIDERS.find((p) => p.slug === resolvedParams.slug);
-  
-  if (!provider) {
-    return {
-      title: 'Provider Not Found',
-    };
-  }
-
   return {
-    title: `Watch on ${provider.name} — Movies & TV Shows | ZIVOX`,
-    description: `Browse all ${provider.name} content on ZIVOX. Stream ${provider.name} movies and TV series in HD free. Updated list of everything on ${provider.name}.`,
-    alternates: {
-      canonical: `/providers/${provider.slug}`
-    }
+    title: provider ? provider.name : 'Provider Not Found',
+    robots: { index: false, follow: false },
   };
 }
 

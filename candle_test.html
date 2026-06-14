@@ -1,0 +1,5212 @@
+
+<!DOCTYPE html>
+<html lang="en" class="player-only-root">
+<head>
+<base href="/api/candle-proxy/">
+
+      <script>
+        (function() {
+          const proxyBase = '/api/candle-proxy';
+          const targetOrigin = 'https://candlestream.xyz';
+          
+          function rewriteUrl(url) {
+            if (!url) return url;
+            let str = url.toString();
+            // Don't rewrite blob: or data: or video CDNs if they are absolute
+            if (str.startsWith('blob:') || str.startsWith('data:')) return str;
+            if (str.includes('.m3u8') || str.includes('.ts') || str.includes('.mp4')) return str;
+            
+            if (str.startsWith('/') && !str.startsWith('//')) {
+              return proxyBase + str;
+            }
+            if (str.startsWith(targetOrigin)) {
+              return str.replace(targetOrigin, proxyBase);
+            }
+            return str;
+          }
+
+          const origFetch = window.fetch;
+          window.fetch = async function() {
+            let args = Array.from(arguments);
+            if (typeof args[0] === 'string' || args[0] instanceof URL) {
+              args[0] = rewriteUrl(args[0]);
+            } else if (args[0] instanceof Request) {
+              const newUrl = rewriteUrl(args[0].url);
+              if (newUrl !== args[0].url) {
+                args[0] = new Request(newUrl, args[0]);
+              }
+            }
+            return origFetch.apply(this, args);
+          };
+
+          const origOpen = XMLHttpRequest.prototype.open;
+          XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
+            return origOpen.apply(this, [method, rewriteUrl(url), async, user, pass]);
+          };
+          
+          try { Object.defineProperty(document, 'domain', { value: 'candlestream.xyz', writable: false }); } catch(e) {}
+        })();
+      </script>
+      
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CandleStream Player - Simple Embed Server</title>
+  <meta name="description" content="Simple embeddable CandleStream player with iframe-ready playback, resume support, and player events.">
+  <meta name="color-scheme" content="dark">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #04070b;
+      --panel: rgba(8, 14, 22, 0.9);
+      --panel-strong: rgba(13, 19, 30, 0.94);
+      --panel-soft: rgba(255, 255, 255, 0.04);
+      --line: rgba(143, 213, 255, 0.14);
+      --line-strong: rgba(255, 255, 255, 0.1);
+      --text: #f5f8ff;
+      --muted: #93a8ba;
+      --accent: #84d7ff;
+      --accent-strong: #f7c57e;
+      --good: #6ef0b1;
+      --bad: #ff7d95;
+      --shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+      --radius: 24px;
+      --control-bg: rgba(4, 7, 12, 0.78);
+      --control-ring: rgba(255, 255, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(132, 215, 255, 0.18), transparent 22%),
+        radial-gradient(circle at top right, rgba(247, 197, 126, 0.14), transparent 20%),
+        linear-gradient(180deg, #07111b 0%, #06090f 52%, #020407 100%);
+      padding: 28px 18px 42px;
+    }
+
+    .shell {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 22px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .grid {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: 340px minmax(0, 1fr);
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(247, 197, 126, 0.14);
+      background: var(--panel-strong);
+      color: var(--text);
+      font: inherit;
+    }
+
+    input,
+    select {
+      padding: 14px 16px;
+    }
+
+    button {
+      padding: 15px 18px;
+      font-weight: 700;
+      color: #151009;
+      background: linear-gradient(135deg, var(--accent-strong), #ffe0aa);
+      box-shadow: 0 18px 40px rgba(247, 197, 126, 0.16);
+      transition: transform 160ms ease, opacity 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.72;
+      cursor: wait;
+      transform: none;
+    }
+
+    .player-shell {
+      display: grid;
+      gap: 18px;
+    }
+
+    .player-frame {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top, rgba(132, 215, 255, 0.12), transparent 48%),
+        linear-gradient(180deg, #05070b 0%, #000 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      aspect-ratio: 16 / 9;
+      min-height: 420px;
+      isolation: isolate;
+    }
+
+    .player-frame::before {
+      display: none;
+    }
+
+    video {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      object-fit: contain;
+      pointer-events: auto;
+    }
+
+    .player-chrome {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .player-frame.chrome-hidden .player-chrome {
+      opacity: 0;
+    }
+
+    .player-top,
+    .player-bottom {
+      padding: 20px;
+      pointer-events: none;
+    }
+
+    .player-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.52), transparent);
+      gap: 12px;
+    }
+
+    .brand-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0;
+      border-radius: 999px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      backdrop-filter: none;
+      pointer-events: auto;
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.75));
+    }
+
+    .brand-chip img {
+      width: 15px;
+      height: 15px;
+      display: block;
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 2px;
+      line-height: 1.05;
+      min-width: 0;
+    }
+
+    .brand-copy strong {
+      font-size: 0.72rem;
+      letter-spacing: 0;
+    }
+
+    .brand-copy span {
+      display: block;
+      max-width: min(42vw, 360px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.64);
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .source-menu-wrap {
+      position: relative;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .source-button {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(4, 7, 12, 0.62);
+      color: #fff;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(12px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .source-button svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .source-button:hover,
+    .source-button.active {
+      transform: none;
+      border-color: rgba(132, 215, 255, 0.48);
+      background: rgba(132, 215, 255, 0.14);
+    }
+
+    .source-panel {
+      position: absolute;
+      top: 42px;
+      right: 0;
+      width: 184px;
+      max-height: min(360px, calc(100vh - 112px));
+      padding: 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(6, 10, 16, 0.94);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+      overflow-y: auto;
+      z-index: 54;
+    }
+
+    .source-panel[hidden] {
+      display: none;
+    }
+
+    .language-panel {
+      right: 0;
+      width: min(340px, calc(100vw - 24px));
+      padding: 10px;
+      border-color: rgba(132, 215, 255, 0.14);
+      background: rgba(6, 10, 16, 0.94);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .peachify-panel-header {
+      position: sticky;
+      top: -10px;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 34px 1fr 34px;
+      align-items: center;
+      min-height: 34px;
+      margin: -2px -2px 8px;
+      padding: 2px;
+      background: linear-gradient(180deg, rgba(8, 14, 22, 0.98), rgba(8, 14, 22, 0.9));
+      color: rgba(235, 247, 255, 0.78);
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .peachify-panel-close {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(171, 204, 225, 0.72);
+      box-shadow: none;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .peachify-panel-close:hover {
+      transform: none;
+      background: rgba(132, 215, 255, 0.12);
+      color: #fff;
+    }
+
+    .peachify-section-title {
+      margin: 12px 0 8px;
+      color: rgba(147, 168, 186, 0.72);
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .source-option.peachify-language-option {
+      min-height: 40px;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(232, 243, 251, 0.86);
+      font-size: 0.92rem;
+    }
+
+    .source-option.peachify-language-option:hover {
+      background: rgba(132, 215, 255, 0.09);
+    }
+
+    .source-option.peachify-language-option.is-active {
+      background: rgba(132, 215, 255, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(132, 215, 255, 0.22);
+    }
+
+    .peachify-language-name {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: inherit;
+      text-transform: none;
+    }
+
+    .peachify-flag {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      flex: 0 0 auto;
+      overflow: hidden;
+      background: rgba(132, 215, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      object-fit: cover;
+    }
+
+    .peachify-flag-placeholder {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      flex: 0 0 auto;
+      background: rgba(132, 215, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .peachify-quality-summary {
+      flex: 0 0 auto;
+      color: rgba(147, 168, 186, 0.78);
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .source-option small {
+      display: block;
+      margin-top: 2px;
+      color: rgba(147, 168, 186, 0.62);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+
+    .source-option {
+      width: 100%;
+      min-height: 34px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: left;
+    }
+
+    .source-option span:first-child {
+      color: inherit;
+      text-transform: uppercase;
+    }
+
+    .source-option:hover {
+      transform: none;
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .source-option.is-active {
+      color: #fff;
+      background: rgba(132, 215, 255, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(132, 215, 255, 0.22);
+    }
+
+    .source-option.is-failed {
+      color: #ff8a9b;
+      background: rgba(255, 74, 104, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 74, 104, 0.24);
+    }
+
+    .source-option.is-failed:hover {
+      background: rgba(255, 74, 104, 0.18);
+    }
+
+    .source-option span:last-child {
+      color: rgba(147, 168, 186, 0.62);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .source-option.is-active span:last-child {
+      color: rgba(255, 255, 255, 0.42);
+    }
+
+    .source-option.is-failed span:last-child {
+      color: rgba(255, 138, 155, 0.66);
+    }
+
+    .source-option.peachify-language-option .peachify-language-name,
+    .source-option.peachify-language-option .peachify-language-name span {
+      color: inherit;
+      font-size: inherit;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .source-option.peachify-language-option .peachify-quality-summary {
+      color: rgba(255, 255, 255, 0.54);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .source-option.peachify-language-option.is-active .peachify-quality-summary {
+      color: rgba(255, 255, 255, 0.66);
+    }
+
+    .center-play {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 84px;
+      height: 84px;
+      border-radius: 999px;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 0;
+      backdrop-filter: none;
+      box-shadow: none;
+      cursor: pointer;
+      z-index: 30;
+      transition: transform 180ms ease, opacity 180ms ease;
+    }
+
+    .center-play svg {
+      width: 34px;
+      height: 34px;
+      display: block;
+      margin: 0;
+      transform-origin: 50% 50%;
+    }
+
+    .center-play .center-play-icon {
+      width: 38px;
+      height: 38px;
+    }
+
+    .center-play .center-play-icon-play {
+      transform: translateX(2px);
+    }
+
+    .center-play:hover {
+      transform: translate(-50%, -50%) scale(1.03);
+    }
+
+    .next-episode,
+    .skip-segment {
+      position: absolute;
+      right: 22px;
+      top: 50%;
+      z-index: 45;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      min-width: 86px;
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(132, 215, 255, 0.42);
+      background: rgba(8, 14, 22, 0.84);
+      color: #fff;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(16px);
+      transform: translateY(-50%);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .skip-segment {
+      top: auto;
+      bottom: 126px;
+      right: 34px;
+      min-width: 148px;
+      height: 50px;
+      padding: 0 20px;
+      font-size: 1rem;
+      gap: 9px;
+      overflow: hidden;
+      position: absolute;
+    }
+
+    .skip-segment > span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .next-episode[hidden],
+    .skip-segment[hidden] {
+      display: none;
+    }
+
+    .next-episode:hover,
+    .skip-segment:hover {
+      transform: translateY(-50%) scale(1.04);
+    }
+
+    .skip-segment::after {
+      content: '?';
+      color: var(--accent);
+      font-size: 0.92em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .skip-segment::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(132, 215, 255, 0.34), rgba(132, 215, 255, 0.12));
+      opacity: 0.9;
+      transform-origin: left center;
+      transform: scaleX(var(--skip-hide-progress, 1));
+    }
+
+    .player-frame.is-playing .center-play {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .player-frame.is-playing:not(.chrome-hidden) .center-play {
+      opacity: 0.92;
+      pointer-events: auto;
+    }
+
+    .player-loader {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    .player-loader[hidden] {
+      display: none;
+    }
+
+    .subtitle-overlay {
+      position: absolute;
+      left: 50%;
+      bottom: calc(42px + var(--subtitle-lift, 0px));
+      z-index: 60;
+      width: min(82%, 860px);
+      transform: translateX(-50%);
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+      pointer-events: none;
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .subtitle-overlay[hidden] {
+      display: none;
+    }
+
+    .subtitle-line {
+      width: fit-content;
+      max-width: 100%;
+      padding: 4px 10px;
+      border-radius: 7px;
+      background: var(--subtitle-bg, rgba(0, 0, 0, 0.46));
+      color: var(--subtitle-color, #fff);
+      font-family: var(--subtitle-font-family, 'Space Grotesk', sans-serif);
+      font-size: calc(1rem * var(--subtitle-scale, 1));
+      font-weight: var(--subtitle-weight, 600);
+      line-height: 1.35;
+      text-align: center;
+      text-shadow: var(--subtitle-shadow, 0 1px 2px rgba(0, 0, 0, 0.85));
+    }
+
+    .loader-ring {
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      border: 3px solid rgba(255, 255, 255, 0.16);
+      border-top-color: var(--accent);
+      animation: spin 900ms linear infinite;
+      box-shadow: 0 0 30px rgba(132, 215, 255, 0.18);
+    }
+
+    .player-bottom {
+      display: grid;
+      gap: 14px;
+      margin-top: auto;
+      background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78));
+    }
+
+    .timeline-wrap {
+      position: relative;
+      display: grid;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .seek-preview {
+      position: absolute;
+      left: var(--seek-preview-x, 0%);
+      bottom: 34px;
+      z-index: 5;
+      min-width: 48px;
+      padding: 4px 7px;
+      border-radius: 7px;
+      background: rgba(0, 0, 0, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+      text-align: center;
+      pointer-events: none;
+      transform: translateX(-50%);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+    }
+
+    .seek-preview[hidden] {
+      display: none;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .controls-left,
+    .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .timecode {
+      font-size: 0.98rem;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .control-btn,
+    .icon-toggle {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid var(--control-ring);
+      background: var(--control-bg);
+      color: #fff;
+      display: inline-grid;
+      place-items: center;
+      padding: 0;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      box-shadow: none;
+    }
+
+    .control-btn svg,
+    .icon-toggle svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .control-btn:hover,
+    .icon-toggle:hover,
+    .control-btn.active,
+    .icon-toggle.active {
+      border-color: rgba(132, 215, 255, 0.46);
+      background: rgba(14, 24, 36, 0.92);
+    }
+
+    .icon-toggle {
+      width: 44px;
+      min-width: 44px;
+      padding: 0;
+    }
+
+    .icon-toggle svg {
+      color: var(--muted);
+    }
+
+    .icon-toggle.is-on svg {
+      color: #fff;
+    }
+
+    .range {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent) var(--progress, 0%), rgba(255, 255, 255, 0.18) var(--progress, 0%));
+      outline: none;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    .range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(132, 215, 255, 0.14);
+      cursor: pointer;
+    }
+
+    .range::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #fff;
+      border: 0;
+      box-shadow: 0 0 0 4px rgba(132, 215, 255, 0.14);
+      cursor: pointer;
+    }
+
+    .settings-panel {
+      position: absolute;
+      right: 20px;
+      bottom: 112px;
+      width: min(236px, calc(100% - 24px));
+      height: min(320px, calc(100% - 132px));
+      padding: 9px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(6, 10, 16, 0.94);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+      z-index: 50;
+      pointer-events: auto;
+      overflow: hidden;
+      transform-origin: right bottom;
+      animation: settings-panel-in 160ms ease-out;
+    }
+
+    .settings-panel[hidden] {
+      display: none;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 9px;
+      height: 100%;
+    }
+
+    .settings-head {
+      display: none;
+    }
+
+    .settings-close {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+      box-shadow: none;
+      line-height: 1;
+    }
+
+    .settings-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      padding: 3px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .settings-tab {
+      width: 100%;
+      min-height: 30px;
+      padding: 6px 6px;
+      border-radius: 9px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .settings-panel[data-panel-mode="subtitles"] .settings-tabs {
+      display: none;
+    }
+
+    .settings-panel[data-panel-mode="subtitles"] .settings-grid {
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .settings-tab:hover {
+      transform: none;
+    }
+
+    .settings-tab.is-active {
+      color: #fff;
+      background: rgba(132, 215, 255, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(132, 215, 255, 0.28);
+    }
+
+    .subtitle-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      padding: 3px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .subtitle-tab {
+      width: 100%;
+      min-height: 30px;
+      padding: 6px 6px;
+      border-radius: 9px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .subtitle-tab:hover {
+      transform: none;
+    }
+
+    .subtitle-tab.is-active {
+      color: #fff;
+      background: rgba(132, 215, 255, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(132, 215, 255, 0.28);
+    }
+
+    .settings-section {
+      display: grid;
+      gap: 7px;
+      align-content: start;
+      min-height: 0;
+      height: 100%;
+      overflow: auto;
+      padding-right: 1px;
+    }
+
+    .settings-section[hidden] {
+      display: none;
+    }
+
+    .settings-section > label {
+      display: none;
+    }
+
+    .option-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .option-list.is-peachify-quality,
+    .option-list.is-quality-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    .option-list.is-peachify-quality .option-chip,
+    .option-list.is-quality-list .option-chip {
+      width: 100%;
+      height: 36px;
+      justify-content: flex-start;
+      padding: 0 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(232, 243, 251, 0.78);
+      font-size: 0.86rem;
+      font-weight: 800;
+      text-transform: none;
+    }
+
+    .option-list.is-peachify-quality .option-chip.is-active,
+    .option-list.is-quality-list .option-chip.is-active {
+      color: #fff;
+      border-color: rgba(132, 215, 255, 0.5);
+      background: rgba(132, 215, 255, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(132, 215, 255, 0.18);
+    }
+
+    .subtitle-option-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 5px;
+      max-height: 218px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .subtitle-option-list .option-chip {
+      width: 100%;
+      justify-content: flex-start;
+      border-radius: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .subtitle-option-list .option-chip.has-flag {
+      gap: 8px;
+    }
+
+    .subtitle-flag {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      flex: 0 0 auto;
+      object-fit: cover;
+      background: rgba(132, 215, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .option-chip {
+      width: auto;
+      min-width: 0;
+      height: 30px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--muted);
+      box-shadow: none;
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .option-chip.option-chip-preview {
+      min-width: 72px;
+      min-height: 50px;
+      height: auto;
+      padding: 6px;
+      border-radius: 14px;
+    }
+
+    .option-chip.option-chip-preview.option-chip-preview-wide {
+      min-width: 88px;
+    }
+
+    .option-chip-preview-inner {
+      display: grid;
+      gap: 4px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .option-chip-preview-frame {
+      position: relative;
+      width: 100%;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background:
+        linear-gradient(180deg, rgba(132, 215, 255, 0.12), rgba(255, 255, 255, 0.02)),
+        linear-gradient(180deg, rgba(6, 10, 16, 0.94), rgba(5, 8, 14, 0.98));
+      overflow: hidden;
+      box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.38);
+    }
+
+    .option-chip-preview-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.12), transparent 34%);
+      pointer-events: none;
+    }
+
+    .option-chip-preview-caption {
+      position: absolute;
+      left: 50%;
+      bottom: var(--preview-position-offset, 3px);
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      max-width: calc(100% - 8px);
+      padding: 2px 5px;
+      border-radius: 5px;
+      white-space: nowrap;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .option-chip-preview-label {
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 0.46rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .option-chip:hover {
+      transform: none;
+    }
+
+    .option-chip.is-active {
+      color: #fff;
+      border-color: rgba(132, 215, 255, 0.5);
+      background: rgba(132, 215, 255, 0.14);
+    }
+
+    .option-chip:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .subtitle-size-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding-bottom: 2px;
+    }
+
+    .subtitle-size-label {
+      flex: 0 0 100%;
+      color: var(--muted);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .subtitle-settings-group {
+      display: grid;
+      gap: 6px;
+      padding-bottom: 2px;
+    }
+
+    .subtitle-group-title {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin: 2px 0 0;
+    }
+
+    .subtitle-customization-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .subtitle-pane[hidden] {
+      display: none;
+    }
+
+    .more-options {
+      display: grid;
+      gap: 8px;
+    }
+
+    .more-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 34px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .more-toggle input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .player-summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .player-summary strong {
+      color: #fff;
+      font-size: 0.85rem;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .stream-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stream-card {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--panel-soft);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stream-card strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .stream-card code {
+      display: block;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #d8f2ff;
+      line-height: 1.6;
+    }
+
+    pre {
+      margin: 0;
+      padding: 18px;
+      min-height: 220px;
+      border-radius: 18px;
+      background: #041019;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #d8f2ff;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes settings-panel-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .settings-panel {
+        animation: none;
+      }
+    }
+
+    @media (max-width: 920px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        padding: 22px;
+      }
+
+      .player-frame {
+        min-height: 320px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 0;
+      }
+
+      .player-frame {
+        border-radius: 0;
+        min-height: 100vh;
+      }
+
+      .player-top,
+      .player-bottom {
+        padding: 10px 12px;
+      }
+
+      .brand-chip {
+        gap: 6px;
+        padding: 0;
+      }
+
+      .brand-chip img {
+        width: 15px;
+        height: 15px;
+      }
+
+      .brand-copy strong {
+        font-size: 0.72rem;
+      }
+
+      .brand-copy span {
+        display: block;
+        max-width: 52vw;
+        font-size: 0.54rem;
+      }
+
+      .timeline-wrap {
+        gap: 6px;
+      }
+
+      .seek-preview {
+        bottom: 28px;
+        min-width: 42px;
+        padding: 3px 6px;
+        font-size: 0.64rem;
+      }
+
+      .center-play {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+      }
+
+      .center-play svg {
+        width: 23px;
+        height: 23px;
+        margin: 0;
+      }
+
+      .center-play .center-play-icon {
+        width: 27px;
+        height: 27px;
+      }
+
+      .next-episode {
+        right: 10px;
+        min-width: 64px;
+        height: 30px;
+        padding: 0 10px;
+        font-size: 0.68rem;
+      }
+
+      .skip-segment {
+        top: auto;
+        bottom: 88px;
+        right: 10px;
+        min-width: 84px;
+        height: 30px;
+        padding: 0 10px;
+        font-size: 0.66rem;
+        gap: 6px;
+      }
+
+      .player-bottom {
+        gap: 8px;
+        padding-top: 28px;
+        background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.82));
+      }
+
+      .timeline-wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .timeline-wrap .time-row {
+        display: contents;
+      }
+
+      .timeline-wrap .player-summary {
+        display: none;
+      }
+
+      .timeline-wrap .timecode {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      #progress-range {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      .subtitle-overlay {
+        bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px + var(--subtitle-lift, 0px)));
+        width: min(88%, 520px);
+      }
+
+      .player-frame.chrome-hidden .subtitle-overlay {
+        bottom: max(6px, calc(env(safe-area-inset-bottom) + 6px + var(--subtitle-lift, 0px)));
+      }
+
+      .subtitle-line {
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: calc(0.78rem * var(--subtitle-scale, 1));
+        line-height: 1.3;
+      }
+
+      .control-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .controls-left,
+      .controls-right {
+        width: auto;
+        min-width: 0;
+      }
+
+      .controls-left {
+        display: grid;
+        grid-template-columns: repeat(3, 28px);
+        gap: 7px;
+        align-items: center;
+      }
+
+      .controls-right {
+        gap: 7px;
+        justify-content: flex-end;
+      }
+
+      .control-btn,
+      .icon-toggle {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        backdrop-filter: none;
+      }
+
+      .control-btn svg,
+      .icon-toggle svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      .icon-toggle {
+        width: 28px;
+        min-width: 28px;
+        padding: 0;
+      }
+
+      .timecode {
+        font-size: 0.78rem;
+        justify-self: end;
+      }
+
+      .range {
+        height: 3px;
+      }
+
+      .range::-webkit-slider-thumb {
+        width: 12px;
+        height: 12px;
+        box-shadow: 0 0 0 3px rgba(132, 215, 255, 0.14);
+      }
+
+      .range::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        box-shadow: 0 0 0 3px rgba(132, 215, 255, 0.14);
+      }
+
+      .brand-copy span,
+      .player-summary {
+        display: none;
+      }
+
+      .settings-panel {
+        right: max(8px, env(safe-area-inset-right));
+        left: auto;
+        width: min(176px, calc(100vw - 18px));
+        height: min(164px, calc(100vh - 92px));
+        max-height: min(42vh, 196px);
+        bottom: max(48px, calc(env(safe-area-inset-bottom) + 44px));
+        overflow: hidden;
+        border-radius: 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 5px;
+      }
+
+      .settings-grid {
+        height: 100%;
+        gap: 4px;
+        grid-template-rows: auto auto minmax(0, 1fr);
+      }
+
+      .settings-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.54rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .settings-close {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        font-size: 0.76rem;
+      }
+
+      .settings-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .settings-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 3px;
+        padding: 2px;
+        border-radius: 10px;
+      }
+
+      .settings-tab {
+        min-height: 23px;
+        padding: 4px 3px;
+        border-radius: 8px;
+        font-size: 0.5rem;
+      }
+
+      .subtitle-tab {
+        min-height: 23px;
+        padding: 4px 3px;
+        border-radius: 8px;
+        font-size: 0.5rem;
+      }
+
+      .option-list {
+        gap: 4px;
+      }
+
+      .settings-section {
+        min-height: 0;
+        height: 100%;
+        overflow: auto;
+        gap: 5px;
+        padding-right: 2px;
+        scrollbar-width: thin;
+      }
+
+      .option-chip {
+        flex: 0 1 auto;
+        height: 21px;
+        padding: 3px 6px;
+        font-size: 0.54rem;
+        text-align: center;
+        justify-content: center;
+      }
+
+      .option-chip.option-chip-preview {
+        min-width: 64px;
+        min-height: 44px;
+        padding: 5px;
+      }
+
+      .option-chip.option-chip-preview.option-chip-preview-wide {
+        min-width: 74px;
+      }
+
+      .option-chip-preview-frame {
+        height: 24px;
+      }
+
+      .option-chip-preview-caption {
+        padding: 1px 4px;
+      }
+
+      .option-chip-preview-label {
+        font-size: 0.4rem;
+      }
+
+      .subtitle-size-row {
+        gap: 4px;
+        padding-top: 0;
+      }
+
+      .subtitle-size-label {
+        font-size: 0.48rem;
+      }
+
+      .subtitle-group-title {
+        font-size: 0.48rem;
+      }
+    }
+
+    body.embed-mode,
+    body.player-only {
+      padding: 0;
+      background: #000;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    html.embed-root,
+    html.player-only-root {
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body.embed-mode .shell,
+    body.player-only .shell {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      margin: 0;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    body.embed-mode .stream-list,
+    body.embed-mode #debug-output,
+    body.embed-mode #status-pill,
+    body.player-only .stream-list,
+    body.player-only #debug-output,
+    body.player-only #status-pill {
+      display: none;
+    }
+
+    body.embed-mode .grid,
+    body.player-only .grid {
+      grid-template-columns: 1fr;
+      gap: 0;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    body.embed-mode .panel.player-shell,
+    body.player-only .panel.player-shell {
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: #000;
+      box-shadow: none;
+      backdrop-filter: none;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    body.embed-mode .player-frame,
+    body.player-only .player-frame {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      aspect-ratio: auto;
+    }
+
+    body.embed-mode .player-frame::before,
+    body.player-only .player-frame::before {
+      display: none;
+    }
+
+    body.embed-mode .player-top,
+    body.embed-mode .player-bottom,
+    body.player-only .player-top,
+    body.player-only .player-bottom {
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+  </style>
+</head>
+<body class="player-only">
+  <main class="shell">
+    <section class="grid">
+      <div class="panel player-shell" id="try-candle">
+        <form id="candle-form" hidden>
+          <input id="tmdb-id" name="id" type="text" value="687163">
+          <select id="content-type" name="type">
+            <option value="movie" selected>movie</option>
+            <option value="tv">tv</option>
+            <option value="anime">anime</option>
+          </select>
+          <input id="season-number" name="season" type="number" min="1" step="1" value="1">
+          <input id="episode-number" name="episode" type="number" min="1" step="1" value="1">
+          <button id="load-button" type="submit">Load Candle</button>
+          <button id="reset-button" type="button">Reset</button>
+        </form>
+
+        <div hidden>
+          <pre id="embed-url"></pre>
+          <pre id="iframe-snippet"></pre>
+          <span id="status-pill">Idle</span>
+          <span id="status-text">Idle</span>
+          <span id="source-count">-</span>
+          <span id="provider-text">-</span>
+          <span id="encrypted-text">-</span>
+          <span id="upstream-text">-</span>
+          <div class="stream-list" id="stream-list"></div>
+          <pre id="debug-output"></pre>
+        </div>
+
+        <div class="player-frame" id="player-frame">
+          <video id="candle-player" preload="metadata" playsinline crossorigin="anonymous"></video>
+          <div id="subtitle-overlay" class="subtitle-overlay" aria-live="polite" hidden></div>
+
+          <div class="player-chrome" id="player-chrome">
+            <div class="player-top">
+              <div class="brand-chip">
+                <img src="/api/candle-proxy/candle.svg" alt="">
+                <div class="brand-copy">
+                  <strong>CandleStream</strong>
+                  <span id="media-title">Now playing</span>
+                </div>
+              </div>
+              <div class="source-menu-wrap">
+                <button id="language-button" type="button" class="source-button language-button" aria-label="Choose language" aria-expanded="false" hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"></path></svg>
+                </button>
+                <div id="language-panel" class="source-panel language-panel" hidden></div>
+                <button id="source-button" type="button" class="source-button" aria-label="Choose Candle source" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.5 19H8a6 6 0 1 1 5.7-7.85A4.5 4.5 0 1 1 17.5 19Z"></path></svg>
+                </button>
+                <div id="source-panel" class="source-panel" hidden></div>
+              </div>
+            </div>
+
+            <div class="player-bottom">
+              <div class="timeline-wrap">
+                <input id="progress-range" class="range" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek">
+                <span id="seek-preview" class="seek-preview" hidden>0:00</span>
+                <div class="time-row">
+                  <span class="player-summary" id="player-summary">Now Playing</span>
+                  <span class="timecode" id="timecode">0:00 / 0:00</span>
+                </div>
+              </div>
+
+              <div class="control-row">
+                <div class="controls-left">
+                  <button id="play-button" type="button" class="control-btn" aria-label="Play or pause"></button>
+                  <button id="rewind-button" type="button" class="control-btn" aria-label="Rewind 10 seconds">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 19 2 12l9-7v14Z"></path><path d="M22 19 13 12l9-7v14Z"></path></svg>
+                  </button>
+                  <button id="forward-button" type="button" class="control-btn" aria-label="Forward 10 seconds">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m13 5 9 7-9 7V5Z"></path><path d="m2 5 9 7-9 7V5Z"></path></svg>
+                  </button>
+                </div>
+
+                <div class="controls-right">
+                  <button id="subtitle-toggle" type="button" class="icon-toggle" aria-label="Open subtitles" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+                      <path d="M7 10h4"></path>
+                      <path d="M13 10h4"></path>
+                      <path d="M7 14h3"></path>
+                      <path d="M12 14h5"></path>
+                    </svg>
+                  </button>
+                  <button id="settings-button" type="button" class="control-btn" aria-label="Open settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82V22a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 20.4a1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33H2a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 3.6 9a1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82V2a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 3.6a1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.26.3.46.65.6 1 .14.35.18.73.12 1.09H22a2 2 0 1 1 0 4h-.09c-.36-.06-.74-.02-1.09.12-.35.14-.7.34-1 .6Z"></path></svg>
+                  </button>
+                  <button id="fullscreen-button" type="button" class="control-btn" aria-label="Toggle fullscreen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button id="center-play" type="button" class="center-play" aria-label="Play">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"></path></svg>
+          </button>
+
+          <button id="next-episode" type="button" class="next-episode" hidden>Next &#x23ED;</button>
+          <button id="skip-segment" type="button" class="skip-segment" hidden>Skip Intro</button>
+
+          <div id="player-loader" class="player-loader" hidden>
+            <span class="loader-ring" aria-hidden="true"></span>
+          </div>
+
+          <div id="settings-panel" class="settings-panel" hidden>
+            <div class="settings-grid">
+              <div class="settings-head">
+                <span id="settings-title">Settings</span>
+                <button id="settings-close" type="button" class="settings-close" aria-label="Close settings">×</button>
+              </div>
+              <div class="settings-tabs" id="settings-tabs">
+                <button type="button" class="settings-tab is-active" data-settings-tab="quality">Quality</button>
+                <button type="button" class="settings-tab" data-settings-tab="speed">More</button>
+              </div>
+              <div class="settings-section" id="settings-section-quality">
+                <label>Quality</label>
+                <div id="quality-options" class="option-list"></div>
+              </div>
+              <div class="settings-section" id="settings-section-subtitles" hidden>
+                <label>Subtitles</label>
+                <div class="subtitle-tabs" id="subtitle-tabs">
+                  <button type="button" class="subtitle-tab is-active" data-subtitle-panel="captions">Captions</button>
+                  <button type="button" class="subtitle-tab" data-subtitle-panel="customization">Customize</button>
+                </div>
+                <div class="subtitle-pane" id="subtitle-pane-captions">
+                  <div id="subtitle-options" class="option-list subtitle-option-list"></div>
+                </div>
+                <div class="subtitle-pane" id="subtitle-pane-customization" hidden>
+                  <div class="subtitle-customization-grid">
+                    <div class="subtitle-size-row">
+                      <span class="subtitle-size-label">Caption size</span>
+                      <div id="subtitle-size-options" class="option-list"></div>
+                    </div>
+                    <div class="subtitle-settings-group">
+                      <span class="subtitle-size-label">Caption style</span>
+                      <div id="subtitle-style-options" class="option-list"></div>
+                    </div>
+                    <div class="subtitle-settings-group">
+                      <span class="subtitle-size-label">Caption position</span>
+                      <div id="subtitle-position-options" class="option-list"></div>
+                    </div>
+                    <div class="subtitle-settings-group">
+                      <span class="subtitle-size-label">Text color</span>
+                      <div id="subtitle-color-options" class="option-list"></div>
+                    </div>
+                    <div class="subtitle-settings-group">
+                      <span class="subtitle-size-label">Background</span>
+                      <div id="subtitle-background-options" class="option-list"></div>
+                    </div>
+                    <div class="subtitle-settings-group">
+                      <span class="subtitle-size-label">Text weight</span>
+                      <div id="subtitle-weight-options" class="option-list"></div>
+                    </div>
+                    <div class="subtitle-settings-group">
+                      <span class="subtitle-size-label">Font</span>
+                      <div id="subtitle-font-options" class="option-list"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-section" id="settings-section-speed" hidden>
+                <label>More</label>
+                <div class="more-options">
+                  <label class="more-toggle">
+                    <span>Auto Skip</span>
+                    <input id="auto-skip-toggle" type="checkbox">
+                  </label>
+                  <label class="more-toggle">
+                    <span>Auto Next</span>
+                    <input id="auto-next-toggle" type="checkbox">
+                  </label>
+                </div>
+                <label>Speed</label>
+                <div id="speed-options" class="option-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('candle-form');
+    const idInput = document.getElementById('tmdb-id');
+    const typeSelect = document.getElementById('content-type');
+    const seasonInput = document.getElementById('season-number');
+    const episodeInput = document.getElementById('episode-number');
+    const loadButton = document.getElementById('load-button');
+    const resetButton = document.getElementById('reset-button');
+    const statusPill = document.getElementById('status-pill');
+    const statusText = document.getElementById('status-text');
+    const providerText = document.getElementById('provider-text');
+    const sourceCountText = document.getElementById('source-count');
+    const encryptedText = document.getElementById('encrypted-text');
+    const upstreamText = document.getElementById('upstream-text');
+    const playerFrame = document.getElementById('player-frame');
+    const player = document.getElementById('candle-player');
+    const subtitleOverlay = document.getElementById('subtitle-overlay');
+    const progressRange = document.getElementById('progress-range');
+    const seekPreview = document.getElementById('seek-preview');
+    const playButton = document.getElementById('play-button');
+    const rewindButton = document.getElementById('rewind-button');
+    const forwardButton = document.getElementById('forward-button');
+    const fullscreenButton = document.getElementById('fullscreen-button');
+    const settingsButton = document.getElementById('settings-button');
+    const settingsClose = document.getElementById('settings-close');
+    const subtitleToggle = document.getElementById('subtitle-toggle');
+    const sourceButton = document.getElementById('source-button');
+    const sourcePanel = document.getElementById('source-panel');
+    const sourceMenuWrap = document.querySelector('.source-menu-wrap');
+    const languageButton = document.getElementById('language-button');
+    const languagePanel = document.getElementById('language-panel');
+    const centerPlay = document.getElementById('center-play');
+    const nextEpisodeButton = document.getElementById('next-episode');
+    const skipSegmentButton = document.getElementById('skip-segment');
+    const loader = document.getElementById('player-loader');
+    const settingsPanel = document.getElementById('settings-panel');
+    const settingsTabs = document.getElementById('settings-tabs');
+    const subtitleTabs = document.getElementById('subtitle-tabs');
+    const settingsTitle = document.getElementById('settings-title');
+    const playerSummary = document.getElementById('player-summary');
+    const timecode = document.getElementById('timecode');
+    const qualityOptions = document.getElementById('quality-options');
+    const subtitleOptions = document.getElementById('subtitle-options');
+    const subtitleSizeOptions = document.getElementById('subtitle-size-options');
+    const subtitleStyleOptions = document.getElementById('subtitle-style-options');
+    const subtitlePositionOptions = document.getElementById('subtitle-position-options');
+    const subtitleColorOptions = document.getElementById('subtitle-color-options');
+    const subtitleBackgroundOptions = document.getElementById('subtitle-background-options');
+    const subtitleWeightOptions = document.getElementById('subtitle-weight-options');
+    const subtitleFontOptions = document.getElementById('subtitle-font-options');
+    const speedOptions = document.getElementById('speed-options');
+    const autoSkipToggle = document.getElementById('auto-skip-toggle');
+    const autoNextToggle = document.getElementById('auto-next-toggle');
+    const streamList = document.getElementById('stream-list');
+    const debugOutput = document.getElementById('debug-output');
+    const embedUrlOutput = document.getElementById('embed-url');
+    const iframeSnippetOutput = document.getElementById('iframe-snippet');
+    const mediaTitle = document.getElementById('media-title');
+    const query = new URLSearchParams(window.location.search);
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const pathPreset = (() => {
+      if (pathParts[0] !== 'candle') return null;
+      if (pathParts[1] === 'tv' && /^\d+$/.test(pathParts[2] || '')) {
+        return {
+          type: 'tv',
+          id: pathParts[2],
+          season: pathParts[3] || '1',
+          episode: pathParts[4] || '1',
+        };
+      }
+      if (pathParts[1] === 'anime' && /^\d+$/.test(pathParts[2] || '')) {
+        return {
+          type: 'anime',
+          id: pathParts[2],
+          season: '1',
+          episode: pathParts[3] || '1',
+          lang: pathParts[4] || 'sub',
+        };
+      }
+      if (/^\d+$/.test(pathParts[1] || '')) {
+        return {
+          type: 'movie',
+          id: pathParts[1],
+          season: '1',
+          episode: '1',
+        };
+      }
+      return null;
+    })();
+    const isIframeContext = (() => {
+      try {
+        return window.self !== window.top;
+      } catch {
+        return true;
+      }
+    })();
+    const hasPresetMedia = Boolean(query.get('id') || pathPreset?.id);
+    const shouldForceEmbedMode = isIframeContext && hasPresetMedia;
+    const isEmbedMode = query.get('embed') === '1' || shouldForceEmbedMode;
+    const isDebugMode = query.get('debug') === '1';
+    const shouldAutoLoad = query.get('autoload') === '1' || shouldForceEmbedMode || Boolean(pathPreset?.id);
+    const shouldAutoPlay = query.get('autoplay') === '1' || shouldAutoLoad;
+    const isPlayerOnlyMode = true;
+    const speedValues = [0.75, 1, 1.25, 1.5, 1.75, 2];
+    let candleServers = [
+      { api: 'moviebox', name: 'Fire' },
+      { api: 'cinemaos', family: 'screenscape', name: 'CinemaOS' },
+      { api: 'peachify', family: 'peachify', name: 'Peach' },
+      { api: 'vidcore', family: 'vidcore', name: 'Core' },
+      { api: 'moviesapi', name: 'Flame' },
+      { api: 'klikxxi', name: 'Wax', label: 'Hindi' },
+      { api: 'purstream', name: 'Sun', label: 'French' },
+      { api: 'allmovies', name: 'Light', label: 'Indian' },
+      { api: 'vidlink', name: 'Lumen' },
+      { api: 'nxsha-yomovies', provider: 'yomovies', family: 'nxsha', name: 'StreamX', label: 'Hindi' },
+    ];
+    let animeCandleServers = [
+      { api: 'hianime', name: 'HiAnime', label: 'VidNest' },
+      { api: 'animepahe', name: 'AnimePahe', label: 'VidNest' },
+    ];
+    const NEXT_EPISODE_PROMPT_MS = 5000;
+    const NEXT_EPISODE_CREDITS_SECONDS = 110;
+    const SKIP_SEGMENT_PROMPT_MS = 5200;
+    const subtitleSizeValues = [
+      { label: 'Small', value: 0.86 },
+      { label: 'Normal', value: 1 },
+      { label: 'Large', value: 1.16 },
+      { label: 'XL', value: 1.32 },
+    ];
+    const subtitleStyleValues = [
+      { label: 'Default', value: 'default', color: '#ffffff', bg: 'rgba(0, 0, 0, 0.46)', shadow: '0 1px 2px rgba(0, 0, 0, 0.85)', weight: '600', colorValue: 'white', backgroundValue: 'normal', weightValue: 'medium' },
+      { label: 'Contrast', value: 'contrast', color: '#ffffff', bg: 'rgba(0, 0, 0, 0.72)', shadow: '0 1px 2px rgba(0, 0, 0, 0.96)', weight: '700', colorValue: 'white', backgroundValue: 'strong', weightValue: 'bold' },
+      { label: 'Yellow', value: 'yellow', color: '#ffe36f', bg: 'rgba(0, 0, 0, 0.46)', shadow: '0 1px 2px rgba(0, 0, 0, 0.96)', weight: '700', colorValue: 'yellow', backgroundValue: 'normal', weightValue: 'bold' },
+      { label: 'Outline', value: 'outline', color: '#ffffff', bg: 'rgba(0, 0, 0, 0)', shadow: '-1px -1px 0 rgba(0, 0, 0, 0.96), 1px -1px 0 rgba(0, 0, 0, 0.96), -1px 1px 0 rgba(0, 0, 0, 0.96), 1px 1px 0 rgba(0, 0, 0, 0.96), 0 2px 6px rgba(0, 0, 0, 0.82)', weight: '700', colorValue: 'white', backgroundValue: 'none', weightValue: 'bold' },
+    ];
+    const subtitlePositionValues = [
+      { label: 'Low', value: 'low', lift: 0 },
+      { label: 'Raised', value: 'raised', lift: 26 },
+      { label: 'High', value: 'high', lift: 54 },
+    ];
+    const subtitleColorValues = [
+      { label: 'White', value: 'white', color: '#ffffff' },
+      { label: 'Yellow', value: 'yellow', color: '#ffe36f' },
+      { label: 'Cyan', value: 'cyan', color: '#8fe8ff' },
+      { label: 'Green', value: 'green', color: '#b7ff8a' },
+    ];
+    const subtitleBackgroundValues = [
+      { label: 'None', value: 'none', bg: 'rgba(0, 0, 0, 0)' },
+      { label: 'Soft', value: 'soft', bg: 'rgba(0, 0, 0, 0.28)' },
+      { label: 'Normal', value: 'normal', bg: 'rgba(0, 0, 0, 0.46)' },
+      { label: 'Strong', value: 'strong', bg: 'rgba(0, 0, 0, 0.72)' },
+    ];
+    const subtitleWeightValues = [
+      { label: 'Regular', value: 'regular', weight: '500' },
+      { label: 'Medium', value: 'medium', weight: '600' },
+      { label: 'Bold', value: 'bold', weight: '700' },
+      { label: 'Heavy', value: 'heavy', weight: '800' },
+    ];
+    const subtitleFontValues = [
+      { label: 'Sans', value: 'sans', family: "'Space Grotesk', system-ui, sans-serif", sample: 'Aa' },
+      { label: 'Classic', value: 'classic', family: "Arial, Helvetica, sans-serif", sample: 'Aa' },
+      { label: 'Serif', value: 'serif', family: "Georgia, 'Times New Roman', serif", sample: 'Aa' },
+      { label: 'Mono', value: 'mono', family: "'IBM Plex Mono', monospace", sample: 'Aa' },
+    ];
+
+    let currentPayload = null;
+    let currentSourceIndex = 0;
+    let currentServerIndex = 0;
+    let currentPeachifyLanguageKey = '';
+    let currentSubtitleValue = '-1';
+    let preferredSubtitleValue = '-1';
+    let isScrubbing = false;
+    let chromeTimer = 0;
+    let chromePinnedByMenu = false;
+    let currentSpeedValue = '1';
+    let currentSubtitleSize = sanitizeSubtitleSize(localStorage.getItem('cs_candle_subtitle_size') || '1');
+    let currentSubtitleStyle = sanitizeSubtitleStyle(localStorage.getItem('cs_candle_subtitle_style') || 'default');
+    let currentSubtitlePosition = sanitizeSubtitlePosition(localStorage.getItem('cs_candle_subtitle_position') || 'low');
+    let currentSubtitleColor = sanitizeSubtitleColor(localStorage.getItem('cs_candle_subtitle_color') || 'white');
+    let currentSubtitleBackground = sanitizeSubtitleBackground(localStorage.getItem('cs_candle_subtitle_background') || 'normal');
+    let currentSubtitleWeight = sanitizeSubtitleWeight(localStorage.getItem('cs_candle_subtitle_weight') || 'medium');
+    let currentSubtitleFont = sanitizeSubtitleFont(localStorage.getItem('cs_candle_subtitle_font') || 'sans');
+    let autoSkipEnabled = localStorage.getItem('cs_candle_auto_skip') === '1';
+    let autoNextEnabled = localStorage.getItem('cs_candle_auto_next') === '1';
+    let failedSourceIndexes = new Set();
+    let failedServerIndexes = new Set();
+    let activeSwitchToken = 0;
+    let startupFallbackTimer = 0;
+    let nextEpisodeTimer = 0;
+    let nextEpisodeAutoTimer = 0;
+    let nextEpisodePromptSeen = false;
+    let nextEpisodeNavigating = false;
+    let currentSettingsTab = 'quality';
+    let currentSubtitlePanel = 'captions';
+    let pendingResumeAt = 0;
+    let activeTextTrack = null;
+    let manualSubtitleCues = [];
+    let manualSubtitleLoadToken = 0;
+    let lastSubtitleRenderKey = '';
+    let subtitleRenderTimer = 0;
+    let videasyTurnstilePromise = null;
+    let videasyTurnstileWidgetId = null;
+    let videasyTurnstilePending = null;
+    let videasySession = null;
+    let videasySessionPromise = null;
+    let activeHls = null;
+    let hlsLoadPromise = null;
+    let currentHlsLevel = -1;
+    let skipSegments = [];
+    let activeSkipSegment = null;
+    let skippedSegmentIds = new Set();
+    let dismissedSkipSegmentId = '';
+    let skipSegmentHideTimer = 0;
+    let skipSegmentProgressTimer = 0;
+    let introDbLoadToken = 0;
+
+    function sanitizeId(value) {
+      const trimmed = String(value || '').trim();
+      return /^\d{1,12}$/.test(trimmed) ? trimmed : '687163';
+    }
+
+    function sanitizeType(value) {
+      if (value === 'tv') return 'tv';
+      if (value === 'anime') return 'anime';
+      return 'movie';
+    }
+
+    function getCandleServerList() {
+      return sanitizeType(typeSelect.value) === 'anime' ? animeCandleServers : candleServers;
+    }
+
+    function normalizeServerList(list, fallback) {
+      if (!Array.isArray(list) || !list.length) return fallback;
+      return list
+        .filter((server) => server && typeof server.api === 'string' && server.api.trim())
+        .map((server) => ({ ...server, api: String(server.api).trim() }));
+    }
+
+    async function syncCandleServerList() {
+      try {
+        const response = await fetch('/api/candle-servers', {
+          headers: {
+            'Accept': 'application/json',
+            'x-candlestream-client': 'web',
+          },
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) return;
+        candleServers = normalizeServerList(payload.servers, candleServers);
+        animeCandleServers = normalizeServerList(payload.animeServers, animeCandleServers);
+        currentServerIndex = sanitizeServerIndex(currentServerIndex);
+        renderServerOptions();
+      } catch {}
+    }
+
+    function sanitizeServerIndex(value) {
+      const raw = String(value ?? '').trim().toLowerCase();
+      const serverList = getCandleServerList();
+      const byApi = serverList.findIndex((server) => server.api === raw);
+      if (byApi >= 0) return byApi;
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) && parsed >= 0 && parsed < serverList.length ? parsed : 0;
+    }
+
+    function getCurrentServer() {
+      const serverList = getCandleServerList();
+      return serverList[currentServerIndex] || serverList[0];
+    }
+
+    function isVideasyServer(server) {
+      return String(server?.family || '').toLowerCase() === 'videasy' && Boolean(server?.provider);
+    }
+
+    function isPeachifyServer(server = getCurrentServer()) {
+      return String(server?.api || '').toLowerCase() === 'peachify'
+        || String(server?.family || '').toLowerCase() === 'peachify';
+    }
+
+    function supportsProviderLanguageOptions(server = getCurrentServer()) {
+      const api = String(server?.api || '').toLowerCase();
+      const family = String(server?.family || '').toLowerCase();
+      return isPeachifyServer(server) || api === 'cinepro-core' || family === 'screenscape';
+    }
+
+    function normalizePeachifyLanguageKey(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+      return normalized || 'original';
+    }
+
+    function getPeachifySourceLanguage(source) {
+      const lang = String(source?.language || source?.lang || '').trim();
+      if (lang && !/^(unknown|und|undefined|null)$/i.test(lang)) return lang;
+      const label = String(source?.label || '').split(' - ').pop();
+      return label && !/\d{3,4}p/i.test(label) ? label : 'Original';
+    }
+
+    function getPeachifySourceLanguageKey(source) {
+      return normalizePeachifyLanguageKey(getPeachifySourceLanguage(source));
+    }
+
+    function getPeachifyLanguageOptions(sources = currentPayload?.sources || []) {
+      const groups = new Map();
+      sources.forEach((source, index) => {
+        if (!source) return;
+        const key = getPeachifySourceLanguageKey(source);
+        const label = getPeachifySourceLanguage(source);
+        const provider = String(source.provider || '').trim();
+        if (!groups.has(key)) {
+          groups.set(key, {
+            key,
+            label,
+            bestIndex: index,
+            count: 0,
+            providers: new Set(),
+          });
+        }
+        const group = groups.get(key);
+        group.count += 1;
+        if (provider) group.providers.add(provider);
+      });
+      return Array.from(groups.values()).map((group) => ({
+        ...group,
+        providers: Array.from(group.providers),
+      }));
+    }
+
+    function getPeachifyProviderLanguageOptions(sources = currentPayload?.sources || []) {
+      const groups = new Map();
+      const duplicateQualityCounts = new Map();
+      const duplicateQualityIndexes = new Map();
+      const splitDuplicateStreams = String(getCurrentServer()?.api || '').toLowerCase() === 'cinepro-core';
+      if (splitDuplicateStreams) {
+        sources.forEach((source) => {
+          if (!source) return;
+          const currentServer = getCurrentServer();
+          const provider = String(source.providerKey || source.provider || currentServer?.api || '').trim().toLowerCase();
+          const languageKey = getPeachifySourceLanguageKey(source);
+          const qualityKey = String(source?.quality || source?.resolution || 'auto').trim().toLowerCase() || 'auto';
+          const typeKey = String(source?.type || '').trim().toLowerCase();
+          const key = `${provider}:${languageKey}:${qualityKey}:${typeKey}`;
+          duplicateQualityCounts.set(key, (duplicateQualityCounts.get(key) || 0) + 1);
+        });
+      }
+      sources.forEach((source, index) => {
+        if (!source) return;
+        const currentServer = getCurrentServer();
+        const provider = String(source.provider || currentServer?.name || 'Source').trim();
+        const providerKey = String(source.providerKey || source.provider || currentServer?.api || provider).trim().toLowerCase();
+        const languageKey = getPeachifySourceLanguageKey(source);
+        const qualityKey = String(source?.quality || source?.resolution || 'auto').trim().toLowerCase() || 'auto';
+        const typeKey = String(source?.type || '').trim().toLowerCase();
+        const duplicateKey = `${providerKey}:${languageKey}:${qualityKey}:${typeKey}`;
+        const shouldSplit = splitDuplicateStreams && (duplicateQualityCounts.get(duplicateKey) || 0) > 1;
+        const duplicateIndex = shouldSplit ? (duplicateQualityIndexes.get(duplicateKey) || 0) + 1 : 0;
+        if (shouldSplit) duplicateQualityIndexes.set(duplicateKey, duplicateIndex);
+        const key = shouldSplit ? `${providerKey}:${languageKey}:${qualityKey}:${typeKey}:${duplicateIndex}` : `${providerKey}:${languageKey}`;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            key,
+            provider,
+            providerKey,
+            languageKey,
+            label: shouldSplit ? `${getPeachifySourceLanguage(source)} ${duplicateIndex}` : getPeachifySourceLanguage(source),
+            bestIndex: index,
+            sources: [],
+          });
+        }
+        groups.get(key).sources.push({ source, index });
+      });
+      return Array.from(groups.values());
+    }
+
+    function getPeachifyFlagCode(language) {
+      const key = normalizePeachifyLanguageKey(language).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
+      const flags = {
+        arabic: 'sa',
+        ar: 'sa',
+        czech: 'cz',
+        cs: 'cz',
+        ces: 'cz',
+        danish: 'dk',
+        da: 'dk',
+        german: 'de',
+        de: 'de',
+        greek: 'gr',
+        el: 'gr',
+        english: 'gb',
+        englishsub: 'gb',
+        en: 'gb',
+        eng: 'gb',
+        spanish: 'es',
+        es: 'es',
+        spa: 'es',
+        finnish: 'fi',
+        fi: 'fi',
+        french: 'fr',
+        fr: 'fr',
+        fra: 'fr',
+        hebrew: 'il',
+        he: 'il',
+        hindi: 'in',
+        hi: 'in',
+        croatian: 'hr',
+        hr: 'hr',
+        hungarian: 'hu',
+        hu: 'hu',
+        indonesian: 'id',
+        id: 'id',
+        inid: 'id',
+        italian: 'it',
+        it: 'it',
+        japanese: 'jp',
+        ja: 'jp',
+        korean: 'kr',
+        ko: 'kr',
+        malay: 'my',
+        ms: 'my',
+        norwegian: 'no',
+        no: 'no',
+        dutch: 'nl',
+        nl: 'nl',
+        polish: 'pl',
+        pl: 'pl',
+        portuguese: 'pt',
+        portuguesebr: 'br',
+        pt: 'pt',
+        ptbr: 'br',
+        romanian: 'ro',
+        ro: 'ro',
+        russian: 'ru',
+        ru: 'ru',
+        swedish: 'se',
+        sv: 'se',
+        tagalog: 'ph',
+        filipino: 'ph',
+        fil: 'ph',
+        tamil: 'in',
+        ta: 'in',
+        telugu: 'in',
+        te: 'in',
+        thai: 'th',
+        th: 'th',
+        turkish: 'tr',
+        tr: 'tr',
+        urdu: 'pk',
+        ur: 'pk',
+        bengali: 'bd',
+        bn: 'bd',
+        chinese: 'cn',
+        zh: 'cn',
+      };
+      return flags[key] || '';
+    }
+
+    function formatPeachifyQuality(value) {
+      const raw = String(value || '').trim();
+      if (!raw || /^auto$/i.test(raw)) return 'AUTO';
+      const height = raw.match(/\d{3,4}/)?.[0];
+      return height ? `${height}P` : raw.toUpperCase();
+    }
+
+    function getPeachifyQualitySummary(option) {
+      const qualities = [];
+      option.sources.forEach(({ source }) => {
+        const quality = formatPeachifyQuality(source?.quality || source?.resolution);
+        if (quality && !qualities.includes(quality)) qualities.push(quality);
+      });
+      qualities.sort((left, right) => {
+        const leftScore = Number.parseInt(left, 10);
+        const rightScore = Number.parseInt(right, 10);
+        if (Number.isFinite(leftScore) && Number.isFinite(rightScore)) return rightScore - leftScore;
+        if (Number.isFinite(leftScore)) return -1;
+        if (Number.isFinite(rightScore)) return 1;
+        return left.localeCompare(right);
+      });
+      const visible = qualities.slice(0, 2);
+      const overflow = qualities.length - visible.length;
+      return overflow > 0 ? `${visible.join(' - ')} - +${overflow}` : visible.join(' - ');
+    }
+
+    function getPeachifyQualityGroups(entries) {
+      const groups = new Map();
+      entries.forEach(({ source, index }) => {
+        const rawQuality = String(source?.quality || source?.resolution || 'auto').trim() || 'auto';
+        const key = rawQuality.toLowerCase();
+        if (!groups.has(key)) {
+          groups.set(key, {
+            key,
+            index,
+            label: /^auto$/i.test(rawQuality) ? 'Auto' : `${rawQuality.replace(/p$/i, '')}p`,
+          });
+        }
+      });
+      return Array.from(groups.values()).sort((left, right) => {
+        const leftScore = Number.parseInt(left.label, 10);
+        const rightScore = Number.parseInt(right.label, 10);
+        if (Number.isFinite(leftScore) && Number.isFinite(rightScore)) return rightScore - leftScore;
+        if (Number.isFinite(leftScore)) return -1;
+        if (Number.isFinite(rightScore)) return 1;
+        return left.label.localeCompare(right.label);
+      });
+    }
+
+    function hasMultipleQualityChoices(entries) {
+      return getPeachifyQualityGroups(entries).length > 1;
+    }
+
+    function getActivePeachifyLanguageKey() {
+      const source = currentPayload?.sources?.[currentSourceIndex];
+      return source ? getPeachifySourceLanguageKey(source) : currentPeachifyLanguageKey;
+    }
+
+    function getActivePeachifyProviderKey() {
+      const source = currentPayload?.sources?.[currentSourceIndex];
+      return String(source?.providerKey || source?.provider || getCurrentServer()?.api || '').trim().toLowerCase();
+    }
+
+    function syncPeachifyLanguageButton() {
+      const options = supportsProviderLanguageOptions() ? getPeachifyProviderLanguageOptions() : [];
+      const shouldShow = options.length > 1;
+      languageButton.hidden = !shouldShow;
+      if (!shouldShow) {
+        languagePanel.hidden = true;
+        languageButton.classList.remove('active');
+        languageButton.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      const activeKey = getActivePeachifyLanguageKey();
+      const activeOption = options.find((option) => option.key === activeKey) || options[0];
+      languageButton.setAttribute('aria-label', `Choose language, current ${activeOption.label}`);
+      languageButton.title = activeOption.label;
+    }
+
+    function sanitizePositiveInt(value, fallback) {
+      const parsed = Number.parseInt(String(value || ''), 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    }
+
+    function sanitizeNonNegativeTime(value) {
+      const parsed = Number.parseFloat(String(value || '').trim());
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    }
+
+    function sanitizeSubtitleSize(value) {
+      const parsed = Number.parseFloat(String(value || '').trim());
+      const match = subtitleSizeValues.find((item) => Math.abs(item.value - parsed) < 0.01);
+      return match ? String(match.value) : '1';
+    }
+
+    function sanitizeSubtitleStyle(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+      return subtitleStyleValues.some((item) => item.value === normalized) ? normalized : 'default';
+    }
+
+    function sanitizeSubtitlePosition(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+      return subtitlePositionValues.some((item) => item.value === normalized) ? normalized : 'low';
+    }
+
+    function sanitizeSubtitleColor(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+      return subtitleColorValues.some((item) => item.value === normalized) ? normalized : 'white';
+    }
+
+    function sanitizeSubtitleBackground(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+      return subtitleBackgroundValues.some((item) => item.value === normalized) ? normalized : 'normal';
+    }
+
+    function sanitizeSubtitleWeight(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+      return subtitleWeightValues.some((item) => item.value === normalized) ? normalized : 'medium';
+    }
+
+    function sanitizeSubtitleFont(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+      return subtitleFontValues.some((item) => item.value === normalized) ? normalized : 'sans';
+    }
+
+    function getDisplayTitle() {
+      const title = String(query.get('title') || query.get('name') || '').trim();
+      if (isTvPlayback()) {
+        const epLabel = `S${sanitizePositiveInt(seasonInput.value, 1)}E${sanitizePositiveInt(episodeInput.value, 1)}`;
+        return title ? `${title} • ${epLabel}` : epLabel;
+      }
+      return title || 'Now playing';
+    }
+
+    function syncMediaTitle() {
+      mediaTitle.textContent = getDisplayTitle();
+    }
+
+    function postParentMessage(type, payload = {}) {
+      try {
+        window.parent.postMessage({ type, ...payload }, '*');
+      } catch {}
+    }
+
+    function postPlaybackEvent(eventType) {
+      if (!Number.isFinite(player.currentTime)) return;
+      postParentMessage('CANDLESTREAM_PLAYER_EVENT', {
+        payload: {
+          type: eventType,
+          data: {
+            time: player.currentTime,
+            duration: Number.isFinite(player.duration) ? player.duration : 0,
+            progress: player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0,
+            season: sanitizePositiveInt(seasonInput.value, 1),
+            episode: sanitizePositiveInt(episodeInput.value, 1),
+            tmdbId: sanitizeId(idInput.value),
+          },
+        },
+      });
+    }
+
+    function isTvPlayback() {
+      return sanitizeType(typeSelect.value) === 'tv';
+    }
+
+    function isAnimePlayback() {
+      return sanitizeType(typeSelect.value) === 'anime';
+    }
+
+    function clearNextEpisodeTimers() {
+      window.clearTimeout(nextEpisodeTimer);
+      window.clearTimeout(nextEpisodeAutoTimer);
+      nextEpisodeTimer = 0;
+      nextEpisodeAutoTimer = 0;
+    }
+
+    function hideNextEpisodePrompt() {
+      nextEpisodeButton.hidden = true;
+      window.clearTimeout(nextEpisodeTimer);
+      nextEpisodeTimer = 0;
+    }
+
+    function showNextEpisodePrompt({ autoHide = true } = {}) {
+      if (!isTvPlayback() || nextEpisodeNavigating) return;
+      nextEpisodeButton.hidden = false;
+      if (autoHide) {
+        window.clearTimeout(nextEpisodeTimer);
+        nextEpisodeTimer = window.setTimeout(hideNextEpisodePrompt, NEXT_EPISODE_PROMPT_MS);
+      }
+    }
+
+    function isInsideCreditsWindow() {
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      if (!isTvPlayback() || duration <= 0) return false;
+      const creditsSegment = skipSegments.find((segment) => segment.type === 'credits');
+      if (creditsSegment) {
+        return player.currentTime >= Math.max(0, creditsSegment.start - 0.75);
+      }
+      const remaining = duration - (player.currentTime || 0);
+      return remaining <= NEXT_EPISODE_CREDITS_SECONDS;
+    }
+
+    function handleNextPromptActivity() {
+      if (isInsideCreditsWindow()) showNextEpisodePrompt();
+    }
+
+    function loadNextEpisode({ auto = false } = {}) {
+      if (!isTvPlayback() || nextEpisodeNavigating) return;
+      nextEpisodeNavigating = true;
+      clearNextEpisodeTimers();
+      hideNextEpisodePrompt();
+      pendingResumeAt = 0;
+      episodeInput.value = String(sanitizePositiveInt(episodeInput.value, 1) + 1);
+      syncMediaTitle();
+      postPlaybackEvent('sourcechange');
+      syncEmbedDocs();
+      loadCandle().finally(() => {
+        nextEpisodeNavigating = false;
+        nextEpisodePromptSeen = false;
+      });
+    }
+
+    function maybeShowNextEpisodePrompt() {
+      if (!isInsideCreditsWindow()) {
+        nextEpisodePromptSeen = false;
+        hideNextEpisodePrompt();
+        return;
+      }
+      if (autoNextEnabled) {
+        loadNextEpisode({ auto: true });
+        return;
+      }
+      if (!nextEpisodePromptSeen) {
+        nextEpisodePromptSeen = true;
+        showNextEpisodePrompt();
+      }
+    }
+
+    function getSegmentLabel(type) {
+      if (type === 'recap') return 'Skip Recap';
+      if (type === 'credits') return 'Skip Credits';
+      if (type === 'preview') return 'Skip Preview';
+      return 'Skip Intro';
+    }
+
+    function normalizeIntroDbSegment(type, item, index) {
+      const startMs = item?.start_ms ?? item?.startMs ?? null;
+      const endMs = item?.end_ms ?? item?.endMs ?? null;
+      const start = startMs == null ? 0 : Number(startMs) / 1000;
+      const end = endMs == null ? null : Number(endMs) / 1000;
+      if (!Number.isFinite(start) || (end != null && !Number.isFinite(end))) return null;
+      if (end != null && end <= start) return null;
+      return {
+        id: `${type}-${index}`,
+        type,
+        label: getSegmentLabel(type),
+        start,
+        end,
+      };
+    }
+
+    function normalizeIntroDbSegments(data) {
+      return ['recap', 'intro', 'preview', 'credits'].flatMap((type) => (
+        Array.isArray(data?.[type])
+          ? data[type].map((item, index) => normalizeIntroDbSegment(type, item, index)).filter(Boolean)
+          : []
+      )).sort((left, right) => left.start - right.start);
+    }
+
+    function clearSkipSegmentHideTimers() {
+      window.clearTimeout(skipSegmentHideTimer);
+      window.clearInterval(skipSegmentProgressTimer);
+      skipSegmentHideTimer = 0;
+      skipSegmentProgressTimer = 0;
+    }
+
+    function setSkipSegmentProgress(value) {
+      skipSegmentButton.style.setProperty('--skip-hide-progress', String(Math.max(0, Math.min(1, value))));
+    }
+
+    function hideSkipSegmentButton({ dismiss = false } = {}) {
+      if (dismiss && activeSkipSegment) dismissedSkipSegmentId = activeSkipSegment.id;
+      clearSkipSegmentHideTimers();
+      activeSkipSegment = null;
+      skipSegmentButton.hidden = true;
+      setSkipSegmentProgress(1);
+    }
+
+    function startSkipSegmentHideTimer() {
+      clearSkipSegmentHideTimers();
+      setSkipSegmentProgress(1);
+      const startedAt = performance.now();
+      skipSegmentProgressTimer = window.setInterval(() => {
+        const elapsed = performance.now() - startedAt;
+        setSkipSegmentProgress(1 - (elapsed / SKIP_SEGMENT_PROMPT_MS));
+      }, 80);
+      skipSegmentHideTimer = window.setTimeout(() => {
+        hideSkipSegmentButton({ dismiss: true });
+      }, SKIP_SEGMENT_PROMPT_MS);
+    }
+
+    function showSkipSegmentButton(segment, { force = false } = {}) {
+      if (!segment) return;
+      if (!force && dismissedSkipSegmentId === segment.id) return;
+      const wasShowingSame = !skipSegmentButton.hidden && activeSkipSegment?.id === segment.id;
+      activeSkipSegment = segment;
+      skipSegmentButton.innerHTML = `<span>${escapeHTML(segment.label)}</span>`;
+      skipSegmentButton.hidden = false;
+      if (!wasShowingSame || force) startSkipSegmentHideTimer();
+    }
+
+    function getSegmentTarget(segment) {
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      const fallbackEnd = duration > 0 ? Math.max(0, duration - 1) : (player.currentTime || 0) + 30;
+      const target = segment?.end == null ? fallbackEnd : segment.end;
+      return Math.min(target, fallbackEnd);
+    }
+
+    function shouldAutoSkipSegment(segment) {
+      return autoSkipEnabled && segment && segment.type !== 'credits' && !skippedSegmentIds.has(segment.id);
+    }
+
+    function skipToSegmentEnd(segment) {
+      if (!segment) return;
+      skippedSegmentIds.add(segment.id);
+      player.currentTime = getSegmentTarget(segment);
+      hideSkipSegmentButton();
+    }
+
+    function revealSkipSegmentFromActivity() {
+      const currentTime = player.currentTime || 0;
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      if (!skipSegments.length || duration <= 0) return;
+      const segment = skipSegments.find((item) => {
+        const target = getSegmentTarget(item);
+        return currentTime >= Math.max(0, item.start - 0.75) && currentTime < target - 0.75;
+      });
+      if (segment && !shouldAutoSkipSegment(segment)) showSkipSegmentButton(segment, { force: true });
+    }
+
+    function syncSkipSegmentButton() {
+      const currentTime = player.currentTime || 0;
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      if (!skipSegments.length || duration <= 0) {
+        hideSkipSegmentButton();
+        return;
+      }
+      const segment = skipSegments.find((item) => {
+        const target = getSegmentTarget(item);
+        return currentTime >= Math.max(0, item.start - 0.75) && currentTime < target - 0.75;
+      });
+      if (!segment) {
+        hideSkipSegmentButton();
+        return;
+      }
+      activeSkipSegment = segment;
+      if (shouldAutoSkipSegment(segment)) {
+        skipToSegmentEnd(segment);
+        return;
+      }
+      showSkipSegmentButton(segment);
+    }
+
+    async function loadIntroDbSegments() {
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      const mediaId = sanitizeId(idInput.value);
+      const token = ++introDbLoadToken;
+      skipSegments = [];
+      skippedSegmentIds = new Set();
+      dismissedSkipSegmentId = '';
+      hideSkipSegmentButton();
+      if (!mediaId || duration <= 0) return;
+
+      const url = new URL('https://api.theintrodb.org/v3/media');
+      url.searchParams.set('tmdb_id', mediaId);
+      url.searchParams.set('duration_ms', String(Math.round(duration * 1000)));
+      if (isTvPlayback()) {
+        url.searchParams.set('season', String(sanitizePositiveInt(seasonInput.value, 1)));
+        url.searchParams.set('episode', String(sanitizePositiveInt(episodeInput.value, 1)));
+      }
+
+      try {
+        const response = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+        if (!response.ok || token !== introDbLoadToken) return;
+        const data = await response.json();
+        if (token !== introDbLoadToken) return;
+        skipSegments = normalizeIntroDbSegments(data);
+        syncSkipSegmentButton();
+      } catch {}
+    }
+
+    function applyQueryPreset() {
+      const presetId = query.get('id') || pathPreset?.id;
+      const presetType = query.get('type') || pathPreset?.type;
+      const presetSeason = query.get('season') || pathPreset?.season;
+      const presetEpisode = query.get('episode') || pathPreset?.episode;
+      const presetLang = query.get('lang') || pathPreset?.lang;
+      if (presetId) idInput.value = sanitizeId(presetId);
+      if (presetType) typeSelect.value = sanitizeType(presetType);
+      if (presetSeason) seasonInput.value = String(sanitizePositiveInt(presetSeason, 1));
+      if (presetEpisode) episodeInput.value = String(sanitizePositiveInt(presetEpisode, 1));
+      if (presetLang) query.set('lang', presetLang === 'dub' ? 'dub' : 'sub');
+      currentServerIndex = sanitizeServerIndex(query.get('api') || query.get('server') || currentServerIndex);
+      pendingResumeAt = sanitizeNonNegativeTime(query.get('resumeAt'));
+      syncMediaTitle();
+      renderServerOptions();
+    }
+
+    function setStatus(label, tone) {
+      statusPill.textContent = label;
+      statusPill.className = 'status' + (tone ? ' ' + tone : '');
+      statusText.textContent = label;
+    }
+
+    function setLoaderVisible(visible) {
+      loader.hidden = !visible;
+    }
+
+    function setDebugVisibility() {
+      document.querySelectorAll('[data-debug-row]').forEach((row) => {
+        row.hidden = !isDebugMode;
+      });
+      if (streamList) streamList.hidden = !isDebugMode;
+      if (debugOutput) debugOutput.hidden = !isDebugMode;
+    }
+
+    function buildEndpoint(serverIndex = currentServerIndex) {
+      const serverList = getCandleServerList();
+      const server = serverList[sanitizeServerIndex(serverIndex)] || serverList[0];
+      const params = new URLSearchParams({
+        id: sanitizeId(idInput.value),
+        type: sanitizeType(typeSelect.value),
+        season: String(sanitizePositiveInt(seasonInput.value, 1)),
+        episode: String(sanitizePositiveInt(episodeInput.value, 1)),
+        api: server.api,
+      });
+      if (isAnimePlayback()) params.set('lang', query.get('lang') === 'dub' ? 'dub' : 'sub');
+      ['title', 'name', 'year', 'imdbId', 'imdb'].forEach((key) => {
+        const value = String(query.get(key) || '').trim();
+        if (value) params.set(key, value);
+      });
+      if (isAnimePlayback()) return `/api/anime-candle-source?${params.toString()}`;
+      return `/api/candle-source?${params.toString()}`;
+    }
+
+    function buildEmbedUrl() {
+      const mediaType = sanitizeType(typeSelect.value);
+      const mediaId = sanitizeId(idInput.value);
+      const params = new URLSearchParams();
+      const serverList = getCandleServerList();
+      const server = serverList[sanitizeServerIndex(currentServerIndex)] || serverList[0];
+      if (server?.api && server.api !== serverList[0].api) params.set('api', server.api);
+      if (mediaType === 'anime') {
+        const path = `/candle/anime/${encodeURIComponent(mediaId)}/${encodeURIComponent(String(sanitizePositiveInt(episodeInput.value, 1)))}/${encodeURIComponent(query.get('lang') === 'dub' ? 'dub' : 'sub')}`;
+        const queryString = params.toString();
+        return queryString ? `${path}?${queryString}` : path;
+      }
+      if (mediaType === 'tv') {
+        const path = `/candle/tv/${encodeURIComponent(mediaId)}/${encodeURIComponent(String(sanitizePositiveInt(seasonInput.value, 1)))}/${encodeURIComponent(String(sanitizePositiveInt(episodeInput.value, 1)))}`;
+        const queryString = params.toString();
+        return queryString ? `${path}?${queryString}` : path;
+      }
+      const path = `/candle/${encodeURIComponent(mediaId)}`;
+      const queryString = params.toString();
+      return queryString ? `${path}?${queryString}` : path;
+    }
+
+    function syncEmbedDocs() {
+      const embedUrl = buildEmbedUrl();
+      if (embedUrlOutput) {
+        embedUrlOutput.textContent = embedUrl;
+      }
+      if (iframeSnippetOutput) {
+        iframeSnippetOutput.textContent = `<iframe
+  src="${embedUrl.replace(/&/g, '&amp;')}"
+  allow="autoplay; fullscreen; picture-in-picture"
+  allowfullscreen
+  referrerpolicy="strict-origin-when-cross-origin"
+></iframe>`;
+      }
+    }
+
+    function escapeHTML(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[char] || char));
+    }
+
+    function encodeProxyToken(payload) {
+      const bytes = new TextEncoder().encode(JSON.stringify(payload));
+      let binary = '';
+      bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    function buildProxyUrl(payload) {
+      const url = new URL('/api/candle-proxy', window.location.origin);
+      url.searchParams.set('token', encodeProxyToken(payload));
+      return url.toString();
+    }
+
+    function concatBytes(...chunks) {
+      const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+      const out = new Uint8Array(length);
+      let offset = 0;
+      chunks.forEach((chunk) => {
+        out.set(chunk, offset);
+        offset += chunk.length;
+      });
+      return out;
+    }
+
+    function md5Bytes(input) {
+      const bytes = input instanceof Uint8Array ? input : new Uint8Array(input || []);
+      const shifts = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+      const table = Array.from({ length: 64 }, (_, index) => Math.floor(Math.abs(Math.sin(index + 1)) * 4294967296) >>> 0);
+      const bitLength = bytes.length * 8;
+      const paddedLength = (((bytes.length + 8) >>> 6) + 1) << 6;
+      const padded = new Uint8Array(paddedLength);
+      padded.set(bytes);
+      padded[bytes.length] = 0x80;
+      const view = new DataView(padded.buffer);
+      view.setUint32(paddedLength - 8, bitLength >>> 0, true);
+      view.setUint32(paddedLength - 4, Math.floor(bitLength / 4294967296), true);
+      let a0 = 0x67452301;
+      let b0 = 0xefcdab89;
+      let c0 = 0x98badcfe;
+      let d0 = 0x10325476;
+      const rotl = (value, shift) => ((value << shift) | (value >>> (32 - shift))) >>> 0;
+
+      for (let offset = 0; offset < paddedLength; offset += 64) {
+        let a = a0;
+        let b = b0;
+        let c = c0;
+        let d = d0;
+        for (let i = 0; i < 64; i += 1) {
+          let f;
+          let g;
+          if (i < 16) {
+            f = (b & c) | (~b & d);
+            g = i;
+          } else if (i < 32) {
+            f = (d & b) | (~d & c);
+            g = (5 * i + 1) % 16;
+          } else if (i < 48) {
+            f = b ^ c ^ d;
+            g = (3 * i + 5) % 16;
+          } else {
+            f = c ^ (b | ~d);
+            g = (7 * i) % 16;
+          }
+          const shift = shifts[(Math.floor(i / 16) * 4) + (i % 4)];
+          const nextD = c;
+          const nextC = b;
+          const sum = (a + f + table[i] + view.getUint32(offset + g * 4, true)) >>> 0;
+          b = (b + rotl(sum, shift)) >>> 0;
+          a = d;
+          d = nextD;
+          c = nextC;
+        }
+        a0 = (a0 + a) >>> 0;
+        b0 = (b0 + b) >>> 0;
+        c0 = (c0 + c) >>> 0;
+        d0 = (d0 + d) >>> 0;
+      }
+
+      const digest = new Uint8Array(16);
+      const digestView = new DataView(digest.buffer);
+      [a0, b0, c0, d0].forEach((word, index) => digestView.setUint32(index * 4, word, true));
+      return digest;
+    }
+
+    function deriveOpenSslKey(passphrase, salt) {
+      const password = new TextEncoder().encode(passphrase);
+      const blocks = [];
+      let previous = new Uint8Array(0);
+      while (concatBytes(...blocks).length < 48) {
+        previous = md5Bytes(concatBytes(previous, password, salt || new Uint8Array(0)));
+        blocks.push(previous);
+      }
+      const material = concatBytes(...blocks);
+      return { key: material.slice(0, 32), iv: material.slice(32, 48) };
+    }
+
+    function base64ToBytes(value) {
+      const binary = atob(String(value || '').replace(/\s+/g, ''));
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      return bytes;
+    }
+
+    async function decryptOpenSslAes(cipherText, passphrase) {
+      const allBytes = base64ToBytes(cipherText);
+      const salted = allBytes.length > 16 && String.fromCharCode(...allBytes.slice(0, 8)) === 'Salted__';
+      const salt = salted ? allBytes.slice(8, 16) : new Uint8Array(0);
+      const encrypted = salted ? allBytes.slice(16) : allBytes;
+      const { key, iv } = deriveOpenSslKey(passphrase, salt);
+      const cryptoKey = await crypto.subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['decrypt']);
+      const decrypted = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, cryptoKey, encrypted));
+      return new TextDecoder().decode(decrypted).replace(/[\u0001-\u0010]+$/g, '');
+    }
+
+    let videasyWasmPromise = null;
+    let videasyServePromise = null;
+    let cinebyDecrypterFramePromise = null;
+    let cinebyDecrypterRequestId = 0;
+
+    async function getVideasyWasm(moduleUrl) {
+      if (videasyWasmPromise) return videasyWasmPromise;
+      videasyWasmPromise = (async () => {
+        const response = await fetch(moduleUrl || '/api/candle-videasy-module', {
+          headers: { 'x-candlestream-client': 'web' }
+        });
+        if (!response.ok) throw new Error(`Videasy module failed with ${response.status}`);
+        const imports = {
+          env: {
+            seed: () => Date.now() * Math.random(),
+            abort: () => { throw new Error('Videasy module aborted'); },
+          },
+        };
+        const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), imports);
+        const exports = instance.exports;
+        const writeString = (value) => {
+          const text = String(value || '');
+          const length = text.length;
+          const ptr = exports.__new(length << 1, 2);
+          const chars = new Uint16Array(exports.memory.buffer, ptr, length);
+          for (let index = 0; index < length; index += 1) {
+            chars[index] = text.charCodeAt(index);
+          }
+          return ptr;
+        };
+        const readString = (ptr) => {
+          if (!ptr) return '';
+          const byteLength = new Uint32Array(exports.memory.buffer)[(ptr - 4) >>> 2] >>> 0;
+          const chars = new Uint16Array(exports.memory.buffer, ptr, byteLength >>> 1);
+          let out = '';
+          for (let index = 0; index < chars.length; index += 0x8000) {
+            out += String.fromCharCode(...chars.subarray(index, index + 0x8000));
+          }
+          return out;
+        };
+        return { exports, readString, writeString };
+      })();
+      return videasyWasmPromise;
+    }
+
+    async function getVideasyHash(wasm) {
+      if (window.hash) return window.hash;
+      if (!videasyServePromise) {
+        videasyServePromise = (async () => {
+          Function(wasm.readString(wasm.exports.serve()))();
+          const startedAt = Date.now();
+          while (!window.hash) {
+            if (Date.now() - startedAt > 10000) throw new Error('Videasy hash timed out');
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          return window.hash;
+        })();
+      }
+      return videasyServePromise;
+    }
+
+    function getCinebyDecrypterFrame() {
+      if (cinebyDecrypterFramePromise) return cinebyDecrypterFramePromise;
+      cinebyDecrypterFramePromise = new Promise((resolve, reject) => {
+        const iframe = document.createElement('iframe');
+        iframe.src = '/api/candle-cineby-decrypter';
+        iframe.hidden = true;
+        iframe.setAttribute('aria-hidden', 'true');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '1px';
+        iframe.style.height = '1px';
+        iframe.style.border = '0';
+        iframe.style.opacity = '0';
+        const timeout = window.setTimeout(() => reject(new Error('Cineby decrypter timed out')), 20000);
+        iframe.addEventListener('load', () => {
+          window.clearTimeout(timeout);
+          resolve(iframe);
+        }, { once: true });
+        iframe.addEventListener('error', () => {
+          window.clearTimeout(timeout);
+          reject(new Error('Cineby decrypter failed to load'));
+        }, { once: true });
+        document.body.appendChild(iframe);
+      });
+      return cinebyDecrypterFramePromise;
+    }
+
+    function loadVideasyTurnstile() {
+      if (window.turnstile) return Promise.resolve(window.turnstile);
+      if (videasyTurnstilePromise) return videasyTurnstilePromise;
+      videasyTurnstilePromise = new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-candle-videasy-turnstile]');
+        if (existing) {
+          existing.addEventListener('load', () => resolve(window.turnstile), { once: true });
+          existing.addEventListener('error', () => reject(new Error('Videasy challenge failed to load')), { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.dataset.candleVideasyTurnstile = '1';
+        script.addEventListener('load', () => resolve(window.turnstile), { once: true });
+        script.addEventListener('error', () => reject(new Error('Videasy challenge failed to load')), { once: true });
+        document.head.appendChild(script);
+      });
+      return videasyTurnstilePromise;
+    }
+
+    async function getVideasyTurnstileToken(timeoutMs = 12000) {
+      const turnstile = await loadVideasyTurnstile();
+      if (!turnstile?.render || !turnstile?.execute) {
+        throw new Error('Videasy challenge is unavailable');
+      }
+      if (videasyTurnstileWidgetId == null) {
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '-9999px';
+        container.style.width = '0';
+        container.style.height = '0';
+        container.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(container);
+        videasyTurnstileWidgetId = turnstile.render(container, {
+          sitekey: '0x4AAAAAADerxS_C3ByUbYxH',
+          size: 'invisible',
+          callback: (token) => {
+            const pending = videasyTurnstilePending;
+            videasyTurnstilePending = null;
+            pending?.resolve(token);
+          },
+          'error-callback': () => {
+            const pending = videasyTurnstilePending;
+            videasyTurnstilePending = null;
+            pending?.reject(new Error('Videasy challenge was rejected'));
+          },
+          'timeout-callback': () => {
+            const pending = videasyTurnstilePending;
+            videasyTurnstilePending = null;
+            pending?.reject(new Error('Videasy challenge timed out'));
+          },
+        });
+      }
+
+      return new Promise((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          if (!videasyTurnstilePending) return;
+          videasyTurnstilePending = null;
+          reject(new Error('Videasy challenge timed out'));
+        }, timeoutMs);
+        videasyTurnstilePending = {
+          resolve: (token) => {
+            window.clearTimeout(timeout);
+            resolve(token);
+          },
+          reject: (error) => {
+            window.clearTimeout(timeout);
+            reject(error);
+          },
+        };
+        try {
+          turnstile.reset(videasyTurnstileWidgetId);
+          turnstile.execute(videasyTurnstileWidgetId, { action: 'sources' });
+        } catch (error) {
+          window.clearTimeout(timeout);
+          videasyTurnstilePending = null;
+          reject(error);
+        }
+      });
+    }
+
+    async function getVideasySessionToken({ force = false } = {}) {
+      if (!force && videasySession?.token && videasySession.expiresAt > Date.now()) {
+        return videasySession.token;
+      }
+      if (!force && videasySessionPromise) return videasySessionPromise;
+      videasySessionPromise = (async () => {
+        const token = await getVideasyTurnstileToken();
+        const response = await fetch('https://api.videasy.net/auth/session', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-app-id': 'videasy',
+          },
+          body: JSON.stringify({ token }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.token) {
+          throw new Error(payload?.error ? `Videasy session ${payload.error}` : `Videasy session failed with ${response.status}`);
+        }
+        videasySession = {
+          token: String(payload.token),
+          expiresAt: Date.now() + (Number(payload.expiresIn || 0) * 1000) - 15000,
+        };
+        return videasySession.token;
+      })().finally(() => {
+        videasySessionPromise = null;
+      });
+      return videasySessionPromise;
+    }
+
+    async function fetchVideasyApi(url, options = {}) {
+      let sessionToken = '';
+      try {
+        sessionToken = await getVideasySessionToken();
+      } catch (error) {
+        throw new Error(`${error?.message || 'Videasy session failed'}; Turnstile may not allow this domain`);
+      }
+      const request = async (token) => fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          'x-app-id': 'videasy',
+          ...(token ? { 'x-session-token': token } : {}),
+        },
+      });
+      let response = await request(sessionToken);
+      if (response.status === 401 || response.status === 429) {
+        videasySession = null;
+        sessionToken = await getVideasySessionToken({ force: true });
+        response = await request(sessionToken);
+      }
+      return response;
+    }
+
+    async function sha256Hex(value) {
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value || '')));
+      return Array.from(new Uint8Array(digest))
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    async function decryptVideasyGuardedPayload(value) {
+      const text = String(value || '').trim();
+      if (!text.startsWith('v2:')) return text;
+      const sessionToken = videasySession?.token || '';
+      if (!sessionToken) throw new Error('Videasy guarded payload is missing a session');
+      const passphrase = await sha256Hex(`g:${sessionToken}`);
+      const decrypted = await decryptOpenSslAes(text.slice(3), passphrase);
+      if (!decrypted) throw new Error('Videasy guarded payload could not be decoded');
+      return decrypted;
+    }
+
+    function computeVideasyAesKey(tmdbId) {
+      const source = `${sanitizeId(tmdbId)}d486ae1ce6fdbe63b60bd1704541fcf0`;
+      const xorKey = '8c465aa8af6cbfd4c1f91bf0c8d678ba'
+        .split('')
+        .map((char) => char.charCodeAt(0));
+      const hex = source
+        .split('')
+        .map((char) => {
+          const value = xorKey.reduce((next, keyCode) => next ^ keyCode, char.charCodeAt(0));
+          return value.toString(16).padStart(2, '0').slice(-2);
+        })
+        .join('');
+      return btoa(hex);
+    }
+
+    async function getVideasyBrowserMetadata() {
+      const queryTitle = String(query.get('title') || query.get('name') || '').trim();
+      const queryYear = String(query.get('year') || '').trim();
+      const queryImdb = String(query.get('imdbId') || query.get('imdb') || '').trim();
+      const queryTotalSeasons = String(query.get('totalSeasons') || query.get('total_seasons') || '').trim();
+      if (queryTitle) {
+        return { title: queryTitle, year: queryYear, imdbId: queryImdb, totalSeasons: queryTotalSeasons };
+      }
+
+      const mediaType = sanitizeType(typeSelect.value);
+      const endpoint = mediaType === 'tv' ? `/tv/${sanitizeId(idInput.value)}` : `/movie/${sanitizeId(idInput.value)}`;
+      try {
+        const url = new URL('/api/tmdb', window.location.origin);
+        url.searchParams.set('endpoint', endpoint);
+        url.searchParams.set('append_to_response', 'external_ids');
+        const response = await fetch(url.toString(), {
+          headers: { accept: 'application/json', 'x-candlestream-client': 'web' },
+        });
+        const payload = await response.json().catch(() => ({}));
+        const details = payload?.data || payload;
+        const date = String(details?.release_date || details?.first_air_date || '');
+        return {
+          title: String(mediaType === 'tv' ? details?.name || details?.original_name || '' : details?.title || details?.original_title || '').trim(),
+          year: date.match(/^(\d{4})/)?.[1] || queryYear,
+          imdbId: String(details?.imdb_id || details?.external_ids?.imdb_id || queryImdb || '').trim(),
+          totalSeasons: mediaType === 'tv' ? String(details?.number_of_seasons || queryTotalSeasons || '') : '',
+        };
+      } catch {
+        return { title: queryTitle, year: queryYear, imdbId: queryImdb, totalSeasons: queryTotalSeasons };
+      }
+    }
+
+    async function buildVideasySourceUrl(server) {
+      const metadata = await getVideasyBrowserMetadata();
+      const params = new URLSearchParams({
+        title: encodeURIComponent(metadata.title),
+        mediaType: sanitizeType(typeSelect.value) === 'tv' ? 'tv' : 'movie',
+        year: metadata.year,
+        totalSeasons: metadata.totalSeasons,
+        episodeId: String(sanitizePositiveInt(episodeInput.value, 1)),
+        seasonId: String(sanitizePositiveInt(seasonInput.value, 1)),
+        tmdbId: sanitizeId(idInput.value),
+        imdbId: metadata.imdbId,
+      });
+      if (server.provider === 'meine') params.set('language', 'german');
+      [...params.entries()].forEach(([key, value]) => {
+        if (value === '') params.delete(key);
+      });
+      return `https://api.videasy.net/${encodeURIComponent(server.provider)}/sources-with-title?${params.toString()}`;
+    }
+
+    async function fetchVideasyBrowserPayload(server) {
+      setStatus(`Verifying ${server.name}`, '');
+      const sourceUrl = await buildVideasySourceUrl(server);
+      const response = await fetchVideasyApi(sourceUrl, { headers: { accept: '*/*' } });
+      const cipherText = await response.text();
+      if (!response.ok) {
+        let message = '';
+        try {
+          message = JSON.parse(cipherText)?.error || '';
+        } catch {}
+        throw new Error(message ? `Videasy ${message}` : `Videasy request failed with ${response.status}`);
+      }
+      const cleanCipher = await decryptVideasyGuardedPayload(cipherText);
+      if (!/^[a-f0-9]{32,}$/i.test(cleanCipher)) {
+        throw new Error('Unexpected Videasy encrypted payload');
+      }
+      return {
+        ok: true,
+        encrypted: true,
+        request: {
+          type: sanitizeType(typeSelect.value),
+          id: sanitizeId(idInput.value),
+          season: sanitizePositiveInt(seasonInput.value, 1),
+          episode: sanitizePositiveInt(episodeInput.value, 1),
+          api: server.api,
+        },
+        server,
+        servers: getCandleServerList().map((item, index) => ({ ...item, index })),
+        upstream: {
+          url: sourceUrl,
+          status: response.status,
+          encrypted: true,
+          provider: server.provider,
+          proxy: true,
+          needConfig: false,
+          encoding: 'cineby-wasm-aes',
+        },
+        videasy: {
+          cipherText: cleanCipher,
+          tmdbId: sanitizeId(idInput.value),
+          aesKey: computeVideasyAesKey(idInput.value),
+          moduleUrl: '/api/candle-videasy-module',
+          referer: 'https://player.videasy.net/',
+          origin: 'https://player.videasy.net',
+        },
+        decoded: null,
+        sources: [],
+        tracks: [],
+      };
+    }
+
+    async function decryptWithCinebyFrame(payload) {
+      const iframe = await getCinebyDecrypterFrame();
+      const requestId = `cineby-${Date.now()}-${cinebyDecrypterRequestId += 1}`;
+      return new Promise((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+          reject(new Error('Cineby decrypt timed out'));
+        }, 25000);
+
+        function handleMessage(event) {
+          if (event.origin !== window.location.origin) return;
+          const message = event.data || {};
+          if (message.type !== 'cineby-decrypt-result' || message.requestId !== requestId) return;
+          window.clearTimeout(timeout);
+          window.removeEventListener('message', handleMessage);
+          if (!message.ok) {
+            reject(new Error(message.error || 'Cineby decrypt failed'));
+            return;
+          }
+          resolve(String(message.text || ''));
+        }
+
+        window.addEventListener('message', handleMessage);
+        iframe.contentWindow.postMessage({
+          type: 'cineby-decrypt',
+          requestId,
+          cipherText: payload.videasy.cipherText,
+          aesKey: payload.videasy.aesKey,
+          tmdbId: payload.videasy.tmdbId,
+        }, window.location.origin);
+      });
+    }
+
+    async function decryptWithVideasyWasm(payload) {
+      const wasm = await getVideasyWasm(payload.videasy?.moduleUrl);
+      const hash = await getVideasyHash(wasm);
+      const hashPtr = wasm.writeString(hash);
+      if (!wasm.exports.verify(hashPtr)) {
+        throw new Error('Videasy hash verification failed');
+      }
+      const cipherPtr = wasm.writeString(payload.videasy.cipherText);
+      const encrypted = wasm.readString(wasm.exports.decrypt(cipherPtr, Number(payload.videasy.tmdbId)));
+      return decryptOpenSslAes(encrypted, payload.videasy.aesKey || '');
+    }
+
+    function normalizeVideasySources(payload, decoded) {
+      const headers = {
+        Origin: payload.videasy?.origin || 'https://player.videasy.net',
+        Referer: payload.videasy?.referer || 'https://player.videasy.net/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.160 Safari/537.36',
+        'Sec-CH-UA': '"Chromium";v="121", "Not A(Brand";v="99"',
+        'Sec-CH-UA-Mobile': '?0',
+        'Sec-CH-UA-Platform': '"Windows"',
+      };
+      const rawSources = Array.isArray(decoded?.sources)
+        ? decoded.sources
+        : Array.isArray(decoded?.url)
+          ? decoded.url
+          : [decoded?.source || decoded?.url || decoded?.file].filter(Boolean).map((url) => ({ url }));
+      const filteredSources = payload.server?.provider === 'hdmovie' && payload.server?.label
+        ? rawSources.filter((entry) => String(entry?.quality || entry?.label || entry?.language || '').toLowerCase() === String(payload.server.label).toLowerCase())
+        : rawSources;
+      const sourceEntries = filteredSources.length ? filteredSources : rawSources;
+      const sources = sourceEntries.map((entry, index) => {
+        const sourceUrl = String(entry?.url || entry?.file || entry?.link || '').trim();
+        if (!sourceUrl) return null;
+        const quality = String(entry?.quality || entry?.label || entry?.resolution || 'Auto').trim();
+        const type = String(entry?.type || (/\.m3u8(?:[?#]|$)/i.test(sourceUrl) ? 'm3u8' : 'mp4')).trim().toLowerCase();
+        return {
+          id: `videasy-source-${index + 1}`,
+          label: quality,
+          resolution: quality,
+          lang: String(entry?.lang || entry?.language || payload.server?.label || 'Unknown').trim(),
+          type,
+          directUrl: sourceUrl,
+          proxiedUrl: buildProxyUrl({ kind: 'media', url: sourceUrl, sourceType: type, headers }),
+        };
+      }).filter(Boolean).sort((left, right) => {
+        const leftScore = Number.parseInt(left.resolution, 10);
+        const rightScore = Number.parseInt(right.resolution, 10);
+        const scoreDiff = (Number.isFinite(rightScore) ? rightScore : 0) - (Number.isFinite(leftScore) ? leftScore : 0);
+        if (scoreDiff) return scoreDiff;
+        const leftHls = ['hls', 'm3u8', 'cloudflare', 'hlf'].includes(String(left.type || '').toLowerCase()) ? 1 : 0;
+        const rightHls = ['hls', 'm3u8', 'cloudflare', 'hlf'].includes(String(right.type || '').toLowerCase()) ? 1 : 0;
+        return rightHls - leftHls;
+      });
+
+      const rawTracks = Array.isArray(decoded?.tracks)
+        ? decoded.tracks
+        : Array.isArray(decoded?.subtitles)
+          ? decoded.subtitles
+          : [];
+      const tracks = rawTracks.map((entry, index) => {
+        const trackUrl = String(entry?.file || entry?.url || '').trim();
+        if (!trackUrl) return null;
+        const label = String(entry?.label || entry?.lang || entry?.language || `Track ${index + 1}`).trim();
+        return {
+          id: `videasy-track-${index + 1}`,
+          label,
+          kind: String(entry?.kind || 'captions').trim().toLowerCase() || 'captions',
+          srclang: String(entry?.srclang || entry?.lang || '').trim().toLowerCase() || 'en',
+          default: /english|^en$/i.test(label),
+          proxiedUrl: buildProxyUrl({ kind: 'text', url: trackUrl, headers }),
+        };
+      }).filter(Boolean);
+
+      return { sources, tracks };
+    }
+
+    async function decryptVideasyPayload(payload) {
+      if (payload.upstream?.encoding !== 'cineby-wasm-aes' || !payload.videasy?.cipherText) return payload;
+      setStatus(`Decoding ${payload.server?.name || 'Cineby'}`, '');
+      let plainText;
+      try {
+        plainText = await decryptWithVideasyWasm(payload);
+      } catch (error) {
+        console.warn('Videasy WASM decode failed, trying fallback frame', error);
+        plainText = await decryptWithCinebyFrame(payload);
+      }
+      const decoded = JSON.parse(plainText);
+      const normalized = normalizeVideasySources(payload, decoded);
+      return {
+        ...payload,
+        decoded,
+        sources: normalized.sources,
+        tracks: normalized.tracks,
+      };
+    }
+
+    function renderStreamList(sources) {
+      streamList.innerHTML = '';
+      sources.forEach((source) => {
+        const card = document.createElement('div');
+        card.className = 'stream-card';
+        card.innerHTML = `<strong>${escapeHTML(source.label)} • ${escapeHTML(source.type)}</strong><code></code>`;
+        card.querySelector('code').textContent = source.proxiedUrl;
+        streamList.appendChild(card);
+      });
+    }
+
+    function getPreferredSubtitleIndex(tracks) {
+      const englishIndex = tracks.findIndex((track) => /english|(^|[^a-z])en([^a-z]|$)/i.test(`${track.label || ''} ${track.srclang || ''}`));
+      if (englishIndex >= 0) return englishIndex;
+      const defaultIndex = tracks.findIndex((track) => Boolean(track.default));
+      return defaultIndex;
+    }
+
+    function getQualityLabel(source, index) {
+      const rawLabel = String(source?.label || '').trim();
+      const resolution = String(source?.resolution || rawLabel).match(/\d{3,4}/)?.[0];
+      if (resolution) return `${resolution}p`;
+      const lang = String(source?.lang || '').trim();
+      const displayLabel = rawLabel && !/^(auto|hls|m3u8|hlf)$/i.test(rawLabel) ? rawLabel : lang;
+      if (displayLabel && !/^(unknown|auto|hls|m3u8|hlf)$/i.test(displayLabel)) return displayLabel;
+      if (isHlsSource(source)) return 'Auto';
+      const type = String(source?.type || '').trim().toUpperCase();
+      return type || `Source ${index + 1}`;
+    }
+
+    function getHlsLevelLabel(level, index) {
+      const height = Number.parseInt(level?.height || '', 10);
+      if (Number.isFinite(height) && height > 0) return `${height}p`;
+      const width = Number.parseInt(level?.width || '', 10);
+      if (Number.isFinite(width) && width > 0) return `${width}w`;
+      const bitrate = Number.parseInt(level?.bitrate || level?.attrs?.BANDWIDTH || '', 10);
+      if (Number.isFinite(bitrate) && bitrate > 0) return `${Math.round(bitrate / 1000)} kbps`;
+      return `Level ${index + 1}`;
+    }
+
+    function applyPreferredHlsSourceSelection(source) {
+      if (!activeHls || !source) return;
+      const preferredHeight = Number.parseInt(source.hlsLevelHeight || source.resolution || '', 10);
+      if (Number.isFinite(preferredHeight) && preferredHeight > 0 && Array.isArray(activeHls.levels)) {
+        const levelIndex = activeHls.levels.findIndex((level) => Number(level?.height || 0) === preferredHeight);
+        if (levelIndex >= 0) {
+          currentHlsLevel = levelIndex;
+          activeHls.currentLevel = levelIndex;
+          activeHls.loadLevel = levelIndex;
+        }
+      }
+
+      const preferredAudioName = String(source.hlsAudioName || source.language || source.lang || '').trim().toLowerCase();
+      const preferredAudioLanguage = String(source.hlsAudioLanguage || source.lang || '').trim().toLowerCase();
+      const audioTracks = Array.isArray(activeHls.audioTracks) ? activeHls.audioTracks : [];
+      const audioIndex = audioTracks.findIndex((track) => {
+        const name = String(track?.name || '').trim().toLowerCase();
+        const lang = String(track?.lang || track?.language || '').trim().toLowerCase();
+        return (preferredAudioName && name === preferredAudioName)
+          || (preferredAudioLanguage && lang === preferredAudioLanguage);
+      });
+      if (audioIndex >= 0) activeHls.audioTrack = audioIndex;
+    }
+
+    function getSelectableHlsLevels() {
+      if (!activeHls || !Array.isArray(activeHls.levels)) return [];
+      return activeHls.levels
+        .map((level, index) => ({ level, index }))
+        .filter(({ level }) => level && (level.height || level.width || level.bitrate || level.attrs?.BANDWIDTH));
+    }
+
+    function getSubtitleLabel(track, index) {
+      const label = String(track?.label || '').trim();
+      if (!label) return `Sub ${index + 1}`;
+      if (/^english$/i.test(label)) return 'EN';
+      return label;
+    }
+
+    function buildSubtitleFramePreview({
+      text = 'Hello',
+      label = '',
+      color = 'var(--subtitle-color, #fff)',
+      bg = 'var(--subtitle-bg, rgba(0, 0, 0, 0.46))',
+      shadow = 'var(--subtitle-shadow, 0 1px 2px rgba(0, 0, 0, 0.85))',
+      weight = 'var(--subtitle-weight, 600)',
+      size = '0.54rem',
+      family = 'var(--subtitle-font-family, "Space Grotesk", sans-serif)',
+      positionOffset = '3px',
+    } = {}) {
+      return `
+        <span class="option-chip-preview-frame">
+          <span class="option-chip-preview-caption" style="color:${color};background:${bg};text-shadow:${shadow};font-weight:${weight};font-size:${size};font-family:${family};--preview-position-offset:${positionOffset};">${text}</span>
+        </span>
+        ${label ? `<span class="option-chip-preview-label">${escapeHTML(label)}</span>` : ''}
+      `;
+    }
+
+    function setPreviewButtonState(button, { active = false, title = '', html = '', wide = false } = {}) {
+      button.type = 'button';
+      button.className = `option-chip option-chip-preview${wide ? ' option-chip-preview-wide' : ''}${active ? ' is-active' : ''}`;
+      button.title = title;
+      button.setAttribute('aria-label', title);
+      button.innerHTML = `<span class="option-chip-preview-inner">${html}</span>`;
+    }
+
+    function getPeachifyQualityLabel(source, index) {
+      const rawQuality = String(source?.quality || source?.resolution || '').trim();
+      const quality = rawQuality && rawQuality !== 'auto' ? `${rawQuality.replace(/p$/i, '')}p` : getQualityLabel(source, index);
+      const provider = String(source?.provider || '').trim();
+      return provider ? `${provider} ${quality}` : quality;
+    }
+
+    function renderQualityOptions(sources) {
+      qualityOptions.innerHTML = '';
+      const useProviderLanguageOptions = supportsProviderLanguageOptions();
+      const hasLanguageOptions = useProviderLanguageOptions && getPeachifyProviderLanguageOptions(sources).length > 1;
+      const hlsLevels = getSelectableHlsLevels();
+      const activeLanguageKey = hasLanguageOptions ? getActivePeachifyLanguageKey() : '';
+      const activeProviderKey = hasLanguageOptions ? getActivePeachifyProviderKey() : '';
+      const sourceEntries = (sources || [])
+        .map((source, index) => ({ source, index }))
+        .filter(({ source }) => {
+          if (!activeLanguageKey) return true;
+          const providerKey = String(source?.providerKey || source?.provider || getCurrentServer()?.api || '').trim().toLowerCase();
+          return getPeachifySourceLanguageKey(source) === activeLanguageKey
+            && (!activeProviderKey || providerKey === activeProviderKey);
+        });
+      const visibleEntries = sourceEntries.length ? sourceEntries : (sources || []).map((source, index) => ({ source, index }));
+      const hasMultipleSources = visibleEntries.length > 1;
+      const shouldUseQualityRows = hasLanguageOptions || hasMultipleQualityChoices(visibleEntries);
+      qualityOptions.classList.toggle('is-peachify-quality', hasLanguageOptions);
+      qualityOptions.classList.toggle('is-quality-list', shouldUseQualityRows && !hasLanguageOptions);
+      if (hasLanguageOptions) {
+        if (
+          visibleEntries.length === 1
+          && visibleEntries[0].index === currentSourceIndex
+          && isHlsSource(currentPayload?.sources?.[currentSourceIndex])
+          && hlsLevels.length > 1
+        ) {
+          const autoButton = document.createElement('button');
+          autoButton.type = 'button';
+          autoButton.className = 'option-chip' + (currentHlsLevel === -1 ? ' is-active' : '');
+          autoButton.textContent = 'Auto';
+          autoButton.addEventListener('click', () => {
+            currentHlsLevel = -1;
+            activeHls.currentLevel = -1;
+            activeHls.loadLevel = -1;
+            renderQualityOptions(currentPayload?.sources || []);
+            showChrome();
+          });
+          qualityOptions.appendChild(autoButton);
+
+          hlsLevels.forEach(({ level, index }) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'option-chip' + (index === currentHlsLevel ? ' is-active' : '');
+            button.textContent = getHlsLevelLabel(level, index);
+            button.addEventListener('click', () => {
+              currentHlsLevel = index;
+              activeHls.currentLevel = index;
+              activeHls.loadLevel = index;
+              renderQualityOptions(currentPayload?.sources || []);
+              showChrome();
+            });
+            qualityOptions.appendChild(button);
+          });
+          return;
+        }
+        getPeachifyQualityGroups(visibleEntries).forEach((group) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'option-chip' + (group.index === currentSourceIndex ? ' is-active' : '');
+          button.textContent = group.label;
+          button.addEventListener('click', () => {
+            playSource(group.index, { keepTime: true });
+            updateSummary();
+            syncPeachifyLanguageButton();
+            renderQualityOptions(currentPayload?.sources || []);
+          });
+          qualityOptions.appendChild(button);
+        });
+        return;
+      }
+      if (shouldUseQualityRows) {
+        getPeachifyQualityGroups(visibleEntries).forEach((group) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'option-chip' + (group.index === currentSourceIndex ? ' is-active' : '');
+          button.textContent = group.label;
+          button.addEventListener('click', () => {
+            playSource(group.index, { keepTime: true });
+            updateSummary();
+            renderQualityOptions(currentPayload?.sources || []);
+          });
+          qualityOptions.appendChild(button);
+        });
+        return;
+      }
+      if (!hasMultipleSources && isHlsSource(currentPayload?.sources?.[currentSourceIndex]) && hlsLevels.length > 1) {
+        const autoButton = document.createElement('button');
+        autoButton.type = 'button';
+        autoButton.className = 'option-chip' + (currentHlsLevel === -1 ? ' is-active' : '');
+        autoButton.textContent = 'Auto';
+        autoButton.addEventListener('click', () => {
+          currentHlsLevel = -1;
+          activeHls.currentLevel = -1;
+          activeHls.loadLevel = -1;
+          renderQualityOptions(currentPayload?.sources || []);
+          showChrome();
+        });
+        qualityOptions.appendChild(autoButton);
+
+        hlsLevels.forEach(({ level, index }) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'option-chip' + (index === currentHlsLevel ? ' is-active' : '');
+          button.textContent = getHlsLevelLabel(level, index);
+          button.addEventListener('click', () => {
+            currentHlsLevel = index;
+            activeHls.currentLevel = index;
+            activeHls.loadLevel = index;
+            renderQualityOptions(currentPayload?.sources || []);
+            showChrome();
+          });
+          qualityOptions.appendChild(button);
+        });
+        return;
+      }
+      if (useProviderLanguageOptions) {
+        getPeachifyQualityGroups(visibleEntries).forEach((group) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'option-chip' + (group.index === currentSourceIndex ? ' is-active' : '');
+          button.textContent = group.label;
+          button.addEventListener('click', () => {
+            playSource(group.index, { keepTime: true });
+            updateSummary();
+            syncPeachifyLanguageButton();
+            renderQualityOptions(currentPayload?.sources || []);
+          });
+          qualityOptions.appendChild(button);
+        });
+        return;
+      }
+      visibleEntries.forEach(({ source, index }) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'option-chip' + (index === currentSourceIndex ? ' is-active' : '');
+        button.textContent = getQualityLabel(source, index);
+        button.addEventListener('click', () => {
+          playSource(index, { keepTime: true });
+          updateSummary();
+          syncPeachifyLanguageButton();
+          renderQualityOptions(currentPayload?.sources || []);
+        });
+        qualityOptions.appendChild(button);
+      });
+    }
+
+    function renderPeachifyLanguageOptions() {
+      languagePanel.innerHTML = '';
+      const header = document.createElement('div');
+      header.className = 'peachify-panel-header';
+      header.innerHTML = '<span></span><strong>Servers</strong>';
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'peachify-panel-close';
+      closeButton.setAttribute('aria-label', 'Close language servers');
+      closeButton.innerHTML = '&times;';
+      closeButton.addEventListener('click', () => toggleLanguagePanel(false));
+      header.appendChild(closeButton);
+      languagePanel.appendChild(header);
+
+      const options = getPeachifyProviderLanguageOptions();
+      const activeKey = getActivePeachifyLanguageKey();
+      const activeProviderKey = getActivePeachifyProviderKey();
+      let currentProvider = '';
+      options.forEach((option) => {
+        if (option.provider !== currentProvider) {
+          currentProvider = option.provider;
+          const title = document.createElement('div');
+          title.className = 'peachify-section-title';
+          title.textContent = option.provider;
+          languagePanel.appendChild(title);
+        }
+        const button = document.createElement('button');
+        const flagCode = getPeachifyFlagCode(option.label);
+        const summary = getPeachifyQualitySummary(option);
+        button.type = 'button';
+        button.className = [
+          'source-option',
+          'peachify-language-option',
+          option.providerKey === activeProviderKey && option.languageKey === activeKey && option.sources.some((entry) => entry.index === currentSourceIndex) ? 'is-active' : '',
+        ].filter(Boolean).join(' ');
+        button.innerHTML = `
+          <span class="peachify-language-name">
+            ${flagCode
+              ? `<img class="peachify-flag" src="https://flagcdn.com/w40/${escapeHTML(flagCode)}.png" alt="">`
+              : '<span class="peachify-flag-placeholder"></span>'}
+            <span>${escapeHTML(option.label)}</span>
+          </span>
+          <span class="peachify-quality-summary">${escapeHTML(summary)}</span>
+        `;
+        button.addEventListener('click', () => {
+          currentPeachifyLanguageKey = option.languageKey;
+          playSource(option.bestIndex, { keepTime: true });
+          updateSummary();
+          renderQualityOptions(currentPayload?.sources || []);
+          renderPeachifyLanguageOptions();
+          toggleLanguagePanel(false);
+        });
+        languagePanel.appendChild(button);
+      });
+      syncPeachifyLanguageButton();
+    }
+
+    function renderServerOptions() {
+      sourcePanel.innerHTML = '';
+      getCandleServerList().forEach((server, index) => {
+        const button = document.createElement('button');
+        const visibleLabel = server.label && server.label !== 'Cineby' ? server.label : '';
+        button.type = 'button';
+        button.className = [
+          'source-option',
+          visibleLabel ? 'has-label' : '',
+          index === currentServerIndex ? 'is-active' : '',
+          failedServerIndexes.has(index) ? 'is-failed' : '',
+        ].filter(Boolean).join(' ');
+        button.innerHTML = `<span>${escapeHTML(server.name)}</span>${visibleLabel ? `<span>${escapeHTML(visibleLabel)}</span>` : ''}`;
+        button.addEventListener('click', () => {
+          if (index === currentServerIndex) {
+            toggleSourcePanel(false);
+            return;
+          }
+          const resumeAt = Number.isFinite(player.currentTime) ? player.currentTime : 0;
+          pendingResumeAt = resumeAt > 0 ? resumeAt : pendingResumeAt;
+          loadCandle(null, { serverIndex: index, keepTime: true, allowServerFallback: true });
+          toggleSourcePanel(false);
+        });
+        sourcePanel.appendChild(button);
+      });
+      sourceButton.setAttribute('aria-label', `Choose Candle source, current ${getCurrentServer().name}`);
+    }
+
+    function toggleSourcePanel(openState) {
+      const shouldOpen = typeof openState === 'boolean' ? openState : sourcePanel.hidden;
+      if (shouldOpen) toggleLanguagePanel(false);
+      sourcePanel.hidden = !shouldOpen;
+      sourceButton.classList.toggle('active', shouldOpen);
+      sourceButton.setAttribute('aria-expanded', String(shouldOpen));
+      if (shouldOpen) renderServerOptions();
+      showChrome();
+    }
+
+    function toggleLanguagePanel(openState) {
+      const shouldOpen = typeof openState === 'boolean' ? openState : languagePanel.hidden;
+      if (shouldOpen) {
+        toggleSourcePanel(false);
+        renderPeachifyLanguageOptions();
+      }
+      languagePanel.hidden = !shouldOpen;
+      languageButton.classList.toggle('active', shouldOpen);
+      languageButton.setAttribute('aria-expanded', String(shouldOpen));
+      showChrome();
+    }
+
+    function renderSubtitleOptions(tracks) {
+      const preferredIndex = getPreferredSubtitleIndex(tracks);
+      preferredSubtitleValue = preferredIndex >= 0 ? String(preferredIndex) : '-1';
+      const availableValues = new Set(tracks.map((_, index) => String(index)));
+      if (currentSubtitleValue !== '-1' && !availableValues.has(currentSubtitleValue)) {
+        currentSubtitleValue = preferredSubtitleValue;
+      }
+      if (currentSubtitleValue === '' || currentSubtitleValue == null) {
+        currentSubtitleValue = preferredSubtitleValue;
+      }
+
+      subtitleOptions.innerHTML = '';
+      const offOption = document.createElement('button');
+      offOption.type = 'button';
+      offOption.className = 'option-chip' + (currentSubtitleValue === '-1' ? ' is-active' : '');
+      offOption.textContent = 'Off';
+      offOption.addEventListener('click', () => setActiveSubtitle('-1'));
+      subtitleOptions.appendChild(offOption);
+
+      tracks.forEach((track, index) => {
+        const button = document.createElement('button');
+        const flagCode = getPeachifyFlagCode(track?.srclang || track?.label || '');
+        button.type = 'button';
+        button.className = [
+          'option-chip',
+          flagCode ? 'has-flag' : '',
+          String(index) === currentSubtitleValue ? 'is-active' : '',
+        ].filter(Boolean).join(' ');
+        button.innerHTML = `${flagCode ? `<img class="subtitle-flag" src="https://flagcdn.com/w40/${escapeHTML(flagCode)}.png" alt="">` : ''}<span>${escapeHTML(getSubtitleLabel(track, index))}</span>`;
+        button.title = track.label || `Subtitle ${index + 1}`;
+        button.addEventListener('click', () => setActiveSubtitle(String(index)));
+        subtitleOptions.appendChild(button);
+      });
+      syncSubtitleToggle();
+    }
+
+    function applySubtitleSize() {
+      const safeSize = sanitizeSubtitleSize(currentSubtitleSize);
+      currentSubtitleSize = safeSize;
+      playerFrame.style.setProperty('--subtitle-scale', safeSize);
+      try {
+        localStorage.setItem('cs_candle_subtitle_size', safeSize);
+      } catch {}
+    }
+
+    function applySubtitleStyle({ applyPreset = false } = {}) {
+      const safeStyle = sanitizeSubtitleStyle(currentSubtitleStyle);
+      const style = subtitleStyleValues.find((item) => item.value === safeStyle) || subtitleStyleValues[0];
+      currentSubtitleStyle = style.value;
+      playerFrame.style.setProperty('--subtitle-shadow', style.shadow);
+      if (applyPreset) {
+        currentSubtitleColor = style.colorValue || currentSubtitleColor;
+        currentSubtitleBackground = style.backgroundValue || currentSubtitleBackground;
+        currentSubtitleWeight = style.weightValue || currentSubtitleWeight;
+        applySubtitleColor();
+        applySubtitleBackground();
+        applySubtitleWeight();
+      }
+      try {
+        localStorage.setItem('cs_candle_subtitle_style', style.value);
+      } catch {}
+    }
+
+    function applySubtitlePosition() {
+      const safePosition = sanitizeSubtitlePosition(currentSubtitlePosition);
+      const position = subtitlePositionValues.find((item) => item.value === safePosition) || subtitlePositionValues[0];
+      currentSubtitlePosition = position.value;
+      playerFrame.style.setProperty('--subtitle-lift', `${position.lift}px`);
+      try {
+        localStorage.setItem('cs_candle_subtitle_position', position.value);
+      } catch {}
+    }
+
+    function applySubtitleColor() {
+      const safeColor = sanitizeSubtitleColor(currentSubtitleColor);
+      const color = subtitleColorValues.find((item) => item.value === safeColor) || subtitleColorValues[0];
+      currentSubtitleColor = color.value;
+      playerFrame.style.setProperty('--subtitle-color', color.color);
+      try {
+        localStorage.setItem('cs_candle_subtitle_color', color.value);
+      } catch {}
+    }
+
+    function applySubtitleBackground() {
+      const safeBackground = sanitizeSubtitleBackground(currentSubtitleBackground);
+      const background = subtitleBackgroundValues.find((item) => item.value === safeBackground) || subtitleBackgroundValues[2];
+      currentSubtitleBackground = background.value;
+      playerFrame.style.setProperty('--subtitle-bg', background.bg);
+      try {
+        localStorage.setItem('cs_candle_subtitle_background', background.value);
+      } catch {}
+    }
+
+    function applySubtitleWeight() {
+      const safeWeight = sanitizeSubtitleWeight(currentSubtitleWeight);
+      const weight = subtitleWeightValues.find((item) => item.value === safeWeight) || subtitleWeightValues[1];
+      currentSubtitleWeight = weight.value;
+      playerFrame.style.setProperty('--subtitle-weight', weight.weight);
+      try {
+        localStorage.setItem('cs_candle_subtitle_weight', weight.value);
+      } catch {}
+    }
+
+    function applySubtitleFont() {
+      const safeFont = sanitizeSubtitleFont(currentSubtitleFont);
+      const font = subtitleFontValues.find((item) => item.value === safeFont) || subtitleFontValues[0];
+      currentSubtitleFont = font.value;
+      playerFrame.style.setProperty('--subtitle-font-family', font.family);
+      try {
+        localStorage.setItem('cs_candle_subtitle_font', font.value);
+      } catch {}
+    }
+
+    function renderSubtitleSizeOptions() {
+      subtitleSizeOptions.innerHTML = '';
+      subtitleSizeValues.forEach((size) => {
+        const value = String(size.value);
+        const button = document.createElement('button');
+        setPreviewButtonState(button, {
+          active: value === currentSubtitleSize,
+          title: `Caption size: ${size.label}`,
+          wide: true,
+          html: buildSubtitleFramePreview({
+            text: 'The door',
+            label: size.label,
+            color: 'var(--subtitle-color, #fff)',
+            bg: 'var(--subtitle-bg, rgba(0,0,0,0.46))',
+            shadow: 'var(--subtitle-shadow, 0 1px 2px rgba(0,0,0,0.85))',
+            weight: 'var(--subtitle-weight, 600)',
+            family: 'var(--subtitle-font-family, "Space Grotesk", sans-serif)',
+            size: `${0.42 + (size.value - 0.86) * 0.3}rem`,
+          }),
+        });
+        button.addEventListener('click', () => {
+          currentSubtitleSize = value;
+          applySubtitleSize();
+          renderSubtitleSizeOptions();
+          showChrome();
+        });
+        subtitleSizeOptions.appendChild(button);
+      });
+    }
+
+    function renderSubtitleStyleOptions() {
+      subtitleStyleOptions.innerHTML = '';
+      subtitleStyleValues.forEach((style) => {
+        const button = document.createElement('button');
+        setPreviewButtonState(button, {
+          active: style.value === currentSubtitleStyle,
+          title: `Caption style: ${style.label}`,
+          wide: true,
+          html: buildSubtitleFramePreview({
+            text: 'Scene change',
+            label: style.label,
+            color: style.color,
+            bg: style.bg,
+            shadow: style.shadow,
+            weight: style.weight,
+            family: 'var(--subtitle-font-family, "Space Grotesk", sans-serif)',
+          }),
+        });
+        button.addEventListener('click', () => {
+          currentSubtitleStyle = style.value;
+          applySubtitleStyle({ applyPreset: true });
+          renderSubtitleStyleOptions();
+          renderSubtitleColorOptions();
+          renderSubtitleBackgroundOptions();
+          renderSubtitleWeightOptions();
+          showChrome();
+        });
+        subtitleStyleOptions.appendChild(button);
+      });
+    }
+
+    function renderSubtitlePositionOptions() {
+      subtitlePositionOptions.innerHTML = '';
+      subtitlePositionValues.forEach((position) => {
+        const button = document.createElement('button');
+        const previewOffset = position.value === 'high' ? '12px' : position.value === 'raised' ? '7px' : '3px';
+        setPreviewButtonState(button, {
+          active: position.value === currentSubtitlePosition,
+          title: `Caption position: ${position.label}`,
+          html: buildSubtitleFramePreview({
+            text: 'Move up',
+            label: position.label,
+            color: 'var(--subtitle-color, #fff)',
+            bg: 'var(--subtitle-bg, rgba(0,0,0,0.46))',
+            shadow: 'var(--subtitle-shadow, 0 1px 2px rgba(0,0,0,0.85))',
+            weight: 'var(--subtitle-weight, 600)',
+            family: 'var(--subtitle-font-family, "Space Grotesk", sans-serif)',
+            positionOffset: previewOffset,
+          }),
+        });
+        button.addEventListener('click', () => {
+          currentSubtitlePosition = position.value;
+          applySubtitlePosition();
+          renderSubtitlePositionOptions();
+          showChrome();
+        });
+        subtitlePositionOptions.appendChild(button);
+      });
+    }
+
+    function renderSubtitleColorOptions() {
+      subtitleColorOptions.innerHTML = '';
+      subtitleColorValues.forEach((color) => {
+        const button = document.createElement('button');
+        setPreviewButtonState(button, {
+          active: color.value === currentSubtitleColor,
+          title: `Text color: ${color.label}`,
+          html: buildSubtitleFramePreview({
+            text: 'Look out',
+            label: color.label,
+            color: color.color,
+            bg: 'var(--subtitle-bg, rgba(0,0,0,0.46))',
+            shadow: 'var(--subtitle-shadow, 0 1px 2px rgba(0,0,0,0.85))',
+            weight: 'var(--subtitle-weight, 600)',
+            family: 'var(--subtitle-font-family, "Space Grotesk", sans-serif)',
+          }),
+        });
+        button.addEventListener('click', () => {
+          currentSubtitleColor = color.value;
+          applySubtitleColor();
+          renderSubtitleColorOptions();
+          showChrome();
+        });
+        subtitleColorOptions.appendChild(button);
+      });
+    }
+
+    function renderSubtitleBackgroundOptions() {
+      subtitleBackgroundOptions.innerHTML = '';
+      subtitleBackgroundValues.forEach((background) => {
+        const button = document.createElement('button');
+        setPreviewButtonState(button, {
+          active: background.value === currentSubtitleBackground,
+          title: `Background: ${background.label}`,
+          html: buildSubtitleFramePreview({
+            text: 'Night scene',
+            label: background.label,
+            color: 'var(--subtitle-color, #fff)',
+            bg: background.bg,
+            shadow: 'var(--subtitle-shadow, 0 1px 2px rgba(0,0,0,0.85))',
+            weight: 'var(--subtitle-weight, 600)',
+            family: 'var(--subtitle-font-family, "Space Grotesk", sans-serif)',
+          }),
+        });
+        button.addEventListener('click', () => {
+          currentSubtitleBackground = background.value;
+          applySubtitleBackground();
+          renderSubtitleBackgroundOptions();
+          showChrome();
+        });
+        subtitleBackgroundOptions.appendChild(button);
+      });
+    }
+
+    function renderSubtitleWeightOptions() {
+      subtitleWeightOptions.innerHTML = '';
+      subtitleWeightValues.forEach((weight) => {
+        const button = document.createElement('button');
+        setPreviewButtonState(button, {
+          active: weight.value === currentSubtitleWeight,
+          title: `Text weight: ${weight.label}`,
+          html: buildSubtitleFramePreview({
+            text: 'Focus',
+            label: weight.label,
+            color: 'var(--subtitle-color, #fff)',
+            bg: 'var(--subtitle-bg, rgba(0,0,0,0.46))',
+            shadow: 'var(--subtitle-shadow, 0 1px 2px rgba(0,0,0,0.85))',
+            weight: weight.weight,
+            family: 'var(--subtitle-font-family, "Space Grotesk", sans-serif)',
+          }),
+        });
+        button.addEventListener('click', () => {
+          currentSubtitleWeight = weight.value;
+          applySubtitleWeight();
+          renderSubtitleWeightOptions();
+          showChrome();
+        });
+        subtitleWeightOptions.appendChild(button);
+      });
+    }
+
+    function renderSubtitleFontOptions() {
+      subtitleFontOptions.innerHTML = '';
+      subtitleFontValues.forEach((font) => {
+        const button = document.createElement('button');
+        setPreviewButtonState(button, {
+          active: font.value === currentSubtitleFont,
+          title: `Font: ${font.label}`,
+          html: buildSubtitleFramePreview({
+            text: font.sample,
+            label: font.label,
+            color: 'var(--subtitle-color, #fff)',
+            bg: 'var(--subtitle-bg, rgba(0,0,0,0.46))',
+            shadow: 'var(--subtitle-shadow, 0 1px 2px rgba(0,0,0,0.85))',
+            weight: 'var(--subtitle-weight, 600)',
+            family: font.family,
+            size: '0.68rem',
+          }),
+        });
+        button.addEventListener('click', () => {
+          currentSubtitleFont = font.value;
+          applySubtitleFont();
+          renderSubtitleFontOptions();
+          showChrome();
+        });
+        subtitleFontOptions.appendChild(button);
+      });
+    }
+
+    function renderSpeedOptions() {
+      speedOptions.innerHTML = '';
+      autoSkipToggle.checked = autoSkipEnabled;
+      autoNextToggle.checked = autoNextEnabled;
+      speedValues.forEach((speed) => {
+        const value = String(speed);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'option-chip' + (value === currentSpeedValue ? ' is-active' : '');
+        button.textContent = `${speed}x`;
+        button.addEventListener('click', () => {
+          currentSpeedValue = value;
+          player.playbackRate = Number(speed) || 1;
+          renderSpeedOptions();
+          showChrome();
+        });
+        speedOptions.appendChild(button);
+      });
+    }
+
+    function renderSettingsTabs() {
+      settingsPanel.dataset.panelMode = currentSettingsTab === 'subtitles' ? 'subtitles' : 'settings';
+      if (settingsTitle) settingsTitle.textContent = currentSettingsTab === 'subtitles' ? 'Subtitles' : 'Settings';
+      settingsTabs.querySelectorAll('[data-settings-tab]').forEach((button) => {
+        const tab = button.getAttribute('data-settings-tab') || '';
+        button.classList.toggle('is-active', tab === currentSettingsTab);
+      });
+      document.getElementById('settings-section-quality').hidden = currentSettingsTab !== 'quality';
+      document.getElementById('settings-section-subtitles').hidden = currentSettingsTab !== 'subtitles';
+      document.getElementById('settings-section-speed').hidden = currentSettingsTab !== 'speed';
+      renderSubtitlePanelTabs();
+    }
+
+    function renderSubtitlePanelTabs() {
+      const normalizedPanel = currentSubtitlePanel === 'customization' ? 'customization' : 'captions';
+      currentSubtitlePanel = normalizedPanel;
+      subtitleTabs.querySelectorAll('[data-subtitle-panel]').forEach((button) => {
+        const panel = button.getAttribute('data-subtitle-panel') || '';
+        button.classList.toggle('is-active', panel === normalizedPanel);
+      });
+      document.getElementById('subtitle-pane-captions').hidden = normalizedPanel !== 'captions';
+      document.getElementById('subtitle-pane-customization').hidden = normalizedPanel !== 'customization';
+    }
+
+    function clearSubtitleOverlay() {
+      lastSubtitleRenderKey = '';
+      subtitleOverlay.innerHTML = '';
+      subtitleOverlay.hidden = true;
+    }
+
+    function parseSubtitleTimestamp(value) {
+      const match = String(value || '').trim().match(/(?:(\d+):)?(\d{2}):(\d{2})[,.](\d{1,3})/);
+      if (!match) return NaN;
+      const hours = Number(match[1] || 0);
+      const minutes = Number(match[2] || 0);
+      const seconds = Number(match[3] || 0);
+      const millis = Number(String(match[4] || '0').padEnd(3, '0').slice(0, 3));
+      return (hours * 3600) + (minutes * 60) + seconds + (millis / 1000);
+    }
+
+    function parseSubtitleCueText(input) {
+      const blocks = String(input || '')
+        .replace(/^\uFEFF/, '')
+        .replace(/\r/g, '')
+        .replace(/^\s*WEBVTT[^\n]*(?:\n|$)/i, '')
+        .split(/\n{2,}/);
+      return blocks.map((block) => {
+        const lines = block.split('\n').map((line) => line.trim()).filter(Boolean);
+        const timingIndex = lines.findIndex((line) => line.includes('-->'));
+        if (timingIndex < 0) return null;
+        const [startRaw, endRaw] = lines[timingIndex].split('-->').map((part) => part.trim().split(/\s+/)[0]);
+        const start = parseSubtitleTimestamp(startRaw);
+        const end = parseSubtitleTimestamp(endRaw);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+        const text = lines.slice(timingIndex + 1).join('\n').trim();
+        return text ? { start, end, text } : null;
+      }).filter(Boolean);
+    }
+
+    function getManualSubtitleLines() {
+      if (!manualSubtitleCues.length || currentSubtitleValue === '-1') return [];
+      const time = Number(player.currentTime || 0);
+      return manualSubtitleCues
+        .filter((cue) => time >= cue.start && time <= cue.end)
+        .flatMap((cue) => cue.text
+          .replace(/<[^>]+>/g, '')
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean))
+        .slice(0, 2);
+    }
+
+    async function loadManualSubtitleTrack() {
+      const token = manualSubtitleLoadToken + 1;
+      manualSubtitleLoadToken = token;
+      manualSubtitleCues = [];
+      const trackIndex = Number(currentSubtitleValue);
+      const track = Number.isFinite(trackIndex) && trackIndex >= 0 ? currentPayload?.tracks?.[trackIndex] : null;
+      const trackUrl = String(track?.proxiedUrl || '').trim();
+      if (!trackUrl) {
+        renderActiveCue({ force: true });
+        return;
+      }
+      try {
+        const response = await fetch(trackUrl, { headers: { accept: 'text/vtt,text/plain,*/*' } });
+        if (!response.ok) throw new Error(`Subtitle request failed with ${response.status}`);
+        const cues = parseSubtitleCueText(await response.text());
+        if (token !== manualSubtitleLoadToken) return;
+        manualSubtitleCues = cues;
+        renderActiveCue({ force: true });
+        syncSubtitleRenderLoop();
+      } catch (error) {
+        if (token !== manualSubtitleLoadToken) return;
+        console.warn('[candle:subtitles] manual subtitle load failed', error?.message || error);
+      }
+    }
+
+    function getActiveSubtitleLines() {
+      if (currentSubtitleValue === '-1') {
+        return [];
+      }
+      if (!activeTextTrack) return getManualSubtitleLines();
+
+      const nativeLines = Array.from(activeTextTrack.activeCues || [])
+        .flatMap((cue) => String(cue?.text || '')
+          .replace(/<[^>]+>/g, '')
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean))
+        .slice(0, 2);
+      return nativeLines.length ? nativeLines : getManualSubtitleLines();
+    }
+
+    function renderActiveCue({ force = false } = {}) {
+      const text = getActiveSubtitleLines();
+
+      if (!text.length) {
+        clearSubtitleOverlay();
+        return;
+      }
+
+      const nextKey = text.join('\n');
+      if (!force && nextKey === lastSubtitleRenderKey && !subtitleOverlay.hidden) return;
+      lastSubtitleRenderKey = nextKey;
+      subtitleOverlay.innerHTML = text
+        .map((line) => `<span class="subtitle-line">${escapeHTML(line)}</span>`)
+        .join('');
+      subtitleOverlay.hidden = false;
+    }
+
+    function stopSubtitleRenderLoop() {
+      window.clearInterval(subtitleRenderTimer);
+      subtitleRenderTimer = 0;
+    }
+
+    function syncSubtitleRenderLoop() {
+      stopSubtitleRenderLoop();
+      if (!activeTextTrack || currentSubtitleValue === '-1' || player.paused) return;
+      subtitleRenderTimer = window.setInterval(() => renderActiveCue(), 160);
+    }
+
+    function mountTracks(tracks) {
+      clearSubtitleOverlay();
+      activeTextTrack = null;
+      manualSubtitleCues = [];
+      manualSubtitleLoadToken += 1;
+      stopSubtitleRenderLoop();
+      Array.from(player.querySelectorAll('track')).forEach((track) => track.remove());
+      tracks.forEach((track, index) => {
+        const node = document.createElement('track');
+        node.kind = track.kind || 'captions';
+        node.label = track.label || `Subtitle ${index + 1}`;
+        node.srclang = track.srclang || 'en';
+        node.src = track.proxiedUrl;
+        node.default = String(index) === preferredSubtitleValue;
+        node.addEventListener('load', () => {
+          if (String(index) === currentSubtitleValue) renderActiveCue({ force: true });
+        });
+        player.appendChild(node);
+      });
+    }
+
+    function applySubtitleMode() {
+      const tracks = Array.from(player.textTracks || []);
+      activeTextTrack = null;
+      tracks.forEach((track, trackIndex) => {
+        const isActive = currentSubtitleValue !== '-1' && Number(currentSubtitleValue) === trackIndex;
+        track.mode = isActive ? 'hidden' : 'disabled';
+        track.oncuechange = isActive ? () => renderActiveCue({ force: true }) : null;
+        if (isActive) activeTextTrack = track;
+      });
+      renderActiveCue({ force: true });
+      syncSubtitleRenderLoop();
+      syncSubtitleToggle();
+      loadManualSubtitleTrack();
+    }
+
+    function setActiveSubtitle(value) {
+      currentSubtitleValue = String(value);
+      renderSubtitleOptions(currentPayload?.tracks || []);
+      requestAnimationFrame(() => requestAnimationFrame(applySubtitleMode));
+      showChrome();
+    }
+
+    function syncSubtitleToggle() {
+      const isOn = currentSubtitleValue !== '-1';
+      subtitleToggle.classList.toggle('is-on', isOn);
+      subtitleToggle.setAttribute('aria-label', isOn ? 'Open subtitles, captions on' : 'Open subtitles');
+    }
+
+    function traceHls(label, data = {}) {
+      void label;
+      void data;
+    }
+
+    function isHlsSource(source) {
+      if (!source) return false;
+      const sourceType = String(source.type || '').trim().toLowerCase();
+      const url = String(source.directUrl || source.proxiedUrl || '').trim().toLowerCase();
+      return sourceType === 'm3u8'
+        || sourceType === 'hls'
+        || sourceType === 'hlf'
+        || sourceType === 'cloudflare'
+        || sourceType === 'application/vnd.apple.mpegurl'
+        || /\.m3u8(?:[?#]|$)/i.test(url);
+    }
+
+    function disposeHls() {
+      if (activeHls && typeof activeHls.destroy === 'function') {
+        activeHls.destroy();
+      }
+      activeHls = null;
+      currentHlsLevel = -1;
+    }
+
+    function loadHlsLibrary() {
+      if (window.Hls) return Promise.resolve(window.Hls);
+      if (hlsLoadPromise) return hlsLoadPromise;
+      traceHls('engine-import-start');
+      hlsLoadPromise = import('/js/vendor/media-engine.mjs?v=1.5.20').then((module) => {
+        const HlsCtor = module.default || module.Hls;
+        if (!HlsCtor) throw new Error('Failed to load HLS library');
+        window.Hls = HlsCtor;
+        traceHls('engine-import-ok', { version: HlsCtor.version || '' });
+        console.info('[candle:hls] engine loaded', HlsCtor.version || '');
+        return HlsCtor;
+      }).catch((error) => {
+        traceHls('engine-import-failed', { message: error?.message || String(error) });
+        console.warn('[candle:hls] engine load failed', error?.message || error);
+        hlsLoadPromise = null;
+        throw error;
+      });
+      return hlsLoadPromise;
+    }
+
+    async function attachSourceToPlayer(source, switchToken, options = {}) {
+      disposeHls();
+      player.removeAttribute('src');
+      const useDirectUrl = Boolean(options.useDirectUrl);
+      const sourceUrl = useDirectUrl && source.directUrl ? source.directUrl : source.proxiedUrl;
+
+      if (isHlsSource(source)) {
+        traceHls('attach-hls-source', { type: source.type, label: source.label, url: sourceUrl, direct: useDirectUrl });
+        let HlsCtor = null;
+        try {
+          HlsCtor = await loadHlsLibrary();
+        } catch (error) {
+          traceHls('engine-unavailable', { message: error?.message || String(error) });
+          console.warn('[candle:hls] unavailable', error?.message || error);
+        }
+        if (HlsCtor && typeof HlsCtor.isSupported === 'function' && HlsCtor.isSupported()) {
+          traceHls('engine-supported');
+          if (switchToken !== activeSwitchToken) return;
+          const hls = new HlsCtor({
+            enableWorker: true,
+            lowLatencyMode: false,
+            backBufferLength: 60,
+          });
+          activeHls = hls;
+          hls.loadSource(sourceUrl);
+          hls.attachMedia(player);
+          hls.on(HlsCtor.Events.MANIFEST_PARSED, () => {
+            traceHls('manifest-parsed');
+            window.clearTimeout(startupFallbackTimer);
+            applyPreferredHlsSourceSelection(source);
+            renderQualityOptions(currentPayload?.sources || []);
+          });
+          hls.on(HlsCtor.Events.AUDIO_TRACKS_UPDATED, () => {
+            applyPreferredHlsSourceSelection(source);
+            renderQualityOptions(currentPayload?.sources || []);
+          });
+          hls.on(HlsCtor.Events.LEVEL_SWITCHED, (_event, data) => {
+            if (currentHlsLevel !== -1) currentHlsLevel = Number(data?.level ?? currentHlsLevel);
+            renderQualityOptions(currentPayload?.sources || []);
+          });
+          hls.on(HlsCtor.Events.FRAG_BUFFERED, () => {
+            traceHls('frag-buffered');
+            window.clearTimeout(startupFallbackTimer);
+            setLoaderVisible(false);
+          });
+          hls.on(HlsCtor.Events.ERROR, (_event, data) => {
+            traceHls('hls-error', {
+              type: data?.type,
+              details: data?.details,
+              fatal: Boolean(data?.fatal),
+              url: data?.url || data?.context?.url || '',
+              responseCode: data?.response?.code || 0,
+            });
+            console.warn('[candle:hls] event error', data);
+            if (data?.fatal) {
+              const directUrl = String(source.directUrl || '').trim();
+              if (source.allowDirectFallback === true && !useDirectUrl && directUrl && directUrl !== sourceUrl) {
+                traceHls('hls-direct-fallback', { url: directUrl });
+                attachSourceToPlayer(source, switchToken, { useDirectUrl: true }).catch(() => {
+                  handleSourceFailure(currentSourceIndex);
+                });
+                return;
+              }
+              handleSourceFailure(currentSourceIndex);
+            }
+          });
+          return;
+        }
+
+        if (player.canPlayType('application/vnd.apple.mpegurl')) {
+          traceHls('native-hls-fallback');
+          player.src = sourceUrl;
+          player.load();
+          return;
+        }
+
+        traceHls('hls-unsupported');
+        throw new Error('HLS is not supported in this browser');
+      }
+
+      player.src = sourceUrl;
+      player.load();
+    }
+
+    async function playSource(index, { keepTime = true, autoplay = shouldAutoPlay } = {}) {
+      if (!currentPayload || !currentPayload.sources[index]) return;
+      const switchToken = ++activeSwitchToken;
+      const currentTime = keepTime ? player.currentTime || 0 : 0;
+      const initialResumeTime = !keepTime && pendingResumeAt > 0 ? pendingResumeAt : 0;
+      const shouldResume = (keepTime && currentTime > 0) || initialResumeTime > 0;
+      const shouldAutoplay = autoplay || !player.paused || keepTime;
+      const source = currentPayload.sources[index];
+
+      currentSourceIndex = index;
+      if (supportsProviderLanguageOptions()) currentPeachifyLanguageKey = getPeachifySourceLanguageKey(source);
+      failedSourceIndexes.delete(index);
+      clearNextEpisodeTimers();
+      hideNextEpisodePrompt();
+      hideSkipSegmentButton();
+      nextEpisodePromptSeen = false;
+      renderQualityOptions(currentPayload?.sources || []);
+      syncPeachifyLanguageButton();
+      setLoaderVisible(true);
+      window.clearTimeout(startupFallbackTimer);
+      try {
+        await attachSourceToPlayer(source, switchToken);
+      } catch (_error) {
+        if (switchToken !== activeSwitchToken) return;
+        handleSourceFailure(index);
+        return;
+      }
+
+      player.onloadedmetadata = () => {
+        if (switchToken !== activeSwitchToken) return;
+        if (shouldResume && Number.isFinite(player.duration)) {
+          const resumeTime = keepTime ? currentTime : initialResumeTime;
+          player.currentTime = Math.min(resumeTime, Math.max(player.duration - 1, 0));
+          if (!keepTime) pendingResumeAt = 0;
+        }
+        if (shouldAutoplay) {
+          player.play().catch(() => {});
+        }
+        applySubtitleMode();
+        player.onloadedmetadata = null;
+      };
+
+      startupFallbackTimer = window.setTimeout(() => {
+        if (switchToken !== activeSwitchToken) return;
+        if (player.readyState >= 2) return;
+        handleSourceFailure(index);
+      }, isHlsSource(source) ? 25000 : 15000);
+    }
+
+    function getNextSourceIndex() {
+      if (!currentPayload?.sources?.length) return -1;
+      const currentSource = currentPayload.sources[currentSourceIndex];
+      const currentLanguageKey = getPeachifySourceLanguageKey(currentSource);
+      const currentProviderKey = String(currentSource?.providerKey || currentSource?.provider || getCurrentServer()?.api || '').trim().toLowerCase();
+      const passes = [
+        (source, index) => index !== currentSourceIndex
+          && getPeachifySourceLanguageKey(source) === currentLanguageKey
+          && String(source?.providerKey || source?.provider || getCurrentServer()?.api || '').trim().toLowerCase() === currentProviderKey,
+        (source, index) => index !== currentSourceIndex && getPeachifySourceLanguageKey(source) === currentLanguageKey,
+        (_source, index) => index !== currentSourceIndex,
+      ];
+      for (const pass of passes) {
+        for (let index = 0; index < currentPayload.sources.length; index += 1) {
+          if (failedSourceIndexes.has(index)) continue;
+          if (pass(currentPayload.sources[index], index)) return index;
+        }
+      }
+      for (let index = 0; index < currentPayload.sources.length; index += 1) {
+        if (!failedSourceIndexes.has(index)) return index;
+      }
+      return -1;
+    }
+
+    function getNextServerIndex() {
+      const serverList = getCandleServerList();
+      for (let offset = 1; offset <= serverList.length; offset += 1) {
+        const nextIndex = (currentServerIndex + offset) % serverList.length;
+        if (!failedServerIndexes.has(nextIndex)) return nextIndex;
+      }
+      return -1;
+    }
+
+    function handleSourceFailure(index = currentSourceIndex) {
+      if (!currentPayload?.sources?.length) return;
+      traceHls('source-failure', {
+        index,
+        server: getCurrentServer().api,
+        type: currentPayload.sources[index]?.type || '',
+        label: currentPayload.sources[index]?.label || '',
+      });
+      failedSourceIndexes.add(index);
+      window.clearTimeout(startupFallbackTimer);
+      const nextIndex = getNextSourceIndex();
+      if (nextIndex >= 0 && nextIndex !== index) {
+        playSource(nextIndex, { keepTime: false });
+        updateSummary();
+        renderQualityOptions(currentPayload.sources || []);
+        return;
+      }
+      failedServerIndexes.add(currentServerIndex);
+      renderServerOptions();
+      const nextServerIndex = getNextServerIndex();
+      if (nextServerIndex >= 0 && nextServerIndex !== currentServerIndex) {
+        setStatus(`Trying ${getCandleServerList()[nextServerIndex].name}`, '');
+        loadCandle(null, { serverIndex: nextServerIndex, keepTime: false, allowServerFallback: true });
+        return;
+      }
+      setLoaderVisible(false);
+      setStatus('Playback failed', 'bad');
+    }
+
+    function formatTime(value) {
+      const total = Math.max(0, Math.floor(Number(value) || 0));
+      const hours = Math.floor(total / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      const seconds = total % 60;
+      if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      }
+      return `${minutes}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function syncTimecode() {
+      const currentTime = player.currentTime || 0;
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      timecode.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+
+      if (!isScrubbing && duration > 0) {
+        progressRange.value = String(Math.round((currentTime / duration) * 1000));
+      }
+      syncRangeFill(progressRange);
+    }
+
+    function syncRangeFill(element) {
+      const min = Number(element.min || 0);
+      const max = Number(element.max || 100);
+      const value = Number(element.value || 0);
+      const percent = max > min ? ((value - min) / (max - min)) * 100 : 0;
+      element.style.setProperty('--progress', `${percent}%`);
+    }
+
+    function getSeekPreviewTime(event) {
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      if (duration <= 0) return null;
+      const rect = progressRange.getBoundingClientRect();
+      const clientX = event.touches?.[0]?.clientX ?? event.clientX;
+      if (!Number.isFinite(clientX) || rect.width <= 0) return null;
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      return {
+        ratio,
+        seconds: ratio * duration,
+      };
+    }
+
+    function showSeekPreview(event) {
+      const preview = getSeekPreviewTime(event);
+      if (!preview) {
+        hideSeekPreview();
+        return;
+      }
+      seekPreview.hidden = false;
+      seekPreview.textContent = formatTime(preview.seconds);
+      seekPreview.style.setProperty('--seek-preview-x', `${preview.ratio * 100}%`);
+      showChrome();
+    }
+
+    function hideSeekPreview() {
+      seekPreview.hidden = true;
+    }
+
+    function syncPlayButton() {
+      const isPaused = player.paused;
+      playerFrame.classList.toggle('is-playing', !isPaused);
+      const icon = isPaused
+        ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"></path></svg>'
+        : '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5h3v14H8zm5 0h3v14h-3z"></path></svg>';
+      const centerIcon = isPaused
+        ? '<svg class="center-play-icon center-play-icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.75 5.8 18.25 12l-9.5 6.2V5.8Z"></path></svg>'
+        : '<svg class="center-play-icon center-play-icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.25 5.5h3.25v13H8.25zm4.25 0h3.25v13H12.5z"></path></svg>';
+      playButton.innerHTML = icon;
+      centerPlay.innerHTML = centerIcon;
+    }
+
+    function togglePlay() {
+      if (player.paused) {
+        player.play().catch(() => {});
+      } else {
+        player.pause();
+      }
+    }
+
+    function lockLandscapeOrientation() {
+      const orientation = screen.orientation;
+      if (!orientation?.lock) return;
+      orientation.lock('landscape').catch(() => {});
+    }
+
+    function unlockOrientation() {
+      const orientation = screen.orientation;
+      if (!orientation?.unlock) return;
+      orientation.unlock();
+    }
+
+    async function toggleFullscreen() {
+      const element = playerFrame;
+      if (document.fullscreenElement === element) {
+        await document.exitFullscreen?.().catch?.(() => {});
+        unlockOrientation();
+      } else {
+        await element.requestFullscreen?.().catch?.(() => {});
+        lockLandscapeOrientation();
+      }
+    }
+
+    function showChrome() {
+      playerFrame.classList.remove('chrome-hidden');
+      window.clearTimeout(chromeTimer);
+      if (!player.paused) {
+        chromeTimer = window.setTimeout(() => {
+          if (!settingsPanel.hidden || !sourcePanel.hidden || !languagePanel.hidden || chromePinnedByMenu) return;
+          playerFrame.classList.add('chrome-hidden');
+          renderActiveCue({ force: true });
+        }, 2200);
+      }
+    }
+
+    function toggleChrome() {
+      window.clearTimeout(chromeTimer);
+      if (playerFrame.classList.contains('chrome-hidden')) {
+        showChrome();
+        return;
+      }
+      if (!settingsPanel.hidden || !sourcePanel.hidden || !languagePanel.hidden || chromePinnedByMenu) return;
+      if (!player.paused) {
+        playerFrame.classList.add('chrome-hidden');
+        renderActiveCue({ force: true });
+      }
+    }
+
+    function toggleSettings(openState, tab = currentSettingsTab) {
+      const shouldOpen = typeof openState === 'boolean' ? openState : settingsPanel.hidden;
+      if (shouldOpen) currentSettingsTab = tab || 'quality';
+      settingsPanel.hidden = !shouldOpen;
+      settingsButton.classList.toggle('active', shouldOpen && currentSettingsTab !== 'subtitles');
+      subtitleToggle.classList.toggle('active', shouldOpen && currentSettingsTab === 'subtitles');
+      subtitleToggle.setAttribute('aria-expanded', String(shouldOpen && currentSettingsTab === 'subtitles'));
+      if (shouldOpen) renderSettingsTabs();
+      showChrome();
+    }
+
+    function updateSummary() {
+      const source = currentPayload?.sources?.[currentSourceIndex];
+      if (!source) {
+        playerSummary.textContent = 'Now Playing';
+        syncMediaTitle();
+        return;
+      }
+      playerSummary.innerHTML = `<strong>${escapeHTML(getCurrentServer().name)}</strong> ${escapeHTML(source.label || 'Auto')}`;
+      syncMediaTitle();
+    }
+
+    async function loadCandle(event, options = {}) {
+      if (event) event.preventDefault();
+      const requestedServerIndex = sanitizeServerIndex(options.serverIndex ?? currentServerIndex);
+      const endpoint = buildEndpoint(requestedServerIndex);
+      const requestedServer = getCandleServerList()[requestedServerIndex] || getCandleServerList()[0];
+      const previousTime = Number.isFinite(player.currentTime) ? player.currentTime : 0;
+      currentServerIndex = requestedServerIndex;
+      currentPeachifyLanguageKey = '';
+      renderServerOptions();
+      syncPeachifyLanguageButton();
+
+      loadButton.disabled = true;
+      setStatus('Loading', '');
+      setLoaderVisible(true);
+      providerText.textContent = '-';
+      sourceCountText.textContent = '-';
+      encryptedText.textContent = '-';
+      upstreamText.textContent = endpoint;
+      streamList.innerHTML = '';
+      debugOutput.textContent = 'Loading player payload...';
+      introDbLoadToken += 1;
+      skipSegments = [];
+      skippedSegmentIds = new Set();
+      dismissedSkipSegmentId = '';
+      hideSkipSegmentButton();
+
+      try {
+        let payload;
+        if (isVideasyServer(requestedServer) && !isAnimePlayback()) {
+          payload = await fetchVideasyBrowserPayload(requestedServer);
+        } else {
+          const response = await fetch(endpoint, {
+            headers: {
+              'Accept': 'application/json',
+              'x-candlestream-client': 'web'
+            }
+          });
+          payload = await response.json();
+          if (!response.ok || !payload.ok) {
+            throw new Error(payload.message || payload.error || `Request failed with ${response.status}`);
+          }
+        }
+        payload = await decryptVideasyPayload(payload);
+
+        currentPayload = payload;
+        currentSourceIndex = 0;
+        currentPeachifyLanguageKey = getPeachifySourceLanguageKey(payload.sources?.[0]);
+        currentSubtitleValue = '';
+        failedSourceIndexes = new Set();
+        currentServerIndex = sanitizeServerIndex(payload.server?.api || requestedServerIndex);
+        providerText.textContent = payload.upstream.provider || payload.upstream.resolver || '-';
+        sourceCountText.textContent = String(payload.sources.length);
+        encryptedText.textContent = String(Boolean(payload.upstream.encrypted ?? payload.upstream.providers?.some((provider) => provider.encrypted)));
+        upstreamText.textContent = payload.upstream.url || payload.upstream.providers?.[0]?.url || endpoint;
+
+        renderStreamList(payload.sources);
+        renderQualityOptions(payload.sources);
+        renderServerOptions();
+        syncPeachifyLanguageButton();
+        renderSubtitleOptions(payload.tracks || []);
+        renderSubtitleSizeOptions();
+        renderSubtitleStyleOptions();
+        renderSubtitlePositionOptions();
+        renderSubtitleColorOptions();
+        renderSubtitleBackgroundOptions();
+        renderSubtitleWeightOptions();
+        renderSubtitleFontOptions();
+        renderSpeedOptions();
+        mountTracks(payload.tracks || []);
+        setActiveSubtitle(currentSubtitleValue);
+        updateSummary();
+
+        if (!payload.sources.length) {
+          failedServerIndexes.add(currentServerIndex);
+          const nextServerIndex = options.allowServerFallback === false ? -1 : getNextServerIndex();
+          if (nextServerIndex >= 0 && nextServerIndex !== currentServerIndex) {
+            setStatus(`Trying ${getCandleServerList()[nextServerIndex].name}`, '');
+            loadCandle(null, { serverIndex: nextServerIndex, keepTime: false, allowServerFallback: true });
+            return;
+          }
+          setStatus('No playable sources', 'bad');
+          setLoaderVisible(false);
+        if (isDebugMode) debugOutput.textContent = JSON.stringify(payload, null, 2);
+        return;
+      }
+
+      if (options.keepTime && previousTime > 0) pendingResumeAt = previousTime;
+      playSource(0, { keepTime: false, autoplay: shouldAutoPlay || Boolean(options.keepTime) });
+      setStatus(`Loaded ${getCurrentServer().name}`, 'good');
+      if (isDebugMode) debugOutput.textContent = JSON.stringify(payload, null, 2);
+    } catch (error) {
+        failedServerIndexes.add(currentServerIndex);
+        renderServerOptions();
+        const nextServerIndex = options.allowServerFallback === false ? -1 : getNextServerIndex();
+        if (nextServerIndex >= 0 && nextServerIndex !== currentServerIndex) {
+          setStatus(`Trying ${getCandleServerList()[nextServerIndex].name}`, '');
+          loadCandle(null, { serverIndex: nextServerIndex, keepTime: false, allowServerFallback: true });
+          return;
+        }
+        currentPayload = null;
+        currentPeachifyLanguageKey = '';
+        failedSourceIndexes = new Set();
+        syncPeachifyLanguageButton();
+        setStatus('Load failed', 'bad');
+        setLoaderVisible(false);
+        if (isDebugMode) debugOutput.textContent = JSON.stringify({
+          ok: false,
+          error: error && error.message ? error.message : 'Unknown Candle error'
+        }, null, 2);
+      } finally {
+        loadButton.disabled = false;
+      }
+    }
+
+    function resetForm() {
+      idInput.value = '687163';
+      typeSelect.value = 'movie';
+      seasonInput.value = '1';
+      episodeInput.value = '1';
+      currentPayload = null;
+      currentSourceIndex = 0;
+      currentServerIndex = 0;
+      currentPeachifyLanguageKey = '';
+      currentSubtitleValue = '-1';
+      preferredSubtitleValue = '-1';
+      failedSourceIndexes = new Set();
+      failedServerIndexes = new Set();
+      syncPeachifyLanguageButton();
+      clearNextEpisodeTimers();
+      hideNextEpisodePrompt();
+      nextEpisodePromptSeen = false;
+      nextEpisodeNavigating = false;
+      introDbLoadToken += 1;
+      skipSegments = [];
+      skippedSegmentIds = new Set();
+      dismissedSkipSegmentId = '';
+      hideSkipSegmentButton();
+      window.clearTimeout(startupFallbackTimer);
+      player.pause();
+      disposeHls();
+      player.removeAttribute('src');
+      player.load();
+      qualityOptions.innerHTML = '';
+      subtitleOptions.innerHTML = '';
+      streamList.innerHTML = '';
+      providerText.textContent = '-';
+      sourceCountText.textContent = '-';
+      encryptedText.textContent = '-';
+      upstreamText.textContent = '-';
+      debugOutput.textContent = 'Press "Load Candle" to load the player payload.';
+      playerSummary.textContent = 'Now Playing';
+      progressRange.value = '0';
+      syncRangeFill(progressRange);
+      hideSeekPreview();
+      player.volume = 1;
+      player.muted = false;
+      syncPlayButton();
+      syncSubtitleToggle();
+      applySubtitleSize();
+      renderSubtitleSizeOptions();
+      renderServerOptions();
+      syncTimecode();
+      toggleSettings(false);
+      setLoaderVisible(false);
+      setStatus('Idle', '');
+      syncEmbedDocs();
+      syncMediaTitle();
+    }
+
+    function showPlayerOnlyEmptyState() {
+      if (hasPresetMedia) return;
+      setLoaderVisible(false);
+      setStatus('Waiting for media', '');
+      playerSummary.innerHTML = '<strong>CandleStream</strong>';
+      timecode.textContent = '0:00 / 0:00';
+      progressRange.value = '0';
+      syncRangeFill(progressRange);
+      showChrome();
+    }
+
+    progressRange.addEventListener('input', () => {
+      isScrubbing = true;
+      syncRangeFill(progressRange);
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      const nextTime = duration > 0 ? (Number(progressRange.value) / 1000) * duration : 0;
+      timecode.textContent = `${formatTime(nextTime)} / ${formatTime(duration)}`;
+      showChrome();
+    });
+
+    progressRange.addEventListener('pointerenter', showSeekPreview);
+    progressRange.addEventListener('pointermove', showSeekPreview);
+    progressRange.addEventListener('pointerleave', () => {
+      if (!isScrubbing) hideSeekPreview();
+    });
+    progressRange.addEventListener('touchstart', showSeekPreview, { passive: true });
+    progressRange.addEventListener('touchmove', showSeekPreview, { passive: true });
+    progressRange.addEventListener('touchend', hideSeekPreview, { passive: true });
+
+    progressRange.addEventListener('change', () => {
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      if (duration > 0) {
+        player.currentTime = (Number(progressRange.value) / 1000) * duration;
+      }
+      isScrubbing = false;
+      syncTimecode();
+      hideSeekPreview();
+    });
+
+    playButton.addEventListener('click', togglePlay);
+    centerPlay.addEventListener('click', togglePlay);
+    nextEpisodeButton.addEventListener('click', () => loadNextEpisode({ auto: false }));
+    nextEpisodeButton.addEventListener('mouseenter', () => showNextEpisodePrompt());
+    nextEpisodeButton.addEventListener('touchstart', () => showNextEpisodePrompt(), { passive: true });
+    rewindButton.addEventListener('click', () => {
+      player.currentTime = Math.max(0, (player.currentTime || 0) - 10);
+      showChrome();
+    });
+    forwardButton.addEventListener('click', () => {
+      const end = Number.isFinite(player.duration) ? player.duration : (player.currentTime || 0) + 10;
+      player.currentTime = Math.min(end, (player.currentTime || 0) + 10);
+      showChrome();
+    });
+    fullscreenButton.addEventListener('click', toggleFullscreen);
+    settingsPanel.addEventListener('click', (event) => event.stopPropagation());
+    settingsPanel.addEventListener('pointerdown', (event) => event.stopPropagation());
+    settingsPanel.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true });
+    settingsButton.addEventListener('click', () => {
+      const nextTab = currentSettingsTab === 'subtitles' ? 'quality' : currentSettingsTab;
+      const shouldOpen = settingsPanel.hidden || currentSettingsTab === 'subtitles';
+      toggleSettings(shouldOpen, nextTab || 'quality');
+    });
+    sourceButton.addEventListener('click', () => toggleSourcePanel());
+    languageButton.addEventListener('click', () => toggleLanguagePanel());
+    sourceMenuWrap?.addEventListener('pointerenter', () => {
+      chromePinnedByMenu = true;
+      showChrome();
+    });
+    sourceMenuWrap?.addEventListener('pointerleave', () => {
+      chromePinnedByMenu = false;
+      showChrome();
+    });
+    settingsClose.addEventListener('click', () => toggleSettings(false));
+    settingsTabs.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest('[data-settings-tab]');
+      if (!button) return;
+      currentSettingsTab = button.getAttribute('data-settings-tab') || 'quality';
+      renderSettingsTabs();
+      showChrome();
+    });
+    subtitleToggle.addEventListener('click', () => {
+      const shouldOpen = settingsPanel.hidden || currentSettingsTab !== 'subtitles';
+      toggleSettings(shouldOpen, 'subtitles');
+    });
+    subtitleTabs.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest('[data-subtitle-panel]');
+      if (!button) return;
+      currentSubtitlePanel = button.getAttribute('data-subtitle-panel') || 'captions';
+      renderSubtitlePanelTabs();
+      showChrome();
+    });
+    skipSegmentButton.addEventListener('click', () => {
+      if (!activeSkipSegment) return;
+      skipToSegmentEnd(activeSkipSegment);
+      showChrome();
+    });
+    skipSegmentButton.addEventListener('mouseenter', revealSkipSegmentFromActivity);
+    skipSegmentButton.addEventListener('touchstart', revealSkipSegmentFromActivity, { passive: true });
+    autoSkipToggle.addEventListener('change', () => {
+      autoSkipEnabled = autoSkipToggle.checked;
+      localStorage.setItem('cs_candle_auto_skip', autoSkipEnabled ? '1' : '0');
+      renderSpeedOptions();
+      syncSkipSegmentButton();
+      showChrome();
+    });
+    autoNextToggle.addEventListener('change', () => {
+      autoNextEnabled = autoNextToggle.checked;
+      localStorage.setItem('cs_candle_auto_next', autoNextEnabled ? '1' : '0');
+      renderSpeedOptions();
+      maybeShowNextEpisodePrompt();
+      showChrome();
+    });
+
+    player.addEventListener('click', toggleChrome);
+    player.addEventListener('dblclick', (event) => {
+      event.preventDefault();
+      toggleFullscreen();
+    });
+    player.addEventListener('play', () => {
+      syncPlayButton();
+      setLoaderVisible(false);
+      syncSubtitleRenderLoop();
+      renderActiveCue({ force: true });
+      postPlaybackEvent('play');
+      showChrome();
+    });
+    player.addEventListener('pause', () => {
+      syncPlayButton();
+      setLoaderVisible(false);
+      stopSubtitleRenderLoop();
+      renderActiveCue({ force: true });
+      postPlaybackEvent('pause');
+      showChrome();
+    });
+    player.addEventListener('timeupdate', () => {
+      syncTimecode();
+      renderActiveCue();
+      postPlaybackEvent('timeupdate');
+      maybeShowNextEpisodePrompt();
+      syncSkipSegmentButton();
+    });
+    player.addEventListener('loadedmetadata', () => {
+      syncTimecode();
+      applySubtitleMode();
+      updateSummary();
+      loadIntroDbSegments();
+    });
+    player.addEventListener('loadstart', () => setLoaderVisible(true));
+    player.addEventListener('waiting', () => setLoaderVisible(true));
+    player.addEventListener('seeking', () => setLoaderVisible(true));
+    player.addEventListener('seeked', () => {
+      renderActiveCue({ force: true });
+      syncSkipSegmentButton();
+    });
+    player.addEventListener('canplay', () => {
+      window.clearTimeout(startupFallbackTimer);
+      setLoaderVisible(false);
+    });
+    player.addEventListener('playing', () => {
+      window.clearTimeout(startupFallbackTimer);
+      setLoaderVisible(false);
+      showChrome();
+    });
+    player.addEventListener('seeked', () => {
+      window.clearTimeout(startupFallbackTimer);
+      setLoaderVisible(false);
+    });
+    player.addEventListener('ended', () => {
+      postPlaybackEvent('ended');
+      if (isTvPlayback()) {
+        showNextEpisodePrompt({ autoHide: false });
+        if (autoNextEnabled) {
+          window.clearTimeout(nextEpisodeAutoTimer);
+          nextEpisodeAutoTimer = window.setTimeout(() => loadNextEpisode({ auto: true }), 1200);
+        }
+      }
+    });
+    player.addEventListener('error', () => handleSourceFailure());
+    player.addEventListener('stalled', () => {
+      if (player.readyState < 2) handleSourceFailure();
+    });
+    player.addEventListener('mousemove', () => {
+      showChrome();
+      revealSkipSegmentFromActivity();
+    });
+    playerFrame.addEventListener('mousemove', () => {
+      showChrome();
+      handleNextPromptActivity();
+      revealSkipSegmentFromActivity();
+    });
+    playerFrame.addEventListener('touchstart', () => {
+      showChrome();
+      handleNextPromptActivity();
+      revealSkipSegmentFromActivity();
+    }, { passive: true });
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) unlockOrientation();
+      showChrome();
+    });
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('#source-panel') || target.closest('#source-button') || target.closest('#language-panel') || target.closest('#language-button')) return;
+      toggleSourcePanel(false);
+      toggleLanguagePanel(false);
+      if (target.closest('#settings-panel') || target.closest('#settings-button') || target.closest('#subtitle-toggle')) return;
+      toggleSettings(false);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        toggleSourcePanel(false);
+        toggleLanguagePanel(false);
+        toggleSettings(false);
+      }
+      if (event.key === ' ' || event.key === 'k') {
+        event.preventDefault();
+        togglePlay();
+      }
+      if (event.key === 'f') {
+        toggleFullscreen();
+      }
+      if (event.key === 'ArrowLeft') {
+        player.currentTime = Math.max(0, (player.currentTime || 0) - 10);
+      }
+      if (event.key === 'ArrowRight') {
+        const end = Number.isFinite(player.duration) ? player.duration : (player.currentTime || 0) + 10;
+        player.currentTime = Math.min(end, (player.currentTime || 0) + 10);
+      }
+    });
+
+    form.addEventListener('submit', (event) => {
+      failedServerIndexes = new Set();
+      loadCandle(event, { serverIndex: currentServerIndex, allowServerFallback: true });
+    });
+    resetButton.addEventListener('click', resetForm);
+    idInput.addEventListener('input', syncEmbedDocs);
+    typeSelect.addEventListener('change', syncEmbedDocs);
+    seasonInput.addEventListener('input', syncEmbedDocs);
+    episodeInput.addEventListener('input', syncEmbedDocs);
+
+    if (isEmbedMode) {
+      document.documentElement.classList.add('embed-root');
+      document.body.classList.add('embed-mode');
+    }
+    if (isPlayerOnlyMode) {
+      document.documentElement.classList.add('player-only-root');
+      document.body.classList.add('player-only');
+    }
+    try {
+      localStorage.removeItem('cs_candle_hls_trace');
+    } catch {}
+
+    setDebugVisibility();
+    resetForm();
+    applyQueryPreset();
+    syncRangeFill(progressRange);
+    renderSpeedOptions();
+    applySubtitleSize();
+    applySubtitleStyle();
+    applySubtitlePosition();
+    applySubtitleColor();
+    applySubtitleBackground();
+    applySubtitleWeight();
+    applySubtitleFont();
+    renderSubtitleSizeOptions();
+    renderSubtitleStyleOptions();
+    renderSubtitlePositionOptions();
+    renderSubtitleColorOptions();
+    renderSubtitleBackgroundOptions();
+    renderSubtitleWeightOptions();
+    renderSubtitleFontOptions();
+    async function startCandlePlayer() {
+      renderServerOptions();
+      await syncCandleServerList();
+      renderSettingsTabs();
+      syncEmbedDocs();
+      syncMediaTitle();
+
+      if (shouldAutoLoad && hasPresetMedia) {
+        loadCandle();
+      } else if (isPlayerOnlyMode) {
+        showPlayerOnlyEmptyState();
+      }
+    }
+
+    startCandlePlayer();
+  </script>
+<!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "55d45fe251454abfba2179f345c88ba8"}'></script><!-- Cloudflare Pages Analytics --><!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "55d45fe251454abfba2179f345c88ba8"}'></script><!-- Cloudflare Pages Analytics --><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0b94a41d8b2b675',t:'MTc4MTQzOTYzNg=='};var a=document.createElement('script');a.src="/api/candle-proxy/cdn-cgi/challenge-platform/scripts/jsd/main.js";document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+

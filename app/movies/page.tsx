@@ -1,6 +1,4 @@
 import { tmdb, getHeroItemsWithLogos } from '@/lib/tmdb';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { getSiteUrl } from '@/lib/utils';
 import { HeroSlider } from '@/components/media/HeroSlider';
 import { RecommendedForYou } from '@/components/media/RecommendedForYou';
 import { getCuratedCollections } from '@/lib/collectionsData';
@@ -13,15 +11,11 @@ const CollectionsRow = nextDynamic(() => import('@/components/media/CollectionsR
 const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row));
 const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow));
 
-export const revalidate = 3600;
+export const revalidate = 21600; // 6h instead of 1h — saves ISR Writes
 
 export const metadata = {
-  title: 'Watch Movies Free Online in HD — ZIVOX',
-  description: 'Stream zivox online movie collections in HD without ads or registration. Watch free movies online, hindi dubbed movies watch online, and top rated cinema free on Zivox.',
-  openGraph: {
-    title: 'Watch Movies Free Online in HD — ZIVOX',
-    description: 'Stream zivox online movie collections in HD without ads or registration. Watch free movies online, hindi dubbed movies watch online, and top rated cinema free on Zivox.',
-  },
+  title: 'Movies',
+  robots: { index: false, follow: false },
 };
 
 const MOODS = [
@@ -52,18 +46,8 @@ export default async function MoviesPage() {
   
   const collectionsData = await getCuratedCollections();
 
-  const siteUrl = getSiteUrl();
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": "Watch Movies Free Online in HD — ZIVOX",
-    "url": `${siteUrl}/movies`,
-    "description": "Stream zivox online movie collections in HD without ads or registration. Watch free movies online, hindi dubbed movies watch online.",
-  };
-
   return (
     <div className="flex flex-col min-h-screen pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-20 bg-[#050505] -mt-[72px]">
-      <JsonLd data={jsonLd} />
       <h1 className="sr-only">Movies</h1>
       {/* Cinematic hero */}
       <HeroSlider items={heroItemsWithLogos} />
@@ -152,28 +136,7 @@ export default async function MoviesPage() {
           </div>
         </div>
 
-        {/* Semantic SEO Block */}
-        <div className="px-4 md:px-14 pb-8 mt-4">
-          <div className="bg-white/[0.02] border border-zinc-800/50 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
-            <h2 className="text-xl md:text-2xl font-bold font-display text-white mb-4">Watch Free Movies Online in HD Without Registration</h2>
-            <div className="prose prose-sm prose-invert max-w-none text-zinc-400 space-y-4">
-              <p>
-                Dive into the ultimate cinematic experience on ZIVOX. Our extensive movie collection allows you to <strong className="text-white">watch free movies online</strong> in crystal-clear HD and 4K quality.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <h3 className="text-white font-bold text-base mb-2">Top Movie Genres</h3>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><a href="/genre/action" className="hover:text-white transition-colors">Action & Adventure</a></li>
-                    <li><a href="/genre/comedy" className="hover:text-white transition-colors">Comedy & Romance</a></li>
-                    <li><a href="/genre/horror" className="hover:text-white transition-colors">Horror & Thriller</a></li>
-                    <li><a href="/genre/science-fiction" className="hover:text-white transition-colors">Sci-Fi & Fantasy</a></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

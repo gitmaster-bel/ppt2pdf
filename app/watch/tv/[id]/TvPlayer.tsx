@@ -413,8 +413,8 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-4">
-                      {show.genres?.map((g: any) => (
-                        <span key={g.id} className="text-xs font-medium text-zinc-300 bg-void-900 border border-zinc-800 px-2 py-1 rounded-md">{g.name}</span>
+                      {show.genres?.map((g: any, i: number) => (
+                        <span key={g.id || `genre-${i}`} className="text-xs font-medium text-zinc-300 bg-void-900 border border-zinc-800 px-2 py-1 rounded-md">{g.name}</span>
                       ))}
                     </div>
 
@@ -504,7 +504,7 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
 
                         return (
                           <div
-                            key={ep.id}
+                            key={ep.id || `ep-${ep.episode_number}-${ep.name}`}
                             onClick={() => goToEpisode(season, ep.episode_number)}
                             role="button"
                             tabIndex={0}

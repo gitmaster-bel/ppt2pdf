@@ -1,105 +1,97 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// ─── Bot Firewall ─────────────────────────────────────────────────────────────
-//
-// Blocks known aggressive crawlers at the Vercel Edge before they can
-// burn compute or function invocations. Returns a minimal 200 so they
-// don't retry — a 403 triggers aggressive re-crawls.
-//
-// NOTE: For complete protection, pair with Cloudflare Bot Fight Mode
-// so bots are blocked at the DNS level before reaching Vercel at all.
+// ─── Edge Runtime ──────────────────────────────────────────────────────────────
+// Runs at Vercel's Edge Network — near-zero CPU cost, doesn't count against
+// Function Invocations on Hobby plan. This is the first line of defense.
+// Note: Middleware is edge by default, no export needed.
 
-const BOT_BLOCKLIST = [
-  'meta-externalagent',     // #1 killer — 5.8K+ req/hr at 0% cache rate
-  'facebookexternalhit',
-  'Bytespider',             // TikTok scraper
-  'AhrefsBot',
-  'SemrushBot',
-  'MJ12bot',
-  'DotBot',
-  'PetalBot',
-  'SeznamBot',
-  'BingPreview',
-  'GPTBot',                 // OpenAI scraper
-  'ClaudeBot',              // Anthropic scraper
-  'Applebot',               // Apple scraper (high volume)
-  'YandexBot',
-  'baiduspider',
-  'DataForSeoBot',
-  'serpstatbot',
+// ─── Known Bot User-Agent Fragments ────────────────────────────────────────────
+// Comprehensive list covering search engines, AI scrapers, SEO tools, and
+// social media crawlers. All lowercase for case-insensitive matching.
+const BLOCKED_BOT_PATTERNS = [
+  // Search engines
+  'googlebot', 'bingbot', 'yandexbot', 'baiduspider', 'duckduckbot',
+  'slurp', 'ia_archiver', 'sogou',
+  // AI crawlers
+  'gptbot', 'oai-searchbot', 'chatgpt-user', 'claudebot', 'claude-searchbot',
+  'claude-user', 'anthropic-ai', 'claude-web', 'cohere-ai',
+  'google-extended', 'googleother', 'google-cloudvertexbot',
+  'meta-externalagent', 'meta-externalfetcher', 'facebookbot',
+  'applebot', 'applebot-extended', 'amazonbot',
+  'ccbot', 'bytespider', 'diffbot', 'perplexitybot', 'perplexity-user',
+  'duckassistbot', 'youbot',
+  'mistralai-user', 'novellumbot', 'novellum ai crawl',
+  'proratabot', 'proratainc',
+  'terracotta', 'terracottabot', 'tiktok-spider', 'tiktokspider', 'timpibot',
+  'manusbot', 'manus bot', 'anchorbrowser', 'anchor browser',
+  'cloudflare-diagnostics', 'cloudflare crawler',
+  'arquivo-web-crawler', 'archive.org_bot',
+  // SEO / scraper tools
+  'ahrefsbot', 'semrushbot', 'mj12bot', 'dotbot', 'petalbot', 'blexbot',
+  'screaming frog', 'rogerbot', 'seznambot', 'exabot',
+  'omgilibot', 'imagesiftbot',
+  // Generic bot patterns
+  'spider', 'crawler', 'scraper', 'wget', 'httrack', 'python-urllib',
+  'python-requests', 'go-http-client', 'java/', 'libwww-perl',
+  'curl/', 'phpcrawl', 'headlesschrome',
 ];
 
-// Only fire the firewall on expensive server-rendered routes.
-// Static assets, API endpoints, and the homepage are excluded.
-const PROTECTED_PATHS = [
-  '/watch/',
-  '/person/',
-  '/collection/',
-  '/collections',
-  '/schedule',
-  '/discover',
-  '/genre/',
-  '/year/',
-  '/mood/',
-  '/movies',
-  '/tv',
-  '/anime',
-  '/search',
-  '/recommended/',
-  '/providers',
+// ─── Scraper Paths ─────────────────────────────────────────────────────────────
+// Paths that only bots/scanners request. Real users never hit these.
+const SCRAPER_PATHS = [
+  '/sitemap', '/sitemap.xml', '/sitemap_index.xml',
+  '/feed', '/rss', '/atom.xml',
+  '/.well-known', '/.env', '/.git',
+  '/wp-admin', '/wp-login', '/wp-content', '/wp-includes',
+  '/xmlrpc.php', '/admin', '/administrator',
+  '/phpmyadmin', '/cgi-bin',
 ];
 
-function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PATHS.some((prefix) => pathname.startsWith(prefix));
-}
+// ─── Minimal 403 Response ──────────────────────────────────────────────────────
+// Ultra-lightweight HTML — no Next.js rendering, no function cost.
+const BLOCKED_RESPONSE = new Response(
+  '<!DOCTYPE html><html><head><title>403</title></head><body><h1>403 Forbidden</h1></body></html>',
+  {
+    status: 403,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+      'X-Robots-Tag': 'noindex, nofollow, noai, noimageai',
+    },
+  }
+);
 
-function isBlockedBot(userAgent: string): boolean {
-  const ua = userAgent.toLowerCase();
-  return BOT_BLOCKLIST.some((bot) => ua.includes(bot.toLowerCase()));
-}
+export default function proxy(request: NextRequest) {
+  const userAgent = (request.headers.get('user-agent') || '').toLowerCase();
+  const pathname = request.nextUrl.pathname;
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // 308 Permanent Redirect: old Vercel subdomains → real custom domain
-  // This trains bots and browsers to never use the old URLs again.
-  const hostname = request.headers.get('host') || '';
-  if (
-    hostname.includes('zivox-tv.vercel.app') ||
-    hostname.includes('zivox-streaming.vercel.app')
-  ) {
-    return NextResponse.redirect(
-      `https://www.zivoxtv.live${pathname}${request.nextUrl.search}`,
-      { status: 308 }
-    );
+  // ── 1. Block scraper paths immediately ───────────────────────────────────
+  const isScraperPath = SCRAPER_PATHS.some(p => pathname.startsWith(p));
+  if (isScraperPath) {
+    return BLOCKED_RESPONSE.clone();
   }
 
-  // Only apply bot firewall to routes that cost real compute
-  if (!isProtectedPath(pathname)) {
-    return NextResponse.next();
+  // ── 2. Block empty or missing user agents ────────────────────────────────
+  // Real browsers always send a user agent. Empty = bot/scanner.
+  if (!userAgent || userAgent.length < 10) {
+    return BLOCKED_RESPONSE.clone();
   }
 
-  const ua = request.headers.get('user-agent') || '';
-
-  if (isBlockedBot(ua)) {
-    return new NextResponse(
-      '<!DOCTYPE html><html><body></body></html>',
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html',
-          'Cache-Control': 'no-store, no-cache',
-          'X-Robots-Tag': 'noindex, nofollow, noarchive',
-        },
-      }
-    );
+  // ── 3. Block known bot user agents ───────────────────────────────────────
+  const isBot = BLOCKED_BOT_PATTERNS.some(pattern => userAgent.includes(pattern));
+  if (isBot) {
+    return BLOCKED_RESPONSE.clone();
   }
 
-  return NextResponse.next();
+  // ── 4. Add security headers to all responses ─────────────────────────────
+  const response = NextResponse.next();
+  response.headers.set('X-Robots-Tag', 'noindex, nofollow, noai, noimageai');
+  return response;
 }
 
+// ─── Matcher ───────────────────────────────────────────────────────────────────
+// Skip static assets — they don't need bot checking and this saves edge compute.
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.png|manifest.json|sw.js|robots.txt|sitemap.xml).*)',
-  ],
+  matcher: '/((?!_next/static|_next/image|favicon.ico|icon.png|manifest.json|sw.js).*)',
 };

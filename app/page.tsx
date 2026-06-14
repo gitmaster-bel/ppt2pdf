@@ -3,12 +3,12 @@ import { getCuratedCollections } from '@/lib/collectionsData';
 import { HeroSlider } from '@/components/media/HeroSlider';
 import { ContinueWatching } from '@/components/media/ContinueWatching';
 import { RecommendedForYou } from '@/components/media/RecommendedForYou';
-import { JsonLd } from '@/components/seo/JsonLd';
+
 import { Suspense } from 'react';
 import { ThemedLoader } from '@/components/ui/ThemedLoader';
 import { PROVIDERS } from '@/lib/providers';
 import nextDynamic from 'next/dynamic';
-import { getSiteUrl } from '@/lib/utils';
+
 
 const CollectionsRow = nextDynamic(() => import('@/components/media/CollectionsRow').then(mod => mod.CollectionsRow));
 const TimeBasedWidget = nextDynamic(() => import('@/components/home/TimeBasedWidget').then(mod => mod.TimeBasedWidget));
@@ -25,7 +25,6 @@ async function HomeDataFetcher() {
   // run this function and hit TMDB ONCE per hour. All other user requests
   // will be served the pre-rendered HTML from Vercel's Edge CDN instantly.
 
-  const siteUrl = getSiteUrl();
   const [
     trending,
     popMovies,
@@ -118,38 +117,7 @@ async function HomeDataFetcher() {
 
   return (
     <div className="flex flex-col min-h-screen -mt-[72px]">
-      <JsonLd data={{
-        '@context': 'https://schema.org',
-        '@graph': [
-          {
-            '@type': 'WebSite',
-            '@id': `${siteUrl}/#website`,
-            name: 'ZIVOX',
-            alternateName: ['Zivox TV', 'Zivox Anime', 'Zivox Shows', 'Zivox Movies', 'Zivox App', 'Zivox Official'],
-            url: siteUrl,
-            description: 'Free premium streaming platform for movies, TV shows, and anime in HD quality without ads.',
-            potentialAction: {
-              '@type': 'SearchAction',
-              target: {
-                '@type': 'EntryPoint',
-                urlTemplate: `${siteUrl}/search?q={search_term_string}`,
-              },
-              'query-input': 'required name=search_term_string',
-            },
-          },
-          {
-            '@type': 'Organization',
-            '@id': `${siteUrl}/#organization`,
-            name: 'ZIVOX',
-            alternateName: ['Zivox App', 'Zivox Official'],
-            url: siteUrl,
-            logo: {
-              '@type': 'ImageObject',
-              url: `${siteUrl}/icon.png`,
-            }
-          }
-        ]
-      }} />
+
       {/* Cinematic hero — full screen, sits behind nav */}
       <HeroSlider items={heroItemsWithLogos} />
 
@@ -207,56 +175,15 @@ async function HomeDataFetcher() {
           seeAllHref="/tv"
         />
         
-        {/* Semantic SEO Block for Home Page */}
-        <div className="px-4 md:px-14 pb-8">
-          <div className="bg-white/[0.02] border border-zinc-800/50 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
-            <h2 className="text-xl md:text-2xl font-bold font-display text-white mb-4">Watch Movies & TV Shows Free Online in HD</h2>
-            <div className="prose prose-sm prose-invert max-w-none text-zinc-400 space-y-4">
-              <p>
-                Welcome to <strong>ZIVOX</strong>, your premier destination to <a href="/movies" className="text-brand-500 hover:underline">watch free movies online</a> and stream the latest TV series in stunning 1080p and 4K HD quality.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <h3 className="text-white font-bold text-base mb-2">Why Choose ZIVOX?</h3>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><strong>No Registration Required:</strong> Start watching instantly.</li>
-                    <li><strong>Premium HD Quality:</strong> 1080p and 4K streams available.</li>
-                    <li><strong>Massive Library:</strong> Over 100,000 titles spanning all genres.</li>
-                    <li><strong>Daily Updates:</strong> New episodes and theatrical releases added daily.</li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-base mb-2">Popular Categories</h3>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><a href="/movies" className="hover:text-white transition-colors">Free HD Movies Online</a></li>
-                    <li><a href="/tv" className="hover:text-white transition-colors">Binge-Watch TV Series</a></li>
-                    <li><a href="/anime" className="hover:text-white transition-colors">Top Anime Releases</a></li>
-                    <li><a href="/discover" className="hover:text-white transition-colors">Discover New Cinematic Gems</a></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );
 }
 
 export default function Home() {
-  const siteUrl = getSiteUrl();
-  
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": "ZIVOX - Watch Free Movies and TV Shows",
-    "url": siteUrl,
-    "description": "Stream ZIVOX online movie collections in HD without ads or registration. Watch free movies online, hindi dubbed movies, and top rated cinema.",
-  };
-
   return (
     <div className="flex flex-col min-h-screen w-full">
-      <JsonLd data={jsonLd} />
       <Suspense fallback={<ThemedLoader theme="home" />}>
         <HomeDataFetcher />
       </Suspense>

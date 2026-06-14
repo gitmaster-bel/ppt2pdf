@@ -9,52 +9,20 @@ import { WelcomeModal } from '@/components/ui/WelcomeModal';
 import { NotificationToaster } from '@/components/ui/NotificationToaster';
 import { GlobalLoader } from '@/components/ui/GlobalLoader';
 import { Analytics } from '@vercel/analytics/react';
-import { JsonLd } from '@/components/seo/JsonLd';
+
 import { SecurityGuard } from '@/components/ui/SecurityGuard';
 import { ThemePromptModal } from "@/components/ui/ThemePromptModal";
 import { GlobalDonationVerifier } from '@/components/ui/GlobalDonationVerifier';
-import { getSiteUrl } from '@/lib/utils';
+
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const space = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
-const siteUrl = getSiteUrl();
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
   title: {
-    default: 'ZivoxTV — Watch Movies, TV Shows & Anime Free in HD',
+    default: 'ZivoxTV',
     template: '%s | ZivoxTV',
-  },
-  description: 'ZivoxTV is the ultimate free streaming platform. Watch the latest movies, TV shows, and anime in stunning HD quality online.',
-  keywords: ['ZivoxTV', 'Zivox TV', 'zivoxtv', 'zivoxtv.live', 'zivox anime', 'zivox shows', 'zivox online movie', 'ZivoxTV official', 'zivox app', 'watch free movies online', 'free HD movies', 'watch shows online free', 'watch anime free', 'free streaming sites', 'movies to watch free', 'online tv shows free', 'watch movies free 2026', 'no ads streaming', 'watch latest movies', 'free cinema online'],
-  alternates: {
-    canonical: '/',
-    languages: {
-      'en': '/',
-    },
-  },
-  openGraph: {
-    title: 'ZivoxTV — Watch Movies, TV Shows & Anime Free in HD',
-    description: 'ZivoxTV is the ultimate free streaming platform. Watch the latest movies, TV shows, and anime in stunning HD quality online.',
-    type: 'website',
-    siteName: 'ZivoxTV',
-    url: siteUrl,
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'ZivoxTV — Premium Streaming',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'ZivoxTV — Watch Movies, TV Shows & Anime Free in HD',
-    description: 'Premium free streaming. Watch the latest movies, TV shows, and anime in stunning HD quality.',
-    images: ['/og-image.png'],
   },
   icons: {
     icon: '/icon.png',
@@ -72,29 +40,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const globalSchema = [
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "ZivoxTV",
-      "url": siteUrl,
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": `${siteUrl}/search?q={search_term_string}`,
-        "query-input": "required name=search_term_string"
-      }
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "ZivoxTV",
-      "url": siteUrl,
-      "logo": `${siteUrl}/icon.png`,
-      "sameAs": [
-        "https://twitter.com/zivoxtv"
-      ]
-    }
-  ];
 
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${space.variable} ${mono.variable}`}>
@@ -102,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/icon.png" type="image/png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
+        <meta name="robots" content="noindex, nofollow, noai, noimageai, noarchive, nosnippet" />
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
@@ -121,7 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `
           }}
         />
-        <JsonLd data={globalSchema} />
+
         {/* ── Theme Injection (runs before first paint — prevents FOUC) ── */}
         <script
           suppressHydrationWarning

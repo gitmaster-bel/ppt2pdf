@@ -6,8 +6,8 @@ import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 export const dynamic = 'force-static';
 
 export const metadata = {
-  title: 'All Streaming Platforms — ZIVOX',
-  description: 'Browse content from 40+ streaming services worldwide including Netflix, Prime Video, Disney+, Max, and more.',
+  title: 'Streaming Platforms',
+  robots: { index: false, follow: false },
 };
 
 export default function ProvidersDirectoryPage() {
