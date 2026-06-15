@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getSource, sources, TOP_8_IDS, encodeServer, decodeServer } from '@/lib/sources';
-import { Settings, Check, X, Heart, Server, Shield, ShieldOff, Play, Maximize, ExternalLink, RotateCcw, Share2, Copy, Twitter, Facebook, MessageCircle, ArrowUp, ArrowUpRight, Sparkles, Globe } from 'lucide-react';
+import { getSource, sources, TOP_8_IDS, EXTENDED_TOP_IDS, encodeServer, decodeServer } from '@/lib/sources';
+import { Settings, Check, X, Heart, Server, Shield, ShieldOff, Play, Maximize, ExternalLink, RotateCcw, Share2, Copy, Twitter, Facebook, MessageCircle, ArrowUp, ArrowUpRight, Sparkles, Globe, Wifi, WifiOff } from 'lucide-react';
 import { ShareModal } from '@/components/ui/ShareModal';
 import Link from 'next/link';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
@@ -538,9 +538,9 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   }, []);
 
   // Top 7 servers — shown with publicName (Server 1..7), real name in settings
-  const top7Sources = sources.filter(s => TOP_8_IDS.includes(s.id) && !favoriteServers.includes(s.id));
+  const top7Sources = sources.filter(s => EXTENDED_TOP_IDS.includes(s.id) && !favoriteServers.includes(s.id));
   const favoriteSources = sources.filter(s => favoriteServers.includes(s.id));
-  const remainingSources = sources.filter(s => !TOP_8_IDS.includes(s.id) && !favoriteServers.includes(s.id));
+  const remainingSources = sources.filter(s => !EXTENDED_TOP_IDS.includes(s.id) && !favoriteServers.includes(s.id));
 
   const toggleFavServer = (e: React.MouseEvent, serverId: string) => {
     e.stopPropagation();
@@ -580,7 +580,8 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     showToast(toastMsg);
   };
 
-  const { preferences } = usePreferences();
+  const { preferences, updatePreferences } = usePreferences();
+  const dataSaver = preferences.dataSaver ?? false;
   
   const themeHexMap: Record<string, string> = {
     violet: '7c3aed',
@@ -975,6 +976,24 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
                       </div>
                     )}
 
+                    {/* Data Saver */}
+                    <div className="bg-black/20 border border-[oklch(1_0_0/0.08)] rounded-lg px-4 min-h-[56px] flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-transform" onClick={() => {
+                        updatePreferences({ dataSaver: !dataSaver });
+                        showToast(`Data Saver ${!dataSaver ? 'ON — Trailers disabled' : 'OFF'}`);
+                    }}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`shrink-0 ${dataSaver ? 'text-cyan-400' : 'text-zinc-500'}`}>
+                          {dataSaver ? <WifiOff size={18} /> : <Wifi size={18} />}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-semibold text-white leading-tight">Data Saver</span>
+                          <span className="text-[11px] text-[#9ca3af] truncate">Disables auto-playing trailers</span>
+                        </div>
+                      </div>
+                      <button className={`shrink-0 relative w-10 h-5 rounded-full transition-all duration-300 ${dataSaver ? 'bg-cyan-500' : 'bg-zinc-700'}`}>
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${dataSaver ? 'left-[22px]' : 'left-0.5'}`} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -1267,7 +1286,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       })()}
 
 
-      <div className={`relative w-full bg-black transition-all ${isFullscreen ? 'flex-1 h-full' : 'aspect-video w-full'}`}>
+      <div className={`relative w-full bg-black transition-all ${isFullscreen ? 'flex-1 h-full' : 'aspect-video w-full min-h-[220px] sm:min-h-[280px] md:min-h-0'}`}>
 
         {testingSources ? (
           <div className="absolute inset-0 z-40 bg-void-950 flex flex-col items-center justify-center p-4 text-center overflow-hidden">

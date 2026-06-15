@@ -10,6 +10,7 @@ import { useAutoLocation } from '@/hooks/useAutoLocation';
 import { useRef } from 'react';
 import { DonationButton } from '@/components/ui/DonationButton';
 import { Logo } from '@/components/ui/Logo';
+import { AISearchModal } from '@/components/ui/AISearchModal';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
@@ -39,6 +40,7 @@ const MOBILE_DOCK_ITEMS = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAISearchOpen, setIsAISearchOpen] = useState(false);
   useAutoLocation();
   const [randomMoviePreview, setRandomMoviePreview] = useState<any>(null);
   const [isHoveringRandom, setIsHoveringRandom] = useState(false);
@@ -62,8 +64,15 @@ export function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
+    const handleOpenAI = () => setIsAISearchOpen(true);
+    
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('open-ai-search', handleOpenAI);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('open-ai-search', handleOpenAI);
+    };
   }, []);
 
   useEffect(() => {
@@ -126,6 +135,9 @@ export function Navbar() {
       <nav className={`md:hidden fixed top-0 left-0 right-0 z-[200] px-4 h-[52px] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#050505]/70 backdrop-blur-[20px] saturate-[1.6]' : 'bg-transparent'}`}>
         <Logo size="md" onClick={(e) => handleNavigation(e, '/')} />
         <div className="flex items-center gap-4 z-10">
+          <button onClick={() => setIsAISearchOpen(true)} className="text-white hover:text-white/80 transition-all duration-300 hover:scale-110 active:scale-95">
+            <Sparkles size={20} strokeWidth={2.5} className="text-brand-400" />
+          </button>
           <Link href="/search" onClick={clearIframes} className="text-white hover:text-white/80 transition-all duration-300 hover:scale-110 active:scale-95"><Search size={20} strokeWidth={2.5} /></Link>
           <DonationButton />
           <button onClick={() => setIsSettingsOpen(true)} className="text-white hover:text-white/80 transition-all duration-300 hover:scale-110 active:scale-95"><Settings size={20} strokeWidth={2.5} /></button>
@@ -233,14 +245,22 @@ export function Navbar() {
             {/* Separator */}
             <div className="w-[1px] h-5 bg-white/10 mx-2 hidden lg:block"></div>
 
-            {/* Prominent Search Bar */}
+            {/* AI Search Bar */}
+            <button
+              onClick={() => setIsAISearchOpen(true)}
+              className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-brand-500/10 hover:border-brand-500/30 transition-all duration-300 group shadow-[0_0_15px_rgba(255,255,255,0.02)] hover:shadow-[0_0_25px_color-mix(in_srgb,var(--brand-500)_20%,transparent)]"
+            >
+              <Sparkles size={13} strokeWidth={2.5} className="text-brand-400 shrink-0" />
+              <span className="text-xs font-medium tracking-wide text-white/60 group-hover:text-white transition-colors">AI Search...</span>
+            </button>
+            {/* Normal search icon — still accessible */}
             <Link
               href="/search"
               onClick={clearIframes}
-              className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-brand-500/30 transition-all duration-300 group shadow-[0_0_15px_rgba(255,255,255,0.02)] hover:shadow-[0_0_25px_rgba(255,165,80,0.15)]"
+              title="Regular Search"
+              className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white/50 hover:text-white transition-all duration-200 active:scale-95"
             >
-              <Search size={15} strokeWidth={2.5} className="text-white/60 group-hover:text-brand-400 transition-colors" />
-              <span className="text-xs font-medium tracking-wide text-white/60 group-hover:text-white transition-colors">Search...</span>
+              <Search size={14} strokeWidth={2.5} />
             </Link>
           </div>
 
@@ -355,6 +375,7 @@ export function Navbar() {
       </nav>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <AISearchModal isOpen={isAISearchOpen} onClose={() => setIsAISearchOpen(false)} />
     </>
   );
 }

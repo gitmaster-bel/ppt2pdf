@@ -30,6 +30,9 @@ export const MediaCard = memo(function MediaCard({
   const router = useRouter();
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const { hasNotification, toggleNotification } = useNotifications();
+  const { preferences } = usePreferences();
+  const { isInWatchlist, toggleWatchlist } = useWatchlist();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const title = media.title || media.name;
   const type = media.media_type || (media.name ? "tv" : "movie");
@@ -93,16 +96,18 @@ export const MediaCard = memo(function MediaCard({
         setMinTimeElapsed(true);
       }, 2000);
 
-      timeoutId = setTimeout(async () => {
-        if (!trailerKey && !trailerFailed) {
-          const key = await getTrailerAction(media.id.toString(), type as 'movie'|'tv');
-          if (key) {
-            setTrailerKey(key);
-          } else {
-            setTrailerFailed(true);
+      if (!preferences.dataSaver) {
+        timeoutId = setTimeout(async () => {
+          if (!trailerKey && !trailerFailed) {
+            const key = await getTrailerAction(media.id.toString(), type as 'movie'|'tv');
+            if (key) {
+              setTrailerKey(key);
+            } else {
+              setTrailerFailed(true);
+            }
           }
-        }
-      }, 400);
+        }, 400);
+      }
     } else {
       setIsExpanded(false);
       setTrailerPlaying(false);
@@ -116,7 +121,7 @@ export const MediaCard = memo(function MediaCard({
       clearTimeout(expandTimeoutId);
       clearTimeout(minTimeId);
     };
-  }, [isHovered, media.id, type, trailerKey, trailerFailed, isMobileExpanded]);
+  }, [isHovered, media.id, type, trailerKey, trailerFailed, isMobileExpanded, preferences.dataSaver]);
 
   useEffect(() => {
     if (!isExpanded || !trailerKey || trailerFailed) return;
@@ -162,10 +167,6 @@ export const MediaCard = memo(function MediaCard({
       clearTimeout(failsafeId);
     };
   }, [isExpanded, trailerKey, trailerFailed, trailerPlaying]);
-
-  const { isInWatchlist, toggleWatchlist } = useWatchlist();
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const { preferences } = usePreferences();
 
   const onWatchlist = isInWatchlist(media.id.toString());
   const onFavorites = isFavorite(media.id.toString());
@@ -433,7 +434,7 @@ export const MediaCard = memo(function MediaCard({
                 draggable={false}
                 style={{ userSelect: 'none' }}
               />
-              {trailerKey && !trailerFailed && (
+              {!preferences.dataSaver && trailerKey && !trailerFailed && (
                 <div className={`absolute inset-0 bg-black overflow-hidden pointer-events-none transition-opacity duration-700 ${trailerPlaying && minTimeElapsed ? 'opacity-100' : 'opacity-0'}`}>
                   <iframe
                     ref={iframeRef}
@@ -453,7 +454,7 @@ export const MediaCard = memo(function MediaCard({
                   />
                 </div>
               )}
-              {trailerKey && trailerPlaying && !trailerFailed && (
+              {!preferences.dataSaver && trailerKey && trailerPlaying && !trailerFailed && (
                  <div className="absolute top-2 right-2 flex items-center gap-1.5 z-50 animate-in fade-in duration-300">
                     <button 
                       onClick={toggleTrailerMute} 

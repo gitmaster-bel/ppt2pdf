@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Settings, Download, Upload, MonitorPlay, Shield, Database, ChevronRight, Palette } from 'lucide-react';
+import { X, Settings, Download, Upload, MonitorPlay, Shield, Database, ChevronRight, Palette, WifiOff, Wifi } from 'lucide-react';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useEffect, useRef, useState } from 'react';
 
@@ -261,6 +261,24 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 </div>
                 <div className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${preferences.showRatings ? 'bg-premium-gradient' : 'bg-black/50 border border-white/20'}`}>
                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${preferences.showRatings ? 'translate-x-7' : 'translate-x-1'}`} />
+                </div>
+              </button>
+
+              <button
+                onClick={() => updatePreferences({ dataSaver: !preferences.dataSaver })}
+                className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${preferences.dataSaver ? 'bg-cyan-500/20' : 'bg-white/5'}`}>
+                    {preferences.dataSaver ? <WifiOff size={16} className="text-cyan-400" /> : <Wifi size={16} className="text-zinc-500" />}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white">Data Saver Mode</h4>
+                    <p className="text-zinc-400 text-xs mt-0.5">Disables auto-playing trailers on movie/show pages — saves bandwidth on mobile</p>
+                  </div>
+                </div>
+                <div className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${preferences.dataSaver ? 'bg-cyan-500' : 'bg-black/50 border border-white/20'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${preferences.dataSaver ? 'translate-x-7' : 'translate-x-1'}`} />
                 </div>
               </button>
             </section>

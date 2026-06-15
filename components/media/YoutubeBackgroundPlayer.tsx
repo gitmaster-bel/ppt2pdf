@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/tmdb';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, WifiOff } from 'lucide-react';
+import { usePreferences } from '@/hooks/usePreferences';
 
 interface YoutubeBackgroundPlayerProps {
   videoKey: string | null;
@@ -12,6 +13,8 @@ interface YoutubeBackgroundPlayerProps {
 }
 
 export function YoutubeBackgroundPlayer({ videoKey, backdropPath, title, onPlayingChange }: YoutubeBackgroundPlayerProps) {
+  const { preferences } = usePreferences();
+  const dataSaver = preferences.dataSaver ?? false;
   const [isPlaying, setIsPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -135,8 +138,8 @@ export function YoutubeBackgroundPlayer({ videoKey, backdropPath, title, onPlayi
         priority
       />
 
-      {/* 2. YouTube Background Iframe (Fades in dynamically only when play is confirmed!) */}
-      {videoKey && !failed && (
+      {/* 2. YouTube Background Iframe — only loaded when Data Saver is OFF */}
+      {videoKey && !failed && !dataSaver && (
         <div 
           className={`absolute inset-0 w-full h-full overflow-hidden pointer-events-none transition-opacity duration-1000 ${
             isPlaying ? 'opacity-100' : 'opacity-0'
@@ -158,6 +161,14 @@ export function YoutubeBackgroundPlayer({ videoKey, backdropPath, title, onPlayi
               }, 4000);
             }}
           />
+        </div>
+      )}
+
+      {/* 2b. Data Saver badge — shown instead of trailer */}
+      {dataSaver && (
+        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm border border-cyan-500/30 text-cyan-400 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+          <WifiOff size={10} />
+          Data Saver ON
         </div>
       )}
 

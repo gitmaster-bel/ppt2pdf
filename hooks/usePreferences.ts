@@ -10,6 +10,7 @@ export type Preferences = {
   country: string;
   locationAutoDetected?: boolean;
   theme: 'red' | 'blue' | 'violet' | 'emerald' | 'mono' | 'rose' | 'amber' | 'cyan' | 'silicon';
+  dataSaver?: boolean;
 };
 
 const defaultPreferences: Preferences = {

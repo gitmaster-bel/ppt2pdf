@@ -209,25 +209,29 @@
   &::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 }
 
-/* Global Premium Scrollbar */
+/* Global Premium Scrollbar — thin, smooth, themed */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-void-950);
+  background: rgba(255, 255, 255, 0.03);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  border: 2px solid var(--color-void-950);
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 100px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--brand-500, rgba(124, 58, 237, 0.8));
+  opacity: 0.8;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) var(--color-void-950);
+  scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.03);
 }
 
 /* ---------- Glass Panel Utility ---------- */
@@ -327,20 +331,24 @@
 }
 
 html {
-  /* No scroll-behavior:smooth on html — if set, window.scrollBy() in carousel
-     wheel handlers would inherit it, creating a new smooth animation per tick
-     (double-smooth jank). Programmatic scrolls specify behavior explicitly. */
   overscroll-behavior: none;
   scroll-padding-top: 72px;
-
-  /* Hide page scrollbar — keep content scrollable, just hide the bar visually.
-     scrollbar-gutter:stable reserves the space so layout doesn't shift. */
   scrollbar-gutter: stable;
-  scrollbar-width: none;        /* Firefox */
-  -ms-overflow-style: none;     /* IE / Edge legacy */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.03);
 }
 html::-webkit-scrollbar {
-  display: none;                /* Chrome / Safari / Opera */
+  width: 5px;
+}
+html::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+html::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 100px;
+}
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-500, rgba(124, 58, 237, 0.8));
 }
 
 body {

@@ -263,9 +263,9 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
                   href={`/collection/${generateSlug(movie.belongs_to_collection.id.toString(), movie.belongs_to_collection.name)}`}
                   className="inline-flex items-center gap-2 text-sm font-bold bg-brand-500/10 hover:bg-brand-500/15 border border-brand-500/25 px-4 py-2 rounded-full text-brand-400 hover:text-brand-300 transition-all w-fit shadow-md mt-2 active:scale-95"
                 >
-                  <span>≡ƒÄ¼</span>
+                  <span>🎬</span>
                   <span>Part of <span className="text-white">{movie.belongs_to_collection.name}</span></span>
-                  <span className="text-brand-500/60 text-xs">ΓåÆ</span>
+                  <span className="text-brand-500/60 text-xs">→</span>
                 </Link>
               )}
             </div>

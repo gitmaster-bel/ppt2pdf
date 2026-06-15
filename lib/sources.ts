@@ -513,6 +513,8 @@ export const sources: Source[] = [
 ];
 
 export const TOP_8_IDS = ["cinemaos", "cinesrc", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "smashystream", "vidnest"];
+/** Servers 9-11 appear in the Settings "Recommended" section but NOT in the quick-switch header strip */
+export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "vidlux", "screenscape", "1embed"];
 
 export const getSource = (id?: string): Source =>
   sources.find((s) => s.id === id) || sources[0];
