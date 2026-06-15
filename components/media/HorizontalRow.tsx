@@ -113,14 +113,14 @@ export function HorizontalRow({ title, subtitle, items, seeAllHref, variant = 'd
           ref={scrollRef}
           onScroll={checkScroll}
           onTouchStart={() => setHasInteracted(true)}
-          className="flex gap-3 md:gap-4 overflow-x-auto overflow-y-hidden no-scrollbar overscroll-x-contain"
+          className="flex gap-3 md:gap-4 overflow-x-auto  no-scrollbar overscroll-x-contain"
           style={{
             paddingLeft: 'clamp(1rem, 3.5vw, 3.5rem)',
             paddingRight: 'clamp(1rem, 3.5vw, 3.5rem)',
             paddingTop: '8px',
             paddingBottom: '24px',
             WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-x',
+            // touchAction: 'pan-x' removed to allow native vertical scrolling on mobile
           }}
         >
           {items.map((item, idx) => (

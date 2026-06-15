@@ -47,7 +47,6 @@ export function SectionTitle({
                   </span>
                 )}
                 {title}
-                {actionNode}
                 <ArrowRight size={18} className="opacity-0 -translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-brand-400" />
               </h2>
             </Link>
@@ -59,7 +58,6 @@ export function SectionTitle({
                 </span>
               )}
               {title}
-              {actionNode}
             </h2>
           )}
           {subtitle && (
@@ -70,16 +68,19 @@ export function SectionTitle({
         </div>
       </div>
       
-      {viewAllHref && (
-        <Link
-          href={viewAllHref}
-          onMouseEnter={() => router.prefetch(viewAllHref)}
-          className="flex items-center gap-1 text-xs font-semibold text-white/40 hover:text-white transition-colors duration-200 group"
-        >
-          View All
-          <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform duration-200" />
-        </Link>
-      )}
+      <div className="flex items-center gap-2 md:gap-4">
+        {actionNode}
+        {viewAllHref && (
+          <Link
+            href={viewAllHref}
+            onMouseEnter={() => router.prefetch(viewAllHref)}
+            className="flex items-center gap-1 text-xs font-semibold text-white/40 hover:text-white transition-colors duration-200 group"
+          >
+            View All
+            <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform duration-200" />
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

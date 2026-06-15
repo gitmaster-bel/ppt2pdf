@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
       },
       // ── HOME PAGE ────────────────────────────────────────────────────────────
       // Currently only 14.6% cached — this is the #1 cost driver.
-      // CDN caches for 1h, serves stale for 24h while background revalidates.
+      // CDN caches for 24h, serves stale for 7 days while background revalidates.
       {
         source: '/',
         headers: [
@@ -101,29 +101,29 @@ const nextConfig: NextConfig = {
         ],
       },
       // ── BROWSE PAGES ─────────────────────────────────────────────────────────
-      // /movies, /tv, /anime, /schedule — revalidate every 6h, stale 7 days
+      // /movies, /tv, /anime, /schedule — cache longer to protect hobby-plan usage.
       {
         source: '/movies',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=604800' },
+          { key: 'Cache-Control', value: 'public, s-maxage=86400, stale-while-revalidate=604800' },
         ],
       },
       {
         source: '/tv',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=604800' },
+          { key: 'Cache-Control', value: 'public, s-maxage=86400, stale-while-revalidate=604800' },
         ],
       },
       {
         source: '/anime',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=604800' },
+          { key: 'Cache-Control', value: 'public, s-maxage=86400, stale-while-revalidate=604800' },
         ],
       },
       {
         source: '/schedule',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=604800' },
         ],
       },
       // ── DISCOVER ─────────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ const nextConfig: NextConfig = {
       {
         source: '/discover',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=604800' },
         ],
       },
       // ── SEARCH ───────────────────────────────────────────────────────────────
@@ -150,21 +150,21 @@ const nextConfig: NextConfig = {
       {
         source: '/api/discover',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=1800, stale-while-revalidate=86400' },
+          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=604800' },
         ],
       },
-      // Search API — cache for 1 hour to prevent function invocation spam
+      // Search API — cache for 6 hours to prevent function invocation spam
       {
         source: '/api/search',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=86400' },
         ],
       },
       // Random API — cache a short window
       {
         source: '/api/random',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=120' },
+          { key: 'Cache-Control', value: 'public, s-maxage=600, stale-while-revalidate=3600' },
         ],
       },
       // Blog + static content pages
@@ -177,7 +177,7 @@ const nextConfig: NextConfig = {
       {
         source: '/collections',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
+          { key: 'Cache-Control', value: 'public, s-maxage=86400, stale-while-revalidate=604800' },
         ],
       },
       {

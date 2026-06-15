@@ -11,7 +11,7 @@ const CollectionsRow = nextDynamic(() => import('@/components/media/CollectionsR
 const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row));
 const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow));
 
-export const revalidate = 21600; // 6h instead of 1h — saves ISR Writes
+export const revalidate = 86400; // 24h — protects hobby-plan ISR writes
 
 export const metadata = {
   title: 'Movies',

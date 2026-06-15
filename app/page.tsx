@@ -17,12 +17,12 @@ const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mo
 const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow));
 const ProviderHeroShelf = nextDynamic(() => import('@/components/providers/ProviderHeroShelf').then(mod => mod.ProviderHeroShelf));
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 async function HomeDataFetcher() {
   // ─── Single cached render replaces 12+ parallel TMDB calls ────────────────
-  // The page itself exports `revalidate = 3600`. This means Next.js will only
-  // run this function and hit TMDB ONCE per hour. All other user requests
+  // The page itself exports `revalidate = 86400`. This means Next.js will only
+  // run this function and hit TMDB once per day. All other user requests
   // will be served the pre-rendered HTML from Vercel's Edge CDN instantly.
 
   const [

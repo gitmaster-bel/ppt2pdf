@@ -132,7 +132,7 @@ export function Navbar() {
   return (
     <>
       {/* ── MOBILE TOP NAV ── */}
-      <nav className={`md:hidden fixed top-0 left-0 right-0 z-[200] px-4 h-[52px] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#050505]/70 backdrop-blur-[20px] saturate-[1.6]' : 'bg-transparent'}`}>
+      <nav className={`xl:hidden fixed top-0 left-0 right-0 z-[200] px-4 h-[52px] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#050505]/70 backdrop-blur-[20px] saturate-[1.6]' : 'bg-transparent'}`}>
         <Logo size="md" onClick={(e) => handleNavigation(e, '/')} />
         <div className="flex items-center gap-4 z-10">
           <button onClick={() => setIsAISearchOpen(true)} className="text-white hover:text-white/80 transition-all duration-300 hover:scale-110 active:scale-95">
@@ -147,7 +147,7 @@ export function Navbar() {
 
       {/* ── DESKTOP FLOATING PILL NAV ── */}
       <nav
-        className={`hidden md:flex fixed z-[200] left-0 right-0 justify-center px-4 transition-all duration-500 pointer-events-none ${scrolled ? 'top-3' : 'top-6'}`}
+        className={`hidden xl:flex fixed z-[200] left-0 right-0 justify-center px-4 transition-all duration-500 pointer-events-none ${scrolled ? 'top-3' : 'top-6'}`}
       >
         <div
           className="group relative flex items-center px-5 py-2.5 gap-5 rounded-full transition-all duration-300 pointer-events-auto"
@@ -329,7 +329,7 @@ export function Navbar() {
 
       {/* ── MOBILE BOTTOM DOCK ── */}
       <nav
-        className="md:hidden fixed left-0 right-0 z-[100]"
+        className="xl:hidden fixed left-0 right-0 z-[100]"
         style={{
           bottom: '-20px', // Extend 20px below the viewport to guarantee no gaps
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)', // Push content back up

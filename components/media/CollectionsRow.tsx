@@ -97,7 +97,7 @@ export function CollectionsRow({ collections }: { collections: CollectionData[] 
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth"
+          className="flex gap-4 overflow-x-auto  no-scrollbar scroll-smooth"
           style={{
             paddingLeft: 'clamp(1rem, 3.5vw, 3.5rem)',
             paddingRight: 'clamp(1rem, 3.5vw, 3.5rem)',

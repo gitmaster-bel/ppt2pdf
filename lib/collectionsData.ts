@@ -128,7 +128,10 @@ export const COLLECTION_CATEGORIES: Record<string, number[]> = {
 };
 
 export async function getCuratedCollections() {
-  const collectionIds = [263, 119, 230, 131292, 1241, 84, 10, 404609, 87359, 645, 2344, 328, 10194, 173710, 9485];
+  const collectionIds = [
+    263, 119, 230, 131292, 1241, 84, 10, 404609, 87359, 645, 2344, 328, 10194, 173710, 9485,
+    350309, 44976, 246091, 619537, 210303, 131635, 8650, 295, 531330
+  ];
   const rawCollections = await Promise.all(collectionIds.map(id => tmdb.getCollection(id.toString())));
   
   const CURATED_TAGLINES: Record<number, string> = {
@@ -136,7 +139,10 @@ export async function getCuratedCollections() {
     131292: "The ultimate connected universe", 1241: "The boy who lived", 84: "The original adventure hero",
     10: "Where it all began", 404609: "Modern action at its finest", 87359: "The best ongoing action franchise",
     645: "60 years of the greatest spy", 2344: "The sci-fi landmark", 328: "30 years of dino carnage",
-    10194: "Pixar's timeless masterpiece", 173710: "The reboot done right", 9485: "Family. Always."
+    10194: "Pixar's timeless masterpiece", 173710: "The reboot done right", 9485: "Family. Always.",
+    350309: "India's greatest epic", 44976: "High-octane Bollywood heist", 246091: "India's beloved superhero",
+    619537: "Korean zombie masterpiece", 210303: "Japanese mecha phenomenon", 131635: "May the odds be ever in your favor",
+    8650: "Robots in disguise", 295: "A pirate's life for me", 531330: "The titans clash"
   };
 
   return rawCollections.filter(Boolean).map(c => ({

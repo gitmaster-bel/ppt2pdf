@@ -6,7 +6,7 @@ import { Top10Row } from '@/components/media/Top10Row';
 import { RecommendedForYou } from '@/components/media/RecommendedForYou';
 
 
-export const revalidate = 21600; // 6h
+export const revalidate = 86400; // 24h
 
 export const metadata = {
   title: 'TV Shows',

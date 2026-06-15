@@ -6,18 +6,18 @@ export const runtime = 'edge';
 // ─── Home Data API Route ──────────────────────────────────────────────────────
 //
 // RATIONALE: The home page was firing 12+ parallel TMDB fetches on EVERY render
-// with revalidate=3600. With 842 requests at 13.8% cached, ~724 renders each
-// made 12 TMDB calls = ~8,688 TMDB API sub-requests per hour just for the
+// with short revalidation windows. With high traffic, uncached renders each
+// made 12 TMDB calls, creating a large amount of avoidable function work for the
 // home page.
 //
 // This route consolidates all home data into ONE cached endpoint. The `revalidate`
-// directive ensures the function runs AT MOST once per hour, regardless of traffic.
-// All subsequent requests within that hour receive the CDN-cached JSON response
+// directive ensures the function runs at most once per day, regardless of traffic.
+// All subsequent requests within that window receive the CDN-cached JSON response
 // at zero function invocation cost.
 //
 // The s-maxage header in next.config.ts ensures Vercel's CDN layer caches this.
 
-export const revalidate = 3600; // Revalidate once per hour — not once per user
+export const revalidate = 86400; // Revalidate once per day — not once per user
 
 export async function GET() {
   try {
@@ -94,8 +94,8 @@ export async function GET() {
       },
       {
         headers: {
-          // Tell Vercel CDN to cache this response for 1 hour
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          // Tell Vercel CDN to cache this response for 24 hours.
+          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
         },
       }
     );

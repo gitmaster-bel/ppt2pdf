@@ -25,48 +25,7 @@ interface AISearchModalProps {
   onClose: () => void;
 }
 
-const EXTREME_PROMPTS = [
-  {
-    text: "best Hindi action thriller movies starring Nawazuddin Siddiqui in 2010s",
-    tags: ["Actor", "Genres", "Language", "Decade", "Rating"],
-    description: "Combines cast credits, multiple genres, native language, decade ranges, and high rating sorting."
-  },
-  {
-    text: "underrated 90s sci-fi movies similar to The Matrix",
-    tags: ["Decade", "Genre", "Similarity", "Underrated"],
-    description: "Filters by release decade, sci-fi genre, similar movies recommendations, and underrated quality filter."
-  },
-  {
-    text: "top rated classic French romantic comedy films from 80s",
-    tags: ["Rating", "Classic", "Language", "Genres", "Decade"],
-    description: "Finds French films from the 1980s, combining romance/comedy, and sorts by highest Bayesian rating."
-  },
-  {
-    text: "popular action sci-fi shows like Stranger Things",
-    tags: ["Popularity", "Genres", "Similarity", "TV Show"],
-    description: "Performs popularity-based recommendation for action/sci-fi TV series resembling a specific title."
-  },
-  {
-    text: "best Korean drama series with high rating from 2020s",
-    tags: ["Rating", "Language", "Genre", "Decade"],
-    description: "Finds top-rated Korean drama series released in the current decade."
-  },
-  {
-    text: "movies directed by Christopher Nolan in the 2010s",
-    tags: ["Director", "Decade", "Movies"],
-    description: "Finds movies where Nolan is credited in directing department, filtered strictly to the 2010s."
-  },
-  {
-    text: "underrated Japanese anime movies similar to Naruto before 2010",
-    tags: ["Underrated", "Language", "Anime", "Similarity", "Year Modifier"],
-    description: "Applies comparative year constraints, Japanese original language, anime genre, similarity, and rating filters."
-  },
-  {
-    text: "adult erotic thriller movies starring Sharon Stone from 1990s",
-    tags: ["Adult Filter", "Genre", "Actor", "Decade"],
-    description: "Unlocks adult content filter, matching specified actor and genre within the 1990s."
-  }
-];
+import { AI_PROMPTS } from '@/lib/prompts';
 
 export function AISearchModal({ isOpen, onClose }: AISearchModalProps) {
   const [query, setQuery] = useState('');
@@ -75,7 +34,7 @@ export function AISearchModal({ isOpen, onClose }: AISearchModalProps) {
   const [parsed, setParsed] = useState<{ type?: string; genres?: number[]; sort?: string; year?: string; keywords?: string; similarTitle?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [activePromptIdx, setActivePromptIdx] = useState(0);
+  const [activePrompts, setActivePrompts] = useState<number[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -87,6 +46,8 @@ export function AISearchModal({ isOpen, onClose }: AISearchModalProps) {
       setHasSearched(false);
       setError(null);
       setParsed(null);
+      const shuffled = [...AI_PROMPTS].sort(() => 0.5 - Math.random());
+      setActivePrompts(shuffled.slice(0, 4).map(p => AI_PROMPTS.indexOf(p)));
     }
   }, [isOpen]);
 
@@ -272,97 +233,72 @@ export function AISearchModal({ isOpen, onClose }: AISearchModalProps) {
             </form>
 
             {/* Suggestions — Interactive AI Prompt Inspiration Deck */}
-            {!hasSearched && !isLoading && (
+            {!hasSearched && !isLoading && activePrompts.length > 0 && (
               <div className="w-full bg-[#0d0d15]/80 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-xl relative overflow-hidden group">
                 {/* Decorative background glows */}
                 <div className="absolute -right-20 -top-20 w-40 h-40 rounded-full bg-brand-500/10 blur-[80px] pointer-events-none group-hover:bg-brand-500/15 transition-all duration-500" />
                 <div className="absolute -left-20 -bottom-20 w-40 h-40 rounded-full bg-purple-500/10 blur-[80px] pointer-events-none group-hover:bg-purple-500/15 transition-all duration-500" />
 
-                {/* Top Row: Title & Index */}
+                {/* Top Row: Title */}
                 <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
                   <div className="flex items-center gap-2">
                     <Sparkles size={14} className="text-brand-400" />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">AI Prompt Inspiration</span>
                   </div>
-                  <span className="text-[9px] font-mono font-bold text-zinc-500">
-                    {activePromptIdx + 1} / {EXTREME_PROMPTS.length}
-                  </span>
                 </div>
 
-                {/* Tags */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  <AnimatePresence mode="popLayout">
-                    {EXTREME_PROMPTS[activePromptIdx].tags.map((tag) => {
-                      let colorClass = "text-zinc-400 bg-zinc-800/40 border-zinc-700/30";
-                      const tLower = tag.toLowerCase();
-                      if (tLower.includes("actor") || tLower.includes("director")) {
-                        colorClass = "text-purple-400 bg-purple-500/10 border-purple-500/20";
-                      } else if (tLower.includes("genre") || tLower.includes("anime")) {
-                        colorClass = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
-                      } else if (tLower.includes("language")) {
-                        colorClass = "text-blue-400 bg-blue-500/10 border-blue-500/20";
-                      } else if (tLower.includes("decade") || tLower.includes("year")) {
-                        colorClass = "text-cyan-400 bg-cyan-500/10 border-cyan-500/20";
-                      } else if (tLower.includes("rating") || tLower.includes("underrated") || tLower.includes("popularity")) {
-                        colorClass = "text-amber-400 bg-amber-500/10 border-amber-500/20";
-                      } else if (tLower.includes("similarity")) {
-                        colorClass = "text-pink-400 bg-pink-500/10 border-pink-500/20";
-                      } else if (tLower.includes("adult")) {
-                        colorClass = "text-rose-400 bg-rose-500/10 border-rose-500/20";
-                      }
-                      
-                      return (
-                        <motion.span
-                          key={tag}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ duration: 0.15 }}
-                          className={`text-[9px] font-bold uppercase tracking-wider border px-2.5 py-0.5 rounded-full ${colorClass}`}
-                        >
-                          {tag}
-                        </motion.span>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
-
-                {/* Prompt Text Container with Animation */}
-                <div className="min-h-[70px] flex flex-col justify-center mb-5">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={activePromptIdx}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -5 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex flex-col gap-2"
-                    >
-                      <p className="text-white text-base md:text-lg font-medium leading-relaxed font-display italic group-hover:text-brand-350 transition-colors">
-                        &ldquo;{EXTREME_PROMPTS[activePromptIdx].text}&rdquo;
-                      </p>
-                      <p className="text-zinc-500 text-xs">
-                        {EXTREME_PROMPTS[activePromptIdx].description}
-                      </p>
-                    </motion.div>
-                  </AnimatePresence>
+                {/* Suggestions List */}
+                <div className="flex flex-col gap-2 mb-4">
+                  {activePrompts.map((idx) => {
+                    const prompt = AI_PROMPTS[idx];
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleSuggestion(prompt.text)}
+                        className="text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all group/prompt"
+                      >
+                        <p className="text-sm text-white/90 group-hover/prompt:text-brand-400 font-medium transition-colors line-clamp-1">
+                          &ldquo;{prompt.text}&rdquo;
+                        </p>
+                        <div className="flex items-center gap-2 mt-1.5 overflow-hidden">
+                          {prompt.tags.slice(0, 3).map(tag => {
+                            let colorClass = "text-zinc-400 bg-zinc-800/40 border-zinc-700/30";
+                            const tLower = tag.toLowerCase();
+                            if (tLower.includes("actor") || tLower.includes("director")) colorClass = "text-purple-400 bg-purple-500/10 border-purple-500/20";
+                            else if (tLower.includes("genre") || tLower.includes("anime")) colorClass = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+                            else if (tLower.includes("language")) colorClass = "text-blue-400 bg-blue-500/10 border-blue-500/20";
+                            else if (tLower.includes("decade") || tLower.includes("year")) colorClass = "text-cyan-400 bg-cyan-500/10 border-cyan-500/20";
+                            else if (tLower.includes("rating") || tLower.includes("underrated") || tLower.includes("popularity")) colorClass = "text-amber-400 bg-amber-500/10 border-amber-500/20";
+                            else if (tLower.includes("similarity")) colorClass = "text-pink-400 bg-pink-500/10 border-pink-500/20";
+                            else if (tLower.includes("adult")) colorClass = "text-rose-400 bg-rose-500/10 border-rose-500/20";
+                            return (
+                              <span key={tag} className={`text-[9px] font-bold uppercase tracking-wider border px-1.5 py-0.5 rounded ${colorClass} shrink-0`}>
+                                {tag}
+                              </span>
+                            );
+                          })}
+                          <span className="text-[10px] font-bold text-zinc-600 ml-auto flex items-center gap-1 opacity-0 group-hover/prompt:opacity-100 transition-opacity uppercase tracking-widest shrink-0">
+                            Try <ArrowRight size={10} />
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => handleSuggestion(EXTREME_PROMPTS[activePromptIdx].text)}
+                    onClick={() => {
+                      const shuffled = [...AI_PROMPTS].sort(() => 0.5 - Math.random());
+                      const newSelection = shuffled.slice(0, 4);
+                      setActivePrompts(newSelection.map(p => AI_PROMPTS.indexOf(p)));
+                      const randomPrompt = newSelection[0].text;
+                      setQuery(randomPrompt);
+                    }}
                     className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-600 hover:to-purple-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20"
                   >
-                    <Sparkles size={13} /> Try Query
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActivePromptIdx((prev) => (prev + 1) % EXTREME_PROMPTS.length);
-                    }}
-                    className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/5 py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-all active:scale-[0.98]"
-                  >
-                    <Shuffle size={12} /> Shuffle
+                    <Shuffle size={13} /> Shuffle & Surprise Me
                   </button>
                 </div>
               </div>

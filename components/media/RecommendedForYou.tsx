@@ -132,7 +132,7 @@ export function RecommendedForYou({ mediaType = 'movie' }: { mediaType?: 'movie'
           !isFallback && (
             <button 
               onClick={handleRefresh}
-              className="ml-2 p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors group"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors group"
               aria-label="Refresh recommendations"
             >
               <RefreshCw size={14} className="group-active:rotate-180 transition-transform duration-500" />

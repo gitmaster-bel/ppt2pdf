@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Copy, Check, Heart, ShieldCheck, Gem, MessageSquarePlus, Bug, Lightbulb, Send, Loader2, ImagePlus, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
+import { grantSupportAccess, MONTH_ACCESS_MS } from '@/lib/support-access';
 
 // ─── Crypto Wallets ────────────────────────────────────────────────────────────
 const WALLETS = [
@@ -547,8 +548,7 @@ export default function SupportPage() {
                                   if (currentData) {
                                     const data = JSON.parse(currentData);
                                     if (data.status !== 'verified') {
-                                      const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000;
-                                      localStorage.setItem('has_supported_zivox', expiry.toString());
+                                      grantSupportAccess(MONTH_ACCESS_MS);
                                       setIsSubmitting(false);
                                       setHasDonated(true);
                                     }

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
 import { Media } from "@/types/tmdb";
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
+import { getSupportAccess } from "@/lib/support-access";
 
 export default function ProfilePage() {
   const { history, clearHistory, removeFromHistory } = useWatchHistory();
@@ -19,15 +20,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     try {
-      const supportVal = localStorage.getItem('has_supported_zivox');
-      if (supportVal === 'true') {
-        setIsSupporter(true);
-      } else if (supportVal) {
-        const expiry = parseInt(supportVal, 10);
-        if (!isNaN(expiry) && Date.now() < expiry) {
-          setIsSupporter(true);
-        }
-      }
+      setIsSupporter(getSupportAccess().isActive);
     } catch(e) {}
   }, []);
 

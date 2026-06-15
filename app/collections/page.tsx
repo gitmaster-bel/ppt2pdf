@@ -203,7 +203,7 @@ function CollectionsPageContent() {
                <p className="text-zinc-400 text-sm md:text-base mt-2 max-w-xl">
                  {isSearching 
                    ? `Found ${collections.length} collections matching "${query}"` 
-                   : `An infinite feed of collections dynamically generated from what's popular in the world right now.`}
+                   : `Search for any collection worldwide—Hollywood, Bollywood, K-Drama, Anime, and more! For now, we are showing our top curated and most popular collections below.`}
                </p>
              </div>
 

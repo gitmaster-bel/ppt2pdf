@@ -113,7 +113,7 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
           onScroll={checkScroll}
           onPointerDown={() => setHasInteracted(true)}
           className="w-full overflow-x-auto no-scrollbar scroll-smooth"
-          style={{ overscrollBehaviorX: 'contain', touchAction: 'pan-x' }}
+          style={{ overscrollBehaviorX: 'contain' }}
         >
           <div className="flex gap-3 md:gap-4 px-4 md:px-14 pb-8 w-max">
             {items.map((item, index) => (

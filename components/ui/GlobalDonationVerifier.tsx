@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { verifyCryptoTransaction, CryptoNetwork } from '@/lib/crypto-verify';
 import { ValidationFeedbackModal } from '@/components/ui/ValidationFeedbackModal';
+import { clearSupportAccess, getSupportAccess, grantSupportAccess, MONTH_ACCESS_MS } from '@/lib/support-access';
 
 export function GlobalDonationVerifier() {
   const [validationMessage, setValidationMessage] = useState<{
@@ -50,8 +51,7 @@ export function GlobalDonationVerifier() {
             verifyData.status = 'verified';
             localStorage.setItem('zivox_donation_verify', JSON.stringify(verifyData));
             
-            const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000;
-            localStorage.setItem('has_supported_zivox', expiry.toString());
+            grantSupportAccess(MONTH_ACCESS_MS);
 
             setValidationMessage({
               type: 'success',
@@ -63,7 +63,9 @@ export function GlobalDonationVerifier() {
             window.dispatchEvent(new Event('zivox_donation_update'));
           } else if (!res.isPending) {
             // Failed verification
-            localStorage.removeItem('has_supported_zivox');
+            if (!getSupportAccess().isActive) {
+              clearSupportAccess();
+            }
             localStorage.removeItem('zivox_donation_verify');
 
             let text = 'Your transaction could not be verified.';

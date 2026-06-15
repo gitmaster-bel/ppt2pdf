@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Heart, Share2, Wallet, Check, X } from 'lucide-react';
 import { getSiteUrl } from '@/lib/utils';
 import { DonationModal } from '@/components/ui/DonationModal';
+import { grantSupportAccess, MONTH_ACCESS_MS, SHARE_ACCESS_MS } from '@/lib/support-access';
 
 interface SupportPopupModalProps {
   isOpen: boolean;
@@ -57,10 +58,7 @@ export function SupportPopupModal({ isOpen, onComplete, title, mediaType }: Supp
   const startCountdown = (type: 'share' | 'donate') => {
     if (countdown === null) {
       setCountdown(7);
-      const expiry = type === 'share' 
-        ? Date.now() + 2 * 24 * 60 * 60 * 1000 
-        : Date.now() + 30 * 24 * 60 * 60 * 1000;
-      localStorage.setItem('has_supported_zivox', expiry.toString());
+      grantSupportAccess(type === 'share' ? SHARE_ACCESS_MS : MONTH_ACCESS_MS);
     }
   };
 
@@ -78,18 +76,13 @@ export function SupportPopupModal({ isOpen, onComplete, title, mediaType }: Supp
     // Don't grant premium here! Let DonationModal handle it when they actually submit a TxID.
   };
 
-  const completeAction = () => {
-    localStorage.setItem('has_supported_zivox', (Date.now() + 30 * 24 * 60 * 60 * 1000).toString());
-    onComplete();
-  };
-
   if (!mounted) return null;
 
   return (
     <>
       <AnimatePresence>
         {isOpen && (
-          <div key="overlay" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-auto">
+          <div key="overlay" className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 sm:p-4 pointer-events-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -102,7 +95,7 @@ export function SupportPopupModal({ isOpen, onComplete, title, mediaType }: Supp
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-md max-h-[90vh] overflow-y-auto no-scrollbar bg-[rgba(10,8,12,0.95)] border border-[rgba(255,255,255,0.08)] rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl z-10"
+              className="relative w-full max-w-[min(28rem,calc(100vw-1.5rem))] max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(90dvh,720px)] overflow-y-auto no-scrollbar bg-[rgba(10,8,12,0.95)] border border-[rgba(255,255,255,0.08)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col items-center text-center shadow-2xl z-10"
             >
           {/* Ambient Background glows */}
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-brand-500/20 rounded-full blur-[80px] pointer-events-none" />

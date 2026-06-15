@@ -18,7 +18,7 @@ export interface Source {
   ) => string;
 }
 
-export const NORMAL_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock";
+export const NORMAL_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads";
 export const TIER_1_SANDBOX = NORMAL_SANDBOX;
 export const TIER_2_SANDBOX = NORMAL_SANDBOX;
 
@@ -41,19 +41,19 @@ export const sources: Source[] = [
         : `https://cinemaos.tech/player/${id}/${season}/${episode}`
   },
   {
-    id: "cinesrc",
-    name: "CineSrc",
+    id: "1embed",
+    name: "1Embed.cc",
     publicName: "Server 2",
     type: "iframe",
     tier: 1,
-    feature: "Auto-play enabled · Premium servers · Ad-free · Reliable uptime · Great for TV shows",
+    feature: "Good UI, smooth playback, Ad-free",
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
     url: (type, id, season, episode, themeHex) =>
       type === "movie"
-        ? `https://cinesrc.st/embed/movie/${id}?color=%23${themeHex || '7c3aed'}&autoplay=true`
-        : `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}&color=%23${themeHex || '7c3aed'}&autoplay=true`
+        ? `https://1embed.cc/embed/movie/${id}?color=${themeHex || '7c3aed'}&auto_play=1`
+        : `https://1embed.cc/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}&auto_play=1`
   },
   {
     id: "vidsrcwtf1",
@@ -178,19 +178,19 @@ export const sources: Source[] = [
         : `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
   },
   {
-    id: "1embed",
-    name: "1Embed.cc",
+    id: "cinesrc",
+    name: "CineSrc",
     publicName: "Server 11",
     type: "iframe",
     tier: 1,
-    feature: "Good UI, smooth playback, Ad-free",
+    feature: "Auto-play enabled · Premium servers · Ad-free · Reliable uptime · Great for TV shows",
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
     url: (type, id, season, episode, themeHex) =>
       type === "movie"
-        ? `https://1embed.cc/embed/movie/${id}?color=${themeHex || '7c3aed'}&auto_play=1`
-        : `https://1embed.cc/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}&auto_play=1`
+        ? `https://cinesrc.st/embed/movie/${id}?color=%23${themeHex || '7c3aed'}&autoplay=true`
+        : `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}&color=%23${themeHex || '7c3aed'}&autoplay=true`
   },
 
   // ── Additional Servers (shown with real names) ───────────────────────────
@@ -512,9 +512,9 @@ export const sources: Source[] = [
   }
 ];
 
-export const TOP_8_IDS = ["cinemaos", "cinesrc", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "smashystream", "vidnest"];
+export const TOP_8_IDS = ["cinemaos", "1embed", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "smashystream", "vidnest"];
 /** Servers 9-11 appear in the Settings "Recommended" section but NOT in the quick-switch header strip */
-export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "vidlux", "screenscape", "1embed"];
+export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "vidlux", "screenscape", "cinesrc"];
 
 export const getSource = (id?: string): Source =>
   sources.find((s) => s.id === id) || sources[0];

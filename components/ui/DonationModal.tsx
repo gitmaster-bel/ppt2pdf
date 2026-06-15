@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Copy, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { grantSupportAccess, MONTH_ACCESS_MS } from '@/lib/support-access';
 
 const WALLETS = [
   { id: 'usdt', label: 'USDT', network: 'Polygon', icon: <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color/usdt.svg" width="20" height="20" alt="USDT" />, color: '#8247E5', address: '0xba3898d8b3d232111a2193c4d330e53cf4cf38cd' },
@@ -131,8 +132,7 @@ export function DonationModal({ isOpen, onClose, onSuccess }: DonationModalProps
         if (currentData) {
           const data = JSON.parse(currentData);
           if (data.status !== 'verified') {
-            const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000;
-            localStorage.setItem('has_supported_zivox', expiry.toString());
+            grantSupportAccess(MONTH_ACCESS_MS);
             setIsSubmitting(false);
             if (onSuccess) onSuccess();
             else onClose();

@@ -39,6 +39,15 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 
   return (
@@ -46,7 +55,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/icon.png" type="image/png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="format-detection" content="telephone=no" />
         <meta name="robots" content="noindex, nofollow, noai, noimageai, noarchive, nosnippet" />
         <script
           suppressHydrationWarning
@@ -91,7 +103,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-void-950 text-zinc-100 min-h-screen flex flex-col font-body" suppressHydrationWarning>
         {/* Ambient Background — Zivox Dark Violet */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden" style={{ background: '#07070d', contain: 'strict' }}>
+        <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden motion-reduce:hidden" style={{ background: '#07070d', contain: 'strict' }}>
           {/* Primary ambient glow — uses brand theme color */}
           <div
             style={{

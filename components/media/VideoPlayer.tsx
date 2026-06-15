@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSource, sources, TOP_8_IDS, EXTENDED_TOP_IDS, encodeServer, decodeServer } from '@/lib/sources';
-import { Settings, Check, X, Heart, Server, Shield, ShieldOff, Play, Maximize, ExternalLink, RotateCcw, Share2, Copy, Twitter, Facebook, MessageCircle, ArrowUp, ArrowUpRight, Sparkles, Globe, Wifi, WifiOff } from 'lucide-react';
+import { Settings, X, Heart, Server, Shield, ShieldOff, Play, Maximize, RotateCcw, Share2, ArrowUp, Sparkles, Globe, Wifi, WifiOff } from 'lucide-react';
 import { ShareModal } from '@/components/ui/ShareModal';
 import Link from 'next/link';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
@@ -12,7 +12,18 @@ import { createPortal } from 'react-dom';
 import { PlayerToasts } from './PlayerToasts';
 import { usePreferences } from '@/hooks/usePreferences';
 import { SupportPopupModal } from '@/components/ui/SupportPopupModal';
+import { getSupportAccess, SUPPORT_ACCESS_KEY, SUPPORT_ACCESS_UPDATED_EVENT } from '@/lib/support-access';
+import { SettingsModal } from './player/SettingsModal';
+import { QuickServerStrip } from './player/QuickServerStrip';
+import { PlayerTopBar } from './player/PlayerTopBar';
+import { TutorialSpotlight } from './player/TutorialSpotlight';
+import { ConnectingOverlay } from './player/ConnectingOverlay';
+import { TestingSourcesOverlay } from './player/TestingSourcesOverlay';
+import { UpNextOverlay } from './player/UpNextOverlay';
 
+
+const SUPPORT_PROMPT_DELAY_MS = 12 * 60 * 1000;
+const SUPPORT_TIMER_SLICE_MS = 12 * 60 * 60 * 1000;
 
 interface VideoPlayerProps {
   type: 'movie' | 'tv';
@@ -38,6 +49,8 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   const [autoSandboxOnSwitch, setAutoSandboxOnSwitch] = useState(true);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
   const [showNextOverlay, setShowNextOverlay] = useState(false);
+  const showNextOverlayRef = useRef(false);
+  useEffect(() => { showNextOverlayRef.current = showNextOverlay; }, [showNextOverlay]);
   const [countdown, setCountdown] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLButtonElement>(null);
@@ -101,15 +114,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       const visits = parseInt(localStorage.getItem('player_visits') || '0', 10) + 1;
       localStorage.setItem('player_visits', visits.toString());
       
-      const supportVal = localStorage.getItem('has_supported_zivox');
-      if (supportVal === 'true') {
-        hasSupportedRef.current = true;
-      } else if (supportVal) {
-        const expiry = parseInt(supportVal, 10);
-        hasSupportedRef.current = !isNaN(expiry) && Date.now() < expiry;
-      } else {
-        hasSupportedRef.current = false;
-      }
+      hasSupportedRef.current = getSupportAccess().isActive;
 
       // ── Value Saved Toast ──
       if (!hasSupportedRef.current && visits > 0 && visits % 3 === 0) {
@@ -133,28 +138,26 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   useEffect(() => {
     const handleDonationUpdate = () => {
       try {
-        const supportVal = localStorage.getItem('has_supported_zivox');
-        if (supportVal === 'true') {
-          hasSupportedRef.current = true;
-          setShowSupportPopup(false);
-        } else if (supportVal) {
-          const expiry = parseInt(supportVal, 10);
-          const isValid = !isNaN(expiry) && Date.now() < expiry;
-          hasSupportedRef.current = isValid;
-          if (isValid) {
-            setShowSupportPopup(false);
-          } else {
-            setShowSupportPopup(true);
-          }
-        } else {
-          hasSupportedRef.current = false;
-          setShowSupportPopup(true);
-        }
+        const access = getSupportAccess();
+        hasSupportedRef.current = access.isActive;
+        if (access.isActive) setShowSupportPopup(false);
       } catch (e) {}
     };
 
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (e.key === SUPPORT_ACCESS_KEY) {
+        handleDonationUpdate();
+      }
+    };
+
     window.addEventListener('zivox_donation_update', handleDonationUpdate);
-    return () => window.removeEventListener('zivox_donation_update', handleDonationUpdate);
+    window.addEventListener(SUPPORT_ACCESS_UPDATED_EVENT, handleDonationUpdate);
+    window.addEventListener('storage', handleStorageUpdate);
+    return () => {
+      window.removeEventListener('zivox_donation_update', handleDonationUpdate);
+      window.removeEventListener(SUPPORT_ACCESS_UPDATED_EVENT, handleDonationUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
   }, []);
 
   // ── Tutorial Spotlight Trigger (Delayed until blockTutorial is false) ──
@@ -172,19 +175,59 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
 
   // ── Support Popup Timer (2 Minutes) ──
   useEffect(() => {
-    if (testingSources || hasSupportedRef.current) return;
+    if (testingSources) return;
 
-    const timer = setTimeout(() => {
-      if (!hasSupportedRef.current && !showSupportPopup) {
-        // Force exit native fullscreen so the user can see our React overlay
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
+    let timer: NodeJS.Timeout | null = null;
+
+    const scheduleSupportPrompt = () => {
+      if (timer) clearTimeout(timer);
+
+      const access = getSupportAccess();
+      hasSupportedRef.current = access.isActive;
+
+      if (access.isActive && access.expiresAt === null) return;
+
+      const rawDelay = access.isActive && access.expiresAt
+        ? Math.max(access.expiresAt - Date.now(), 0)
+        : SUPPORT_PROMPT_DELAY_MS;
+      const delay = Math.min(rawDelay, SUPPORT_TIMER_SLICE_MS);
+
+      timer = setTimeout(() => {
+        const latestAccess = getSupportAccess();
+        hasSupportedRef.current = latestAccess.isActive;
+
+        if (latestAccess.isActive) {
+          scheduleSupportPrompt();
+          return;
         }
-        setShowSupportPopup(true);
-      }
-    }, 300000);
 
-    return () => clearTimeout(timer);
+        if (!latestAccess.isActive && !showSupportPopup) {
+          // Force exit native fullscreen ONLY if the iframe itself is the fullscreen element.
+          // If our container is fullscreen, the React overlay will naturally appear on top.
+          if (document.fullscreenElement && document.fullscreenElement !== containerRef.current) {
+            document.exitFullscreen().catch(() => {});
+          }
+          setShowSupportPopup(true);
+        }
+      }, delay);
+    };
+
+    const handleAccessUpdate = () => scheduleSupportPrompt();
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (e.key === SUPPORT_ACCESS_KEY) scheduleSupportPrompt();
+    };
+
+    scheduleSupportPrompt();
+    window.addEventListener(SUPPORT_ACCESS_UPDATED_EVENT, handleAccessUpdate);
+    window.addEventListener('zivox_donation_update', handleAccessUpdate);
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener(SUPPORT_ACCESS_UPDATED_EVENT, handleAccessUpdate);
+      window.removeEventListener('zivox_donation_update', handleAccessUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
   }, [testingSources, showSupportPopup]);
 
   useEffect(() => {
@@ -265,10 +308,10 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         setTestingCurrentName(s.publicName); // Use publicName (Server 1, Server 2...)
         setTestProgress(((i) / sources.length) * 100);
         
-        const checkTime = Math.random() * 800 + 400;
+        const checkTime = 500;
         await new Promise(r => setTimeout(r, checkTime));
         
-        const works = Math.random() > (i === 0 ? 0.1 : 0.4); 
+        const works = true; // Deterministic: always prefer the top source or cached source 
         
         if (works || i === sources.length - 1) {
           if (isMounted) {
@@ -363,7 +406,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
             addToHistory({ id, type, title, poster: poster || null, timestamp: Date.now(), season, episode, progress: realProgress, release_date: releaseYear });
           }
           if (onProgress) onProgress(realProgress);
-          if (type === 'tv' && hasNextEpisode && realProgress >= 90 && !showNextOverlay) {
+          if (type === 'tv' && hasNextEpisode && realProgress >= 90 && !showNextOverlayRef.current) {
             setShowNextOverlay(true);
           }
         }
@@ -602,6 +645,42 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     ? source.sandboxFlags 
     : undefined; // Completely removes sandbox attribute for true unsandboxed play
 
+  const getShareUrl = (options: { play?: boolean; server?: boolean } = {}) => {
+    if (!mounted) return '';
+    try {
+      const url = new URL(window.location.href);
+      if (options.play) {
+        url.searchParams.set('play', '1');
+      } else {
+        url.searchParams.delete('play');
+      }
+
+      if (options.server) {
+        url.searchParams.set('server', encodeServer(currentSourceId));
+      } else {
+        url.searchParams.delete('server');
+      }
+
+      url.searchParams.delete('t');
+      return url.toString();
+    } catch {
+      return typeof window !== 'undefined' ? window.location.href : '';
+    }
+  };
+
+  const supportPopup = mounted ? (
+    <SupportPopupModal
+      isOpen={showSupportPopup}
+      mediaType={type}
+      title={title}
+      onComplete={() => {
+        setShowSupportPopup(false);
+        hasSupportedRef.current = true;
+        window.dispatchEvent(new Event('zivox_donation_update'));
+      }}
+    />
+  ) : null;
+
   return (
     <motion.div 
       ref={containerRef}
@@ -617,73 +696,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       <PlayerToasts key={id} serverName={source.publicName} serverIsNoAds={source.noAds} isPaused={showTutorial} />
 
       {/* First-time Tutorial Spotlight - Precise Tooltips */}
-      <AnimatePresence>
-        {showTutorial && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-[60] bg-black/50 pointer-events-auto"
-              onClick={() => setShowTutorial(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute top-[48px] left-0 right-0 bottom-0 z-[70] pointer-events-none"
-            >
-              <div className="w-full h-full relative">
-                 {/* LEFT: Servers Pointer */}
-                 <div className="absolute left-2 top-2 flex flex-col items-start w-[45%] md:max-w-[220px]">
-                   <div className="ml-4 md:ml-8 mb-1 text-brand-400 animate-bounce">
-                     <ArrowUp size={20} className="drop-shadow-[0_0_8px_color-mix(in srgb, var(--brand-500) 80%, transparent)] md:w-6 md:h-6" />
-                   </div>
-                   <div className="bg-void-900/95 border border-brand-500/60 p-2 md:p-3 rounded-xl shadow-[0_0_20px_color-mix(in srgb, var(--brand-500) 30%, transparent)] pointer-events-auto">
-                     <h4 className="text-brand-400 font-bold text-[9px] md:text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1.5"><Server size={10} className="md:w-3 md:h-3" /> Servers & Audio</h4>
-                     <p className="text-zinc-300 text-[8px] md:text-[10px] leading-relaxed">Switch servers to find <strong className="text-white">Multilingual/Hindi</strong> dubs. <span className="text-emerald-400 font-semibold block mt-0.5 flex items-center gap-1"><Globe size={8} className="md:w-3 md:h-3" /> Look for the Globe icon!</span></p>
-                   </div>
-                 </div>
-
-                 {/* RIGHT: Fullscreen & Controls Pointer */}
-                 <div className="absolute right-2 top-2 flex flex-col items-end w-[50%] md:max-w-[260px] text-right">
-                   <div className="mr-4 md:mr-8 mb-1 text-brand-400 animate-bounce">
-                     <ArrowUp size={20} className="drop-shadow-[0_0_8px_color-mix(in srgb, var(--brand-500) 80%, transparent)] md:w-6 md:h-6" />
-                   </div>
-                   <div className="bg-void-900/95 border border-brand-500/60 p-2 md:p-3 rounded-xl shadow-[0_0_20px_color-mix(in srgb, var(--brand-500) 30%, transparent)] pointer-events-auto">
-                     <h4 className="text-brand-400 font-bold text-[9px] md:text-[11px] uppercase tracking-wider mb-1 flex items-center justify-end gap-1.5">Controls & Fullscreen <Settings size={10} className="md:w-3 md:h-3" /></h4>
-                     <p className="text-zinc-300 text-[8px] md:text-[10px] leading-relaxed">
-                       Share, Sandbox (Ad-block), or Favorite.<br/>
-                       <span className="hidden md:block text-emerald-400 font-bold mt-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded">Press F to Fullscreen, Esc/F to exit</span>
-                     </p>
-                   </div>
-                 </div>
-                 
-                 {/* Center/Bottom Content: Heading + Got It Button */}
-                 <div className="absolute inset-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 pointer-events-auto flex flex-col items-center justify-center pt-20 md:pt-0 w-full pb-8 md:pb-0">
-                    {/* Add gradient background for mobile to make text readable over video */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent md:hidden pointer-events-none" />
-                    
-                    <div className="relative z-10 flex flex-col items-center w-full px-4 mt-8 md:mt-0">
-                      {/* Optional preview image could go here */}
-                      <div className="text-center mb-6">
-                        <h2 className="text-[clamp(20px,5vw,28px)] font-bold text-white leading-none drop-shadow-lg">Quick Instructions</h2>
-                        <p className="text-brand-500 font-bold mt-2 text-[11px] tracking-[0.1em] uppercase">Read this carefully</p>
-                      </div>
-
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setShowTutorial(false); }}
-                        className="bg-premium-gradient text-white font-bold h-[52px] w-full max-w-[340px] rounded-[10px] text-[16px] transition-all shadow-[0_0_20px_color-mix(in srgb, var(--brand-500) 30%, transparent)] active:scale-95 flex items-center justify-center mb-4 md:mb-0"
-                      >
-                        Got it! ({tutorialCountdown}s)
-                      </button>
-                    </div>
-                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <TutorialSpotlight showTutorial={showTutorial} setShowTutorial={setShowTutorial} tutorialCountdown={tutorialCountdown} />
 
       {/* Inline toast message (server switch) via portal */}
       {mounted && typeof document !== 'undefined' && createPortal(
@@ -744,607 +757,84 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
 
       {/* Settings Modal via Portal (renders outside iframe, proper z-index on mobile) */}
       {mounted && typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {showSettingsModal && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[9990] bg-black/80 backdrop-blur-md flex flex-col items-stretch justify-end md:items-center md:justify-center"
-              onClick={() => setShowSettingsModal(false)}
-            >
-              <motion.div 
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-[#1c1b19] border border-[oklch(1_0_0/0.08)] rounded-t-[16px] md:rounded-[16px] w-full max-w-[100vw] md:max-w-5xl max-h-[92dvh] md:h-auto flex flex-col shadow-2xl relative overflow-hidden mt-auto md:mb-auto md:mt-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Mobile Drag Handle */}
-                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-2 mb-1 md:hidden shrink-0" />
-                {/* Background glows */}
-                <div className="absolute -top-24 -left-24 w-48 h-48 bg-brand-500/10 rounded-full blur-[100px] pointer-events-none" />
-                <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
-
-                {/* Modal header */}
-                <div className="px-4 py-3 md:px-5 md:py-4 border-b border-[oklch(1_0_0/0.08)] flex items-center justify-between bg-black/20 relative z-10 shrink-0">
-                  <h3 className="text-sm md:text-xl font-bold font-display tracking-wider text-white flex items-center gap-2.5 uppercase">
-                    <Settings size={16} className="text-brand-500 animate-spin md:w-[18px] md:h-[18px]" style={{ animationDuration: '6s' }} /> ZIVOX Control
-                  </h3>
-                  <button 
-                    onClick={() => setShowSettingsModal(false)}
-                    className="text-zinc-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 w-9 h-9 flex items-center justify-center rounded-xl active:scale-95"
-                  >
-                    <X size={16} className="md:w-[18px] md:h-[18px]" />
-                  </button>
-                </div>
-
-                {/* Modal body */}
-                <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-                  {/* Left: Server list */}
-                  <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 md:px-5 md:py-3 shrink-0 whitespace-nowrap">
-                      <h4 className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-zinc-400">Select Server</h4>
-                      <span className="text-[11px] md:text-xs bg-brand-500/10 border border-brand-500/20 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-brand-500 font-bold uppercase tracking-wider">{sources.length} Active</span>
-                    </div>
-                    <div data-lenis-prevent="true" className="flex flex-col gap-4 md:gap-5 overflow-y-auto flex-1 px-4 md:px-5 pb-4 md:pb-5">
-                      {(() => {
-                        const renderServerCard = (s: typeof sources[0]) => {
-                          const isActive = currentSourceId === s.id;
-                          const isFav = favoriteServers.includes(s.id);
-                          const isTop7 = TOP_8_IDS.includes(s.id);
-                          const displayName = s.publicName;
-                          
-                          // Build description
-                          const descParts = [];
-                          if (s.feature) descParts.push(s.feature);
-                          if (s.noAds) descParts.push('No Ads');
-                          if (s.hasPopups) descParts.push('Popups');
-                          if (s.autoDisableSandbox) descParts.push('Ads possible');
-                          const description = descParts.join(' · ') || 'Standard Server';
-
-                          return (
-                            <button
-                              key={s.id}
-                              onClick={() => handleSwitchServer(s.id)}
-                              className={`group flex flex-col justify-between w-full p-3 md:p-4 rounded-lg md:rounded-2xl transition-all duration-300 border border-[oklch(1_0_0/0.08)] text-left cursor-pointer active:scale-[0.98] relative overflow-hidden ${
-                                isActive 
-                                  ? 'bg-brand-500/10 border-brand-500/50 text-white shadow-[0_0_20px_color-mix(in srgb, var(--brand-500) 10%, transparent)]' 
-                                  : 'bg-black/20 text-zinc-300 hover:bg-black/40 hover:text-white'
-                              }`}
-                            >
-                              {isActive && (
-                                <div className="absolute inset-0 bg-gradient-to-r from-brand-500/10 to-transparent animate-pulse pointer-events-none" />
-                              )}
-                              <div className="flex items-start justify-between w-full gap-2 z-10">
-                                <div className="flex items-center gap-2">
-                                  <Server size={13} className={isActive ? 'text-brand-500' : 'text-zinc-500'} />
-                                  <span className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">{displayName}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div onClick={(e) => toggleFavServer(e, s.id)} className="hover:scale-110 active:scale-95 transition-transform">
-                                    <Heart size={13} className={isFav ? "fill-pink-500 text-pink-500" : "text-zinc-600 hover:text-pink-400"} />
-                                  </div>
-                                  <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-premium-gradient shadow-[0_0_8px_var(--brand-500)]' : 'bg-zinc-700'}`} />
-                                </div>
-                              </div>
-                              <div className="mt-2 md:mt-3 z-10 flex-1 flex flex-col">
-                                <span className="text-sm md:text-sm font-bold leading-tight block mb-0.5 md:mb-1 font-display">{displayName}</span>
-                                <span className="text-[12px] text-[#9ca3af] leading-snug truncate">{description}</span>
-                              </div>
-                            </button>
-                          );
-                        };
-
-                        return (
-                          <>
-                            {favoriteSources.length > 0 && (
-                              <div>
-                                <h5 className="text-[11px] font-bold uppercase tracking-widest text-pink-500 mb-2 flex items-center gap-1.5"><Heart size={11} className="fill-pink-500" /> Favorites</h5>
-                                <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
-                                  {favoriteSources.map(s => renderServerCard(s))}
-                                </div>
-                              </div>
-                            )}
-                            <div>
-                              <h5 className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-2 flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-[#22c55e] rounded-full" /> Recommended</h5>
-                              <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
-                                {top7Sources.map(s => renderServerCard(s))}
-                              </div>
-                            </div>
-                            {remainingSources.length > 0 && (
-                              <div>
-                                <div className="flex items-center gap-3 mb-2">
-                                  <div className="h-px bg-zinc-800/80 flex-1" />
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); setShowAllServers(!showAllServers); }} 
-                                    className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors bg-void-900 border border-zinc-800 px-3 py-1 rounded-full flex items-center gap-1.5 active:scale-95"
-                                  >
-                                    {showAllServers ? 'Hide' : `More (${remainingSources.length})`}
-                                  </button>
-                                  <div className="h-px bg-zinc-800/80 flex-1" />
-                                </div>
-                                {showAllServers && (
-                                  <div className="flex flex-col gap-1">
-                                    {remainingSources.map((s) => {
-                                      const isActiveCompact = currentSourceId === s.id;
-                                      const isFavCompact = favoriteServers.includes(s.id);
-                                      return (
-                                        <button
-                                          key={s.id}
-                                          onClick={() => {
-                                            setCurrentSourceId(s.id);
-                                            const savedPref = localStorage.getItem('sandbox_pref_' + s.id);
-                                            if (savedPref !== null) setUseSandbox(savedPref === 'true');
-                                            else if (autoSandboxOnSwitch) setUseSandbox(true);
-                                            sessionStorage.setItem(`working_source_${id}`, s.id);
-                                            setShowSettingsModal(false);
-                                            showToast(`${s.publicName}`);
-                                          }}
-                                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 border text-left cursor-pointer active:scale-[0.99] ${
-                                            isActiveCompact
-                                              ? 'bg-brand-500/15 border-brand-500/40 text-white'
-                                              : 'bg-void-900/40 border-zinc-800/60 text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
-                                          }`}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActiveCompact ? 'bg-premium-gradient' : 'bg-zinc-700'}`} />
-                                            <span className="text-xs font-semibold">{s.publicName}</span>
-                                            {s.noAds && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20">âœ“</span>}
-                                          </div>
-                                          <div className="flex items-center gap-1.5">
-                                            <div onClick={(e) => toggleFavServer(e, s.id)} className="hover:scale-110 active:scale-95 transition-transform p-0.5">
-                                              <Heart size={11} className={isFavCompact ? "fill-pink-500 text-pink-500" : "text-zinc-600 hover:text-pink-400"} />
-                                            </div>
-                                          </div>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Right: Security controls */}
-                  <div className="w-full lg:w-80 shrink-0 flex flex-col gap-2 overflow-y-auto px-4 md:px-5 pb-4 md:pb-5 border-t lg:border-t-0 lg:border-l border-[oklch(1_0_0/0.08)] pt-4">
-                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Security</h4>
-                    
-                    {/* Sandbox Shield */}
-                    <div className="bg-black/20 border border-[oklch(1_0_0/0.08)] rounded-lg px-4 min-h-[56px] flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-transform" onClick={() => {
-                        const n = !useSandbox;
-                        setUseSandbox(n);
-                        localStorage.setItem('sandbox_pref_' + currentSourceId, n.toString());
-                        showToast(`Sandbox ${n ? 'ON' : 'OFF'}`);
-                    }}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`shrink-0 ${useSandbox ? 'text-[#22c55e]' : 'text-zinc-500'}`}>
-                          {useSandbox ? <Shield size={18} /> : <ShieldOff size={18} />}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-semibold text-white leading-tight">Sandbox Shield</span>
-                          <span className="text-[11px] text-[#9ca3af] truncate">Blocks popups & trackers</span>
-                        </div>
-                      </div>
-                      <button className={`shrink-0 relative w-10 h-5 rounded-full transition-all duration-300 ${useSandbox ? 'bg-[#22c55e]' : 'bg-zinc-700'}`}>
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${useSandbox ? 'left-[22px]' : 'left-0.5'}`} />
-                      </button>
-                    </div>
-
-                    {/* Auto-Shield */}
-                    <div className="bg-black/20 border border-[oklch(1_0_0/0.08)] rounded-lg px-4 min-h-[56px] flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-transform" onClick={() => {
-                        const n = !autoSandboxOnSwitch;
-                        setAutoSandboxOnSwitch(n);
-                        localStorage.setItem('auto_sandbox_on_switch', n.toString());
-                    }}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`shrink-0 ${autoSandboxOnSwitch ? 'text-indigo-400' : 'text-zinc-500'}`}>
-                          <Shield size={18} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-semibold text-white leading-tight">Auto-Shield</span>
-                          <span className="text-[11px] text-[#9ca3af] truncate">Re-enables on switch</span>
-                        </div>
-                      </div>
-                      <button className={`shrink-0 relative w-10 h-5 rounded-full transition-all duration-300 ${autoSandboxOnSwitch ? 'bg-indigo-500' : 'bg-zinc-700'}`}>
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${autoSandboxOnSwitch ? 'left-[22px]' : 'left-0.5'}`} />
-                      </button>
-                    </div>
-
-                    {/* Auto-Play Next */}
-                    {type === 'tv' && (
-                      <div className="bg-black/20 border border-[oklch(1_0_0/0.08)] rounded-lg px-4 min-h-[56px] flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-transform" onClick={() => {
-                          const n = !autoPlayNext; setAutoPlayNext(n); storage.set({ settings: { ...storage.get().settings, autoPlayNext: n } });
-                      }}>
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`shrink-0 ${autoPlayNext ? 'text-brand-500' : 'text-zinc-500'}`}>
-                            <Play size={18} />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[13px] font-semibold text-white leading-tight">Auto-Play Next</span>
-                            <span className="text-[11px] text-[#9ca3af] truncate">Plays next episode</span>
-                          </div>
-                        </div>
-                        <button className={`shrink-0 relative w-10 h-5 rounded-full transition-all duration-300 ${autoPlayNext ? 'bg-premium-gradient' : 'bg-zinc-700'}`}>
-                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${autoPlayNext ? 'left-[22px]' : 'left-0.5'}`} />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Data Saver */}
-                    <div className="bg-black/20 border border-[oklch(1_0_0/0.08)] rounded-lg px-4 min-h-[56px] flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-transform" onClick={() => {
-                        updatePreferences({ dataSaver: !dataSaver });
-                        showToast(`Data Saver ${!dataSaver ? 'ON — Trailers disabled' : 'OFF'}`);
-                    }}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`shrink-0 ${dataSaver ? 'text-cyan-400' : 'text-zinc-500'}`}>
-                          {dataSaver ? <WifiOff size={18} /> : <Wifi size={18} />}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-semibold text-white leading-tight">Data Saver</span>
-                          <span className="text-[11px] text-[#9ca3af] truncate">Disables auto-playing trailers</span>
-                        </div>
-                      </div>
-                      <button className={`shrink-0 relative w-10 h-5 rounded-full transition-all duration-300 ${dataSaver ? 'bg-cyan-500' : 'bg-zinc-700'}`}>
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${dataSaver ? 'left-[22px]' : 'left-0.5'}`} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+        <SettingsModal
+          showSettingsModal={showSettingsModal}
+          setShowSettingsModal={setShowSettingsModal}
+          sources={sources}
+          currentSourceId={currentSourceId}
+          handleSwitchServer={handleSwitchServer}
+          favoriteServers={favoriteServers}
+          toggleFavServer={toggleFavServer}
+          showAllServers={showAllServers}
+          setShowAllServers={setShowAllServers}
+          useSandbox={useSandbox}
+          setUseSandbox={setUseSandbox}
+          autoSandboxOnSwitch={autoSandboxOnSwitch}
+          setAutoSandboxOnSwitch={setAutoSandboxOnSwitch}
+          type={type}
+          autoPlayNext={autoPlayNext}
+          setAutoPlayNext={setAutoPlayNext}
+          dataSaver={dataSaver}
+          updatePreferences={updatePreferences}
+          showToast={showToast}
+          id={id}
+          storage={storage}
+        />, document.body)}
 
       {/* Share Modal */}
       <ShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         title={title || ''}
-        shareUrl={mounted ? (() => {
-          try {
-            const u = new URL(window.location.href);
-            u.searchParams.set('play', '1');
-            u.searchParams.delete('t');
-            return u.toString();
-          } catch { return window.location.href; }
-        })() : ''}
+        shareUrl={getShareUrl({ play: true, server: true })}
         subtitle={`Via ${source.publicName}`}
-      >
-        {/* ── Copy with Autoplay */}
-        <button
-          onClick={() => {
-            const url = new URL(window.location.href);
-            url.searchParams.set('play', '1');
-            url.searchParams.delete('server');
-            url.searchParams.delete('t');
-            navigator.clipboard.writeText(url.toString());
-            showToast('Autoplay link copied! ▶');
-            setShowShareModal(false);
-          }}
-          className="w-full flex items-center gap-3 px-4 py-3.5 bg-brand-500/10 hover:bg-brand-500/15 border border-brand-500/30 rounded-2xl transition-all active:scale-[0.98] mt-2"
-        >
-          <div className="w-9 h-9 rounded-xl bg-brand-500/20 flex items-center justify-center shrink-0">
-            <Play size={15} className="text-brand-400 fill-brand-400 ml-0.5" />
-          </div>
-          <div className="flex flex-col items-start min-w-0">
-            <span className="text-sm font-bold text-white">Copy with Autoplay</span>
-            <span className="text-[11px] text-white/40">Recipient lands directly in the player</span>
-          </div>
-        </button>
+      />
 
-        {/* ── Copy with Server + Autoplay */}
-        <button
-          onClick={() => {
-            const url = new URL(window.location.href);
-            url.searchParams.set('play', '1');
-            url.searchParams.set('server', encodeServer(currentSourceId));
-            url.searchParams.delete('t');
-            navigator.clipboard.writeText(url.toString());
-            showToast(`Link with ${source.publicName} copied!`);
-            setShowShareModal(false);
-          }}
-          className="w-full flex items-center gap-3 px-4 py-3.5 bg-purple-500/10 hover:bg-purple-500/15 border border-purple-500/30 rounded-2xl transition-all active:scale-[0.98] mt-2"
-        >
-          <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
-            <Server size={15} className="text-purple-400" />
-          </div>
-          <div className="flex flex-col items-start min-w-0">
-            <span className="text-sm font-bold text-white">Copy with Server</span>
-            <span className="text-[11px] text-white/40 truncate w-full">Opens on {source.publicName} automatically</span>
-          </div>
-        </button>
+      {/* ── PLAYER TOP BAR & SERVER STRIP (Animated for Fullscreen) ── */}
+      <AnimatePresence initial={false}>
+        {!isFullscreen && (
+          <motion.div
+            key="player-controls"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden w-full flex flex-col shrink-0"
+          >
+            <PlayerTopBar
+              isFullscreen={isFullscreen}
+              setShowSettingsModal={setShowSettingsModal}
+              source={source}
+              setShowShareModal={setShowShareModal}
+              useSandbox={useSandbox}
+              setUseSandbox={setUseSandbox}
+              currentSourceId={currentSourceId}
+              showToast={showToast}
+              isFav={isFav}
+              toggleFavorite={() => toggleFavorite({ id, type, title: title || '', poster, release_date: releaseYear })}
+              toggleFullscreen={toggleFullscreen}
+            />
+            <QuickServerStrip
+              isFullscreen={isFullscreen}
+              currentSourceId={currentSourceId}
+              sources={sources}
+              handleSwitchServer={handleSwitchServer}
+              setShowSettingsModal={setShowSettingsModal}
+              activeTabRef={activeTabRef}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      </ShareModal>
-
-      {/* ── PLAYER TOP BAR ── */}
-      {!isFullscreen && (
-        <div className="relative flex items-center justify-between gap-2 px-2.5 py-2 bg-void-950 border-b border-zinc-800/60 shrink-0 w-full">
-          {/* Desktop Fullscreen Hint */}
-          <div className="hidden md:flex absolute -top-6 right-2 text-zinc-500 font-medium tracking-wide text-[10px] pointer-events-none">
-            Press <span className="text-zinc-300 font-bold mx-1">F</span> to fullscreen and <span className="text-zinc-300 font-bold mx-1">ESC/F</span> to exit
-          </div>
-          
-          {/* Left: Servers & Settings button + current server info */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="flex items-center gap-1.5 bg-void-900 hover:bg-void-800 border border-zinc-800 text-white px-2.5 py-1.5 rounded-lg transition-all active:scale-95 font-bold text-xs shadow-md shrink-0 whitespace-nowrap"
-            >
-              <Server size={12} className="text-brand-500 shrink-0" />
-              <span className="hidden xs:hidden sm:inline">Servers &amp; Settings</span>
-              <span className="inline sm:hidden">Servers</span>
-            </button>
-            {/* Current server name + no-ads badge — hidden on very small screens */}
-            <div className="hidden md:flex items-center gap-2 min-w-0">
-              <div className="h-4 w-px bg-zinc-800" />
-              <span className="text-xs font-semibold text-zinc-300 truncate">{source.publicName}</span>
-              {source.noAds && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded shrink-0">✓ No Ads</span>}
-            </div>
-          </div>
-
-          {/* Right: icon controls */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Share */}
-            <button
-              onClick={() => setShowShareModal(true)}
-              title="Share"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-500/50 bg-premium-gradient-dark hover:bg-premium-gradient text-white transition-all active:scale-95 font-bold text-xs shadow-lg shadow-brand-900/20"
-            >
-              <span className="hidden sm:inline">Share</span>
-              <Share2 size={14} />
-            </button>
-
-            {/* Sandbox toggle — icon only */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const n = !useSandbox;
-                setUseSandbox(n);
-                localStorage.setItem('sandbox_pref_' + currentSourceId, n.toString());
-                showToast(`Sandbox ${n ? 'ON' : 'OFF'}`);
-              }}
-              title={useSandbox ? 'Sandbox ON — Protected' : 'Sandbox OFF — Risky'}
-              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all active:scale-95 ${
-                useSandbox ? 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20'
-              }`}
-            >
-              {useSandbox ? <Shield size={14} /> : <ShieldOff size={14} />}
-            </button>
-
-            {/* Favorite — icon only */}
-            <button
-              onClick={(e) => { e.stopPropagation(); toggleFavorite({ id, type, title: title || '', poster, release_date: releaseYear }); }}
-              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all active:scale-95 ${
-                isFav ? 'bg-pink-500/10 text-pink-500 border-pink-500/20' : 'bg-void-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-void-800'
-              }`}
-              title={isFav ? 'Remove from Favorites' : 'Add to Favorites'}
-            >
-              <Heart size={14} className={isFav ? 'fill-pink-500' : ''} />
-            </button>
-
-            <div className="h-5 w-px bg-zinc-800 hidden sm:block" />
-
-            {/* Fullscreen */}
-            <button
-              onClick={toggleFullscreen}
-              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'}
-              className="flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-800 bg-void-900 hover:bg-void-800 text-zinc-400 hover:text-white transition-all active:scale-95"
-            >
-              <Maximize size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Video Container — proper 16:9 aspect ratio, works on all screens */}
-
-      {/* ── QUICK SERVER STRIP ─────────────────────────────────────────────────
-           Shows the current server + 3 alternatives from the Top 7 as pills.
-           Tapping switches instantly. A note below points to full settings.
-      ─────────────────────────────────────────────────────────────────────── */}
-      {!isFullscreen && (() => {
-        const top7 = sources.filter(s => TOP_8_IDS.includes(s.id));
-        // Multilingual servers — always surface these for dubbed/subbed content
-        const multilingualIds = new Set(['peachify', 'vidsrcwtf2']);
-
-        // Responsive visibility:
-        // - Mobile (<768px): show 4 servers (current first, then 3 others)
-        // - Tablet (768-1023px): show 5 servers
-        // - Desktop (≥1024px): show all 7 always
-
-        // Build ordered list: current server first, then rest in TOP_8_IDS order
-        const currentInTop7 = TOP_8_IDS.includes(currentSourceId);
-        const orderedStrip = currentInTop7
-          ? [
-              top7.find(s => s.id === currentSourceId)!,
-              ...top7.filter(s => s.id !== currentSourceId),
-            ]
-          : [...top7];
-
-        return (
-          <div className={`px-3 pt-2.5 pb-1.5 bg-void-950 border-b border-zinc-800/40 shrink-0 ${isFullscreen ? 'hidden' : ''}`}>
-            {/* Desktop: all 7 always visible */}
-            <div className="hidden lg:flex items-center gap-1.5 flex-wrap">
-              {top7.map((s) => {
-                const isActive = s.id === currentSourceId;
-                const isMultilingual = multilingualIds.has(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => !isActive && handleSwitchServer(s.id)}
-                    title={isActive ? `Currently on ${s.publicName}` : `Switch to ${s.publicName}${isMultilingual ? ' — Multi-language' : ''}`}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 border shrink-0 ${
-                      isActive
-                        ? 'bg-brand-500/20 border-brand-500/60 text-brand-400 shadow-[0_0_10px_color-mix(in srgb, var(--brand-500) 20%, transparent)] cursor-default'
-                        : 'bg-void-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500 hover:text-white hover:bg-zinc-800/60 active:scale-95 cursor-pointer'
-                    }`}
-                  >
-                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-premium-gradient shadow-[0_0_6px_var(--brand-500)]' : 'bg-zinc-600'}`} />
-                    {s.publicName}
-                    {isActive && <span className="text-[9px] font-bold uppercase tracking-widest text-brand-500/80 ml-0.5">LIVE</span>}
-                    {!isActive && s.noAds && <span className="text-[9px] text-emerald-500">●</span>}
-                    {isMultilingual && <span title="Multi-language subtitles & dubs available">🌐</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Tablet: first 5 */}
-            <div className="hidden md:flex lg:hidden items-center gap-1.5 flex-wrap">
-              {orderedStrip.slice(0, 5).map((s) => {
-                const isActive = s.id === currentSourceId;
-                const isMultilingual = multilingualIds.has(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => !isActive && handleSwitchServer(s.id)}
-                    title={isActive ? `Currently on ${s.publicName}` : `Switch to ${s.publicName}`}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 border shrink-0 ${
-                      isActive
-                        ? 'bg-brand-500/20 border-brand-500/60 text-brand-400 shadow-[0_0_10px_color-mix(in srgb, var(--brand-500) 20%, transparent)] cursor-default'
-                        : 'bg-void-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500 hover:text-white hover:bg-zinc-800/60 active:scale-95 cursor-pointer'
-                    }`}
-                  >
-                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-premium-gradient shadow-[0_0_6px_var(--brand-500)]' : 'bg-zinc-600'}`} />
-                    {s.publicName}
-                    {isActive && <span className="text-[9px] font-bold uppercase tracking-widest text-brand-500/80 ml-0.5">LIVE</span>}
-                    {!isActive && s.noAds && <span className="text-[9px] text-emerald-500">●</span>}
-                    {isMultilingual && <span title="Multi-language">🌐</span>}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="text-[10px] text-zinc-500 hover:text-white transition-colors px-2 py-1 rounded-full border border-zinc-800 hover:border-zinc-600"
-              >
-                +{top7.length - 5} more
-              </button>
-            </div>
-
-            {/* Mobile Tab Bar (<768px) */}
-            <div className="md:hidden flex flex-col w-full">
-              <div className="relative w-full">
-                <div 
-                  className="flex items-center overflow-x-auto snap-x snap-mandatory w-full relative z-0 pb-1 [&::-webkit-scrollbar]:hidden"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-                >
-                  {orderedStrip.map((s) => {
-                    const isActive = s.id === currentSourceId;
-                    const isMultilingual = multilingualIds.has(s.id);
-                    return (
-                      <button
-                        key={s.id}
-                        ref={isActive ? activeTabRef : null}
-                        onClick={() => !isActive && handleSwitchServer(s.id)}
-                        className={`shrink-0 flex items-center justify-center gap-1.5 h-[32px] px-3 text-[12px] whitespace-nowrap snap-start border-b-2 transition-all duration-200 bg-transparent ${
-                          isActive
-                            ? 'border-brand-500 text-[var(--premium-text,#ffffff)] font-bold cursor-default'
-                            : 'border-transparent text-zinc-400 hover:text-white active:bg-white/5 cursor-pointer'
-                        }`}
-                      >
-                        {s.publicName}
-                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-premium-gradient shadow-[0_0_6px_var(--brand-500)] shrink-0" />}
-                        {!isActive && s.noAds && <span className="text-[10px] text-emerald-500 shrink-0">●</span>}
-                        {isMultilingual && <span className="text-[14px] shrink-0 leading-none">🌐</span>}
-                      </button>
-                    );
-                  })}
-                  {/* Extra padding so the last item can scroll past the fade */}
-                  <div className="shrink-0 w-8" />
-                </div>
-                {/* Right Edge Fade Mask */}
-                <div className="absolute right-0 top-0 bottom-1 w-12 bg-gradient-to-l from-void-950 to-transparent pointer-events-none z-10" />
-              </div>
-
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="w-full text-center text-[12px] text-brand-500 font-bold py-[6px] mt-1"
-              >
-                All {sources.length} servers ↑
-              </button>
-            </div>
-
-            <p className="hidden md:block text-[10px] text-zinc-600 mt-1.5 leading-snug">
-              🌐 = Multi-language subtitles &amp; dubs &nbsp;·&nbsp; ● = No ads &nbsp;·&nbsp;{' '}
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="text-zinc-400 hover:text-white underline underline-offset-2 transition-colors"
-              >
-                All {sources.length} servers ↑
-              </button>
-            </p>
-          </div>
-        );
-      })()}
-
-
-      <div className={`relative w-full bg-black transition-all ${isFullscreen ? 'flex-1 h-full' : 'aspect-video w-full min-h-[220px] sm:min-h-[280px] md:min-h-0'}`}>
+      <div className={`relative w-full bg-black transition-all ${isFullscreen ? 'flex-1 h-full' : 'aspect-[4/3] sm:aspect-video w-full min-h-[260px] sm:min-h-[280px] md:min-h-0'}`}>
 
         {testingSources ? (
-          <div className="absolute inset-0 z-40 bg-void-950 flex flex-col items-center justify-center p-4 text-center overflow-hidden">
-            {poster && (
-              <div
-                className="absolute inset-0 opacity-20 pointer-events-none"
-                style={{
-                  backgroundImage: `url(https://image.tmdb.org/t/p/w500${poster})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  filter: 'blur(40px) saturate(1.5)',
-                  transform: 'scale(1.1)',
-                }}
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-void-950 via-void-950/70 to-void-950/50 pointer-events-none" />
-            
-            <div className="relative z-10 flex flex-col items-center gap-5 max-w-xs w-full">
-              <div className="relative">
-                <div
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-brand-500/30 border-t-brand-500 animate-spin"
-                  style={{ animationDuration: '1s' }}
-                />
-                <div
-                  className="absolute inset-2 rounded-full"
-                  style={{
-                    background: 'radial-gradient(circle, color-mix(in srgb, var(--brand-500) 15%, transparent) 0%, transparent 70%)',
-                    animation: 'pulse-glow 2s ease-in-out infinite',
-                  }}
-                />
-              </div>
-
-              <div className="flex flex-col items-center gap-1.5">
-                <h3 className="text-[12px] text-[#9ca3af] font-medium flex items-center">
-                  Fetching media / Trying streaming servers<span className="animate-pulse tracking-widest">...</span>
-                </h3>
-                <p className="text-zinc-500 text-[11px] text-center max-w-[200px] leading-relaxed">
-                  Testing <span className="text-white font-semibold">{testingCurrentName}</span>
-                </p>
-              </div>
-              
-              <div className="w-full max-w-[200px]">
-                <div className="flex justify-between text-[9px] sm:text-[10px] font-mono text-zinc-600 mb-1.5 uppercase tracking-widest">
-                  <span>Scanning</span>
-                  <span className="text-brand-500">{Math.round(testProgress)}%</span>
-                </div>
-                <div className="w-full h-[2px] bg-zinc-900 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-premium-gradient-dark rounded-full transition-all duration-300 ease-out"
-                    style={{ 
-                      width: `${testProgress}%`,
-                      boxShadow: '0 0 8px color-mix(in srgb, var(--brand-500) 60%, transparent)',
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <TestingSourcesOverlay
+            testingSources={testingSources}
+            poster={poster}
+            testingCurrentName={testingCurrentName}
+            testProgress={testProgress}
+          />
         ) : (
           <>
             {/* ── IFRAME — always rendered so content loads in background ──────────
@@ -1361,15 +851,6 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
                     ? 'opacity-40 pointer-events-none'
                     : 'pointer-events-auto opacity-100'
               }`}
-              style={{
-                // Promote to own GPU compositing layer — isolates it from
-                // backdrop-blur / box-shadow repaints in parent stacking contexts.
-                // This is the key fix for windowed buffering/lag.
-                willChange: 'transform',
-                transform: 'translateZ(0)',
-                // Only apply blur filter when strictly needed (support popup)
-                ...((!isConnecting && showSupportPopup) ? { filter: 'blur(4px) grayscale(1)' } : {})
-              }}
               allowFullScreen
               referrerPolicy="strict-origin-when-cross-origin"
               sandbox={sandboxAttrs}
@@ -1377,165 +858,27 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
 
             {/* ── CONNECTING ANIMATION OVERLAY ─────────────────────────────────
                 Shows while the iframe loads in the background.
-                Duration: 8s (fast network) / 12s (medium) / 20s (slow).
-                Progress bar reflects real time elapsed so user knows it's working.
             */}
-            <AnimatePresence>
-              {isConnecting && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.4 }}
-                  className="absolute inset-0 z-30 bg-void-950 flex flex-col items-center justify-center p-4 text-center pointer-events-none overflow-hidden"
-                >
-                  {/* Blurred poster background */}
-                  {poster && (
-                    <div
-                      className="absolute inset-0 opacity-[0.07]"
-                      style={{
-                        backgroundImage: `url(https://image.tmdb.org/t/p/w500${poster})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        filter: 'blur(50px) saturate(2)',
-                        transform: 'scale(1.15)',
-                      }}
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-void-950 via-void-950/80 to-void-950/60" />
-
-                  <div className="relative z-10 flex flex-col items-center gap-5 w-full max-w-[280px] sm:max-w-sm">
-                    {/* Animated server ring */}
-                    <div className="relative flex items-center justify-center">
-                      {/* Outer pulse ring */}
-                      <motion.div
-                        className="absolute w-24 h-24 rounded-full border border-brand-500/20"
-                        animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
-                        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                      />
-                      {/* Middle ring */}
-                      <motion.div
-                        className="absolute w-16 h-16 rounded-full border border-brand-500/40"
-                        animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
-                        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-                      />
-                      {/* Spinning arc */}
-                      <div
-                        className="w-12 h-12 rounded-full border-2 border-zinc-800 border-t-brand-500 animate-spin"
-                        style={{ animationDuration: '1.2s' }}
-                      />
-                      {/* Center dot */}
-                      <div className="absolute w-3 h-3 rounded-full bg-brand-500 shadow-[0_0_12px_var(--brand-500)]" />
-                    </div>
-
-                    {/* Text */}
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm sm:text-base font-display font-black uppercase tracking-widest text-white">
-                          Connecting to Server
-                        </h3>
-                        {/* Network speed badge */}
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                          networkSpeed === 'fast'
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                            : networkSpeed === 'slow'
-                              ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                              : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                        }`}>
-                          {networkSpeed === 'fast' ? '⚡ Fast' : networkSpeed === 'slow' ? '🐢 Slow' : '📶 OK'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] sm:text-xs text-zinc-500 leading-relaxed">
-                        Establishing encrypted stream via{' '}
-                        <span className="text-brand-400 font-bold">{source.publicName}</span>
-                        <span className="animate-pulse">...</span>
-                      </p>
-                    </div>
-
-                    {/* Server status dots */}
-                    <div className="flex items-center gap-3">
-                      {['Auth', 'CDN', 'Stream'].map((label, i) => (
-                        <div key={label} className="flex flex-col items-center gap-1.5">
-                          <motion.div
-                            className="w-2 h-2 rounded-full bg-brand-500"
-                            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
-                            style={{ boxShadow: '0 0 6px var(--brand-500)' }}
-                          />
-                          <span className="text-[8px] uppercase tracking-widest text-zinc-600 font-bold">{label}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="w-full">
-                      <div className="flex justify-between text-[9px] font-mono text-zinc-600 mb-2 uppercase tracking-widest">
-                        <span>Loading stream</span>
-                        <span className="text-brand-500 font-bold">{Math.round(connectProgress)}%</span>
-                      </div>
-                      <div className="w-full h-[3px] bg-zinc-900 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-brand-500 to-purple-500 rounded-full"
-                          style={{
-                            width: `${connectProgress}%`,
-                            boxShadow: '0 0 10px color-mix(in srgb, var(--brand-500) 60%, transparent)',
-                            transition: 'width 0.15s ease-out',
-                          }}
-                        />
-                      </div>
-                      <p className="text-[9px] text-zinc-700 mt-2 text-center">
-                        Content loading in background — will be ready instantly ✓
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <ConnectingOverlay
+              isConnecting={isConnecting}
+              poster={poster}
+              networkSpeed={networkSpeed}
+              source={source}
+              connectProgress={connectProgress}
+            />
           </>
         )}
 
-        <AnimatePresence>
-          {showNextOverlay && hasNextEpisode && (
-            <motion.div 
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute right-4 bottom-20 md:right-8 md:bottom-24 z-50 bg-black/90 backdrop-blur-xl border border-zinc-800 rounded-2xl p-6 shadow-2xl pointer-events-auto text-white max-w-sm w-[calc(100%-2rem)]"
-            >
-              <h4 className="text-[10px] uppercase tracking-widest font-bold text-brand-500 mb-2">Up Next</h4>
-              <p className="text-lg md:text-xl font-bold mb-4 font-display leading-tight">Playing in {countdown}s...</p>
-              <div className="flex gap-3 items-center">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setShowNextOverlay(false); }}
-                  className="flex-1 px-4 py-2.5 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); if (onPlayNext) onPlayNext(); }}
-                  className="flex-1 px-4 py-2.5 bg-premium-gradient hover:bg-premium-gradient-dark rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
-                >
-                  <Play size={14} fill="currentColor" /> Play Now
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <UpNextOverlay
+          showNextOverlay={showNextOverlay}
+          hasNextEpisode={hasNextEpisode || false}
+          countdown={countdown}
+          setShowNextOverlay={setShowNextOverlay}
+          onPlayNext={onPlayNext}
+        />
 
-        {/* 20-Second Support Popup */}
-        {mounted && typeof document !== 'undefined' && createPortal(
-          <SupportPopupModal
-            isOpen={showSupportPopup}
-            mediaType={type}
-            title={title}
-            onComplete={() => {
-              setShowSupportPopup(false);
-              hasSupportedRef.current = true;
-              window.dispatchEvent(new Event('zivox_donation_update'));
-            }}
-          />,
-          document.body
-        )}
+        {/* Support Popup: portal in normal mode, child in fullscreen mode. */}
+        {supportPopup && (isFullscreen ? supportPopup : createPortal(supportPopup, document.body))}
       </div>
 
     </motion.div>

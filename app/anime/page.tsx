@@ -2,7 +2,7 @@ import { tmdb } from '@/lib/tmdb';
 import { AnimeDashboard } from '@/components/media/AnimeDashboard';
 import { Media } from '@/types/tmdb';
 
-export const revalidate = 21600; // 6h
+export const revalidate = 86400; // 24h
 
 export const metadata = {
   title: 'Anime',

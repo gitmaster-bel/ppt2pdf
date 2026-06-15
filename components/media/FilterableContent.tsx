@@ -32,7 +32,7 @@ export function FilterableContent({ sections }: { sections: { title: string; ite
       <div className="relative">
         <div 
           className="px-6 md:px-14 flex items-center gap-2 overflow-x-auto pb-4 pt-2 no-scrollbar snap-x snap-mandatory" 
-          style={{ touchAction: 'pan-x', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
         >
           <button
             onClick={() => handleFilter(null)}
