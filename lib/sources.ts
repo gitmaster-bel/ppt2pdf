@@ -56,9 +56,25 @@ export const sources: Source[] = [
         : `https://1embed.cc/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}&auto_play=1`
   },
   {
+    id: "vidnest",
+    name: "VidNest",
+    publicName: "Server 3 ⚡",
+    type: "iframe",
+    tier: 1,
+    feature: "Very fast",
+    hasPopups: false,
+    noAds: false,
+    autoDisableSandbox: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex) =>
+      type === "movie"
+        ? `https://vidnest.fun/movie/${id}`
+        : `https://vidnest.fun/tv/${id}/${season}/${episode}`
+  },
+  {
     id: "vidsrcwtf1",
     name: "VidSrc Multi-Server",
-    publicName: "Server 3",
+    publicName: "Server 4",
     type: "iframe",
     tier: 1,
     feature: "Aggregates multiple servers automatically · Switches to best source · Zero ads",
@@ -73,7 +89,7 @@ export const sources: Source[] = [
   {
     id: "peachify",
     name: "Peachify",
-    publicName: "Server 4",
+    publicName: "Server 5",
     type: "iframe",
     tier: 1,
     feature: "Multilingual subtitles & dubs · Smart fallbacks · Works well on mobile — Note: may show ads/redirects",
@@ -89,7 +105,7 @@ export const sources: Source[] = [
   {
     id: "autoembed",
     name: "AutoEmbed",
-    publicName: "Server 5",
+    publicName: "Server 6",
     type: "iframe",
     tier: 1,
     feature: "TMDB exact-match engine · Zero ads · Instant source selection · Wide library coverage",
@@ -104,7 +120,7 @@ export const sources: Source[] = [
   {
     id: "vidsrcwtf2",
     name: "VidSrc Multi-Lang",
-    publicName: "Server 6",
+    publicName: "Server 7",
     type: "iframe",
     tier: 1,
     feature: "Extensive multi-language subtitles & dubs · Great for international content · Zero ads",
@@ -117,35 +133,19 @@ export const sources: Source[] = [
         : `https://vidsrc.wtf/2/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
   },
   {
-    id: "smashystream",
-    name: "SmashyStream",
-    publicName: "Server 7",
+    id: "screenscape",
+    name: "ScreenScape",
+    publicName: "Server 8",
     type: "iframe",
     tier: 1,
-    feature: "Extensive backup links · Multi-language subtitles · High uptime · Good fallback option",
-    hasPopups: true,
+    feature: "Fast, many dubs available, Ad-free",
+    hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
     url: (type, id, season, episode, themeHex) =>
       type === "movie"
-        ? `https://embed.smashystream.com/playere.php?tmdb=${id}&color=${themeHex || '7c3aed'}`
-        : `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}&color=${themeHex || '7c3aed'}`
-  },
-  {
-    id: "vidnest",
-    name: "VidNest",
-    publicName: "Server 8 ⚡",
-    type: "iframe",
-    tier: 1,
-    feature: "Very fast",
-    hasPopups: false,
-    noAds: false,
-    autoDisableSandbox: true,
-    sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
-      type === "movie"
-        ? `https://vidnest.fun/movie/${id}`
-        : `https://vidnest.fun/tv/${id}/${season}/${episode}`
+        ? `https://screenscape.me/embed?tmdb=${id}&type=movie`
+        : `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
   },
   {
     id: "vidlux",
@@ -163,19 +163,19 @@ export const sources: Source[] = [
         : `https://vidlux.xyz/embed/tv/${id}/${season}/${episode}`
   },
   {
-    id: "screenscape",
-    name: "ScreenScape",
+    id: "smashystream",
+    name: "SmashyStream",
     publicName: "Server 10",
     type: "iframe",
     tier: 1,
-    feature: "Fast, many dubs available, Ad-free",
-    hasPopups: false,
+    feature: "Extensive backup links · Multi-language subtitles · High uptime · Good fallback option",
+    hasPopups: true,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
     url: (type, id, season, episode, themeHex) =>
       type === "movie"
-        ? `https://screenscape.me/embed?tmdb=${id}&type=movie`
-        : `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
+        ? `https://embed.smashystream.com/playere.php?tmdb=${id}&color=${themeHex || '7c3aed'}`
+        : `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}&color=${themeHex || '7c3aed'}`
   },
   {
     id: "cinesrc",
@@ -192,7 +192,6 @@ export const sources: Source[] = [
         ? `https://cinesrc.st/embed/movie/${id}?color=%23${themeHex || '7c3aed'}&autoplay=true`
         : `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}&color=%23${themeHex || '7c3aed'}&autoplay=true`
   },
-
   // ── Additional Servers (shown with real names) ───────────────────────────
   {
     id: "mappletv",
@@ -512,9 +511,9 @@ export const sources: Source[] = [
   }
 ];
 
-export const TOP_8_IDS = ["cinemaos", "1embed", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "smashystream", "vidnest"];
+export const TOP_8_IDS = ["cinemaos", "1embed", "vidnest", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "screenscape"];
 /** Servers 9-11 appear in the Settings "Recommended" section but NOT in the quick-switch header strip */
-export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "vidlux", "screenscape", "cinesrc"];
+export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "vidlux", "smashystream", "cinesrc"];
 
 export const getSource = (id?: string): Source =>
   sources.find((s) => s.id === id) || sources[0];

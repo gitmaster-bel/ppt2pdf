@@ -138,9 +138,23 @@ const getMockMedia = (i: number, t: string = "movie"): Media => {
   };
 };
 
+const filterUnreleased = (results: any[]) => {
+  if (!results) return [];
+  const now = new Date().toISOString().split('T')[0];
+  return results.filter(item => {
+    if (item.media_type === 'person') return true;
+    const date = item.release_date || item.first_air_date;
+    if (!date) return false;
+    return date <= now;
+  });
+};
+
 export const tmdb = {
   getTrending: async (type: "all" | "movie" | "tv" | "person" = "all") =>
-    fetchTMDB<TMDBResponse<any>>(`/trending/${type}/week`).catch(() => ({
+    fetchTMDB<TMDBResponse<any>>(`/trending/${type}/week`).then(res => {
+      res.results = filterUnreleased(res.results);
+      return res;
+    }).catch(() => ({
       page: 1,
       results: Array.from({ length: 12 }).map((_, i) =>
         type === "person" ? { id: i, name: "Fallback Person", profile_path: null, known_for: [] } : getMockMedia(i, type === "all" ? "movie" : type),
@@ -149,14 +163,20 @@ export const tmdb = {
       total_results: 12,
     })),
   getPopular: async (type: "movie" | "tv") =>
-    fetchTMDB<TMDBResponse<Media>>(`/${type}/popular`).catch(() => ({
+    fetchTMDB<TMDBResponse<Media>>(`/${type}/popular`).then(res => {
+      res.results = filterUnreleased(res.results);
+      return res;
+    }).catch(() => ({
       page: 1,
       results: Array.from({ length: 12 }).map((_, i) => getMockMedia(i, type)),
       total_pages: 1,
       total_results: 12,
     })),
   getTopRated: async (type: "movie" | "tv") =>
-    fetchTMDB<TMDBResponse<Media>>(`/${type}/top_rated`).catch(() => ({
+    fetchTMDB<TMDBResponse<Media>>(`/${type}/top_rated`).then(res => {
+      res.results = filterUnreleased(res.results);
+      return res;
+    }).catch(() => ({
       page: 1,
       results: Array.from({ length: 12 }).map((_, i) => getMockMedia(i, type)),
       total_pages: 1,
@@ -221,6 +241,9 @@ export const tmdb = {
       with_genres: "16",
       with_original_language: "ja",
       page,
+    }).then(res => {
+      res.results = filterUnreleased(res.results);
+      return res;
     }).catch(() => ({
       page: 1,
       results: Array.from({ length: 12 }).map((_, i) => getMockMedia(i, "tv")),
@@ -228,7 +251,10 @@ export const tmdb = {
       total_results: 12,
     })),
   discover: async (type: "movie" | "tv", params: Record<string, string> = {}) =>
-    fetchTMDB<TMDBResponse<Media>>(`/discover/${type}`, params).catch(() => ({
+    fetchTMDB<TMDBResponse<Media>>(`/discover/${type}`, params).then(res => {
+      res.results = filterUnreleased(res.results);
+      return res;
+    }).catch(() => ({
       page: 1,
       results: Array.from({ length: 12 }).map((_, i) => getMockMedia(i, type)),
       total_pages: 1,
@@ -277,7 +303,8 @@ export const tmdb = {
       }
     }
     
-    const deduped = Array.from(uniqueMap.values()) as Media[];
+    let deduped = Array.from(uniqueMap.values()) as Media[];
+    deduped = filterUnreleased(deduped);
     deduped.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
     return { results: deduped };

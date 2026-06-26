@@ -335,6 +335,13 @@ export function DonationModal({ isOpen, onClose, onSuccess }: DonationModalProps
               </AnimatePresence>
             </motion.div>
 
+            <button 
+              onClick={onClose}
+              className="w-full mt-3 py-2 text-[10px] uppercase tracking-widest text-white/40 hover:text-white/80 transition-colors font-bold"
+            >
+              Maybe Later
+            </button>
+
             {/* Copy Toast */}
             <AnimatePresence>
               {showToast && (
