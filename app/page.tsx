@@ -12,13 +12,13 @@ import { RowSkeleton } from '@/components/ui/RowSkeleton';
 
 import nextDynamic from 'next/dynamic';
 
-const RegionalContent = nextDynamic(() => import('@/components/media/RegionalContent').then(mod => mod.RegionalContent));
-const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row));
-const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow));
+const RegionalContent = nextDynamic(() => import('@/components/media/RegionalContent').then(mod => mod.RegionalContent), { loading: () => <RowSkeleton /> });
+const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row), { loading: () => <RowSkeleton /> });
+const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow), { loading: () => <RowSkeleton /> });
 
 // Async feed components
 import { CollectionsFeed } from '@/components/home/CollectionsFeed';
-const ClientProviderShelves = nextDynamic(() => import('@/components/home/ClientProviderShelves').then(mod => mod.ClientProviderShelves));
+const ClientProviderShelves = nextDynamic(() => import('@/components/home/ClientProviderShelves').then(mod => mod.ClientProviderShelves), { loading: () => <RowSkeleton /> });
 import { TopRatedFeed } from '@/components/home/TopRatedFeed';
 import { ClassicsFeed } from '@/components/home/ClassicsFeed';
 import { AnimeFeed } from '@/components/home/AnimeFeed';

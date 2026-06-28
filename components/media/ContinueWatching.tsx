@@ -1,11 +1,22 @@
 'use client';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { HorizontalRow } from '@/components/media/HorizontalRow';
+import { RowSkeleton } from '@/components/ui/RowSkeleton';
 import { Media } from '@/types/tmdb';
+import { useEffect, useState } from 'react';
 
 export function ContinueWatching() {
   const { history } = useWatchHistory();
-  
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <RowSkeleton title="Continue Watching" />;
+  }
+
   if (!history || history.length === 0) return null;
 
   const historyMedia = history.slice(0, 10).map(item => ({

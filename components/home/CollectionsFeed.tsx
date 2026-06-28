@@ -49,13 +49,9 @@ export async function CollectionsFeed({ countryCode }: { countryCode: string }) 
     ...globalColls.slice(0, 15 - Math.min(regionalColls.length, 4))
   ];
 
-  const rawCollections = [];
-  const chunkSize = 5;
-  for (let i = 0; i < finalIds.length; i += chunkSize) {
-    const chunk = finalIds.slice(i, i + chunkSize);
-    const res = await Promise.all(chunk.map(id => tmdb.getCollection(id.toString()).catch(() => null)));
-    rawCollections.push(...res);
-  }
+  const rawCollections = await Promise.all(
+    finalIds.map(id => tmdb.getCollection(id.toString()).catch(() => null))
+  );
   
   const collectionsData = rawCollections.filter(Boolean).map(c => ({
     id: c.id,
