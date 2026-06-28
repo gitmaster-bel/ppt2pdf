@@ -702,10 +702,10 @@ export async function getRegionalProviderShelvesAction(countryCode: string) {
       isRegional ? tmdb.discover('tv', { with_watch_providers: '8', watch_region: curCode, with_original_language: getRegionalLangs(curCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
       isRegional ? tmdb.discover('movie', { with_watch_providers: '119|9', watch_region: curCode, with_original_language: getRegionalLangs(curCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
       isRegional ? tmdb.discover('tv', { with_watch_providers: '119|9', watch_region: curCode, with_original_language: getRegionalLangs(curCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-      curCode === 'IN' ? tmdb.discover('movie', { with_watch_providers: '2336', watch_region: 'IN', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-      curCode === 'IN' ? tmdb.discover('tv', { with_watch_providers: '2336', watch_region: 'IN', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-      curCode === 'IN' ? tmdb.discover('movie', { with_watch_providers: '2336', watch_region: 'IN', with_original_language: getRegionalLangs('IN'), sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-      curCode === 'IN' ? tmdb.discover('tv', { with_watch_providers: '2336', watch_region: 'IN', with_original_language: getRegionalLangs('IN'), sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] })
+      curCode === 'IN' ? tmdb.discover('movie', { with_watch_providers: '122|532|2336', watch_region: 'IN', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      curCode === 'IN' ? tmdb.discover('tv', { with_watch_providers: '122|532|2336', watch_region: 'IN', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      curCode === 'IN' ? tmdb.discover('movie', { with_watch_providers: '122|532|2336', watch_region: 'IN', with_original_language: getRegionalLangs('IN'), sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      curCode === 'IN' ? tmdb.discover('tv', { with_watch_providers: '122|532|2336', watch_region: 'IN', with_original_language: getRegionalLangs('IN'), sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] })
     ]);
 
     const netflixData = { results: [...(netflixDataPage1?.results || []), ...(netflixDataPage2?.results || [])] };

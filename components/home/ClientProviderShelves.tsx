@@ -46,9 +46,9 @@ export function ClientProviderShelves() {
       {preferences.country === 'IN' ? (
         data.jio && data.jio.length > 0 && (
           <ProviderHeroShelf
-            title="Popular on JioCinema"
+            title="Popular on JioHotstar"
             items={data.jio}
-            provider={PROVIDERS.find(p => p.id === 2336)!}
+            provider={PROVIDERS.find(p => p.id === "122|532|2336")!}
           />
         )
       ) : (

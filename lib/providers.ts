@@ -140,21 +140,7 @@ export const PROVIDERS: Provider[] = [
     categories: ['movie', 'tv'],
     tier: 'regional',
   },
-  {
-    id: 2336,
-    slug: 'jiocinema',
-    name: 'JioCinema',
-    logo: 'https://image.tmdb.org/t/p/w300/kVqjgpcwvDJOhCupjcLzwwtOp52.jpg',
-    color: '#D10074',
-    gradient: 'from-[#D10074]/40 to-black',
-    bgAccent: '#1f0011',
-    borderColor: 'border-[#D10074]/30',
-    tagline: 'Watch sports, movies, and more.',
-    region: 'IN',
-    hasTrending: true,
-    categories: ['movie', 'tv'],
-    tier: 'regional',
-  },
+
   {
     id: 237,
     slug: 'sonyliv',
