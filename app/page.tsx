@@ -12,22 +12,43 @@ import { cookies, headers } from 'next/headers';
 import { Media } from '@/types/tmdb';
 import { ProvidersGrid } from '@/components/providers/ProvidersGrid';
 import { RowSkeleton } from '@/components/ui/RowSkeleton';
+import { ProviderRowSkeleton } from '@/components/ui/ProviderRowSkeleton';
+import { CompactTop10Skeleton } from '@/components/ui/CompactTop10Skeleton';
+import { PROVIDERS } from '@/lib/providers';
 
 import nextDynamic from 'next/dynamic';
 
-import { RegionalContent } from '@/components/media/RegionalContent';
+const RegionalContent = nextDynamic(() => import('@/components/media/RegionalContent').then(mod => mod.RegionalContent), { loading: () => <div className="flex flex-col gap-6 md:gap-10 w-full"><CompactTop10Skeleton title="Top Movies" /><CompactTop10Skeleton title="Top TV Shows" /></div> });
 const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row), { loading: () => <RowSkeleton /> });
 const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow), { loading: () => <RowSkeleton /> });
 
 // Async feed components
 import { CollectionsFeed } from '@/components/home/CollectionsFeed';
-import { ClientProviderShelves } from '@/components/home/ClientProviderShelves';
+const ClientProviderShelves = nextDynamic(() => import('@/components/home/ClientProviderShelves').then(mod => mod.ClientProviderShelves), { loading: () => <div className="flex flex-col gap-6 md:gap-10 w-full"><ProviderRowSkeleton title="Popular on Netflix" provider={PROVIDERS.find(p => p.id === 8)} /><ProviderRowSkeleton title="Popular on Prime Video" provider={PROVIDERS.find(p => p.id === 9)} /></div> });
 import { TopRatedFeed } from '@/components/home/TopRatedFeed';
 import { ClassicsFeed } from '@/components/home/ClassicsFeed';
 import { AnimeFeed } from '@/components/home/AnimeFeed';
 import { TimeBasedWidgetFeed } from '@/components/home/TimeBasedWidgetFeed';
 
 const REGIONAL_MARKETS = new Set(['IN', 'PK', 'JP', 'KR', 'BR', 'ES', 'FR', 'DE', 'IT', 'MX', 'PH', 'TH', 'ID', 'NG', 'TR']);
+
+const REGIONAL_TITLES: Record<string, string> = {
+  IN: 'Trending in India',
+  PK: 'Trending in Pakistan',
+  JP: 'Trending in Japan',
+  KR: 'Trending in South Korea',
+  BR: 'Trending in Brazil',
+  ES: 'Trending in Spain',
+  FR: 'Trending in France',
+  DE: 'Trending in Germany',
+  IT: 'Trending in Italy',
+  MX: 'Trending in Mexico',
+  PH: 'Trending in Philippines',
+  TH: 'Trending in Thailand',
+  ID: 'Trending in Indonesia',
+  NG: 'Trending in Nigeria',
+  TR: 'Trending in Turkey',
+};
 
 async function getCountryCode() {
   const headersList = await headers();
@@ -169,7 +190,18 @@ export default async function Home() {
             <ProvidersGrid />
           </div>
           
-          <RegionalContent countryCode={countryCode} />
+          {isRegional ? (
+            <Suspense fallback={
+              <div className="flex flex-col gap-6 md:gap-10 w-full">
+                <CompactTop10Skeleton title={`${REGIONAL_TITLES[countryCode]?.replace('Trending in ', '') || ''}'s Top Movies`} />
+                <CompactTop10Skeleton title={`${REGIONAL_TITLES[countryCode]?.replace('Trending in ', '') || ''}'s Top TV Shows`} />
+              </div>
+            }>
+              <RegionalContent />
+            </Suspense>
+          ) : (
+            <RegionalContent />
+          )}
           
           <Suspense fallback={<RowSkeleton />}>
             <CollectionsFeed countryCode={countryCode} />
@@ -185,8 +217,21 @@ export default async function Home() {
             </Suspense>
           </div>
           
-          <Suspense fallback={<RowSkeleton />}>
-            <ClientProviderShelves countryCode={countryCode} />
+          <Suspense fallback={
+            <div className="flex flex-col gap-6 md:gap-10 w-full">
+              <ProviderRowSkeleton title="Popular on Netflix" provider={PROVIDERS.find(p => p.id === 8)} />
+              <ProviderRowSkeleton title="Popular on Prime Video" provider={PROVIDERS.find(p => p.id === 9)} />
+              {countryCode === 'IN' ? (
+                <ProviderRowSkeleton title="Popular on JioHotstar" provider={PROVIDERS.find(p => p.id === "122|532|2336")} />
+              ) : (
+                <>
+                  <ProviderRowSkeleton title="Popular on Disney+" provider={PROVIDERS.find(p => p.id === 337)} />
+                  <ProviderRowSkeleton title="Popular on Max" provider={PROVIDERS.find(p => p.id === 1899)} />
+                </>
+              )}
+            </div>
+          }>
+            <ClientProviderShelves />
           </Suspense>
 
           <Suspense fallback={<RowSkeleton />}>
