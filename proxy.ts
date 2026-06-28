@@ -84,9 +84,31 @@ export default function proxy(request: NextRequest) {
     return BLOCKED_RESPONSE.clone();
   }
 
-  // ── 4. Add security headers to all responses ─────────────────────────────
-  const response = NextResponse.next();
+  // ── 4. Add security headers and location data ─────────────────────────────
+  const country = request.geo?.country || request.headers.get('x-vercel-ip-country');
+  
+  const requestHeaders = new Headers(request.headers);
+  if (country) {
+    requestHeaders.set('x-user-country', country);
+  }
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  
   response.headers.set('X-Robots-Tag', 'noindex, nofollow, noai, noimageai');
+
+  // Automatically set the cookie on the very first visit so client components can read it instantly
+  if (country && !request.cookies.has('user_country')) {
+    response.cookies.set('user_country', country, {
+      path: '/',
+      maxAge: 31536000,
+      sameSite: 'lax',
+    });
+  }
+
   return response;
 }
 

@@ -41,15 +41,27 @@ export function useAutoLocation() {
 
     const detectLocation = async () => {
       try {
-        const res = await fetch('https://ipapi.co/json/');
-        if (!res.ok) throw new Error('Failed to fetch location');
-        const data = await res.json();
+        let country = 'US';
+        let region = '';
+
+        try {
+          const res = await fetch('https://ipapi.co/json/');
+          if (!res.ok) throw new Error('ipapi failed');
+          const data = await res.json();
+          country = data.country_code || 'US';
+          region = data.region_code || '';
+        } catch (err) {
+          console.warn('ipapi.co failed, falling back to geojs...');
+          // Fallback to GeoJS (very resilient against adblockers)
+          const res = await fetch('https://get.geojs.io/v1/ip/country.json');
+          if (res.ok) {
+            const data = await res.json();
+            country = data.country || 'US';
+          }
+        }
         
         // Double check in case it was updated while fetching
         if (storage.get()?.preferences?.locationAutoDetected) return;
-
-        const country = data.country_code || 'US';
-        const region = data.region_code || ''; // e.g. "MH", "TN", "DL"
         let nativeLangs = COUNTRY_TO_LANG[country] ? [...COUNTRY_TO_LANG[country]] : [];
         
         let serverLanguage: string | undefined;

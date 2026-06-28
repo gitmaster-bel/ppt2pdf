@@ -63,7 +63,7 @@ async function getCountryCode() {
   }
 
   const defaultCountry = process.env.NODE_ENV === 'development' ? 'IN' : 'US';
-  return (savedCountry || headersList.get('x-vercel-ip-country') || defaultCountry).toUpperCase();
+  return (savedCountry || headersList.get('x-user-country') || headersList.get('x-vercel-ip-country') || defaultCountry).toUpperCase();
 }
 
 async function HeroSectionFetcher() {
