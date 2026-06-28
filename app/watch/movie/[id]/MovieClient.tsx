@@ -189,7 +189,9 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
               </div>
               
               {isPlaying && (
-                <PlaybackTips />
+                <div className="w-full max-w-5xl mx-auto">
+                  <PlaybackTips />
+                </div>
               )}
             </div>
 

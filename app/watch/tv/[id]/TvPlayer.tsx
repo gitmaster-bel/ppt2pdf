@@ -387,7 +387,7 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
 
               {/* Tucked Playback Tips for Sidebar Mode */}
               {isPlaying && layout === 'sidebar' && (
-                <div className="hidden xl:block">
+                <div className="hidden xl:block w-full max-w-5xl mx-auto">
                   <PlaybackTips />
                 </div>
               )}
@@ -591,7 +591,7 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                 
                 {/* Tucked Playback Tips for Standard Mode or Mobile */}
                 {isPlaying && (
-                  <div className={layout === 'sidebar' ? 'block xl:hidden mt-2' : 'block mt-2'}>
+                  <div className={`w-full max-w-5xl mx-auto ${layout === 'sidebar' ? 'block xl:hidden mt-2' : 'block mt-2'}`}>
                     <PlaybackTips />
                   </div>
                 )}
