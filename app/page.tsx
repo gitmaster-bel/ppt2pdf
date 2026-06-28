@@ -49,15 +49,22 @@ async function HeroSectionFetcher() {
   const countryCode = await getCountryCode();
   const isRegional = REGIONAL_MARKETS.has(countryCode);
 
-  const [
-    trendingPage1,
-    trendingPage2,
-    regionalTrendingRes
-  ] = await Promise.all([
-    tmdb.getTrending('all', 1),
-    tmdb.getTrending('all', 2),
-    isRegional ? getRegionalTrendingAction(countryCode) : Promise.resolve({ results: [] })
-  ]);
+  let trendingPage1 = { results: [] };
+  let trendingPage2 = { results: [] };
+  let regionalTrendingRes = { results: [] };
+
+  try {
+    const responses = await Promise.all([
+      tmdb.getTrending('all', 1),
+      tmdb.getTrending('all', 2),
+      isRegional ? getRegionalTrendingAction(countryCode) : Promise.resolve({ results: [] })
+    ]);
+    trendingPage1 = responses[0] || { results: [] };
+    trendingPage2 = responses[1] || { results: [] };
+    regionalTrendingRes = responses[2] || { results: [] };
+  } catch (e) {
+    console.error("HeroSectionFetcher failed:", e);
+  }
   
   const regionalTrending = regionalTrendingRes || { results: [] };
   const rawTrendingResults = [...(trendingPage1.results || []), ...(trendingPage2.results || [])];
@@ -101,15 +108,22 @@ async function TrendingRowsFetcher() {
   const countryCode = await getCountryCode();
   const isRegional = REGIONAL_MARKETS.has(countryCode);
 
-  const [
-    trendingPage1,
-    trendingPage2,
-    regionalTrendingRes
-  ] = await Promise.all([
-    tmdb.getTrending('all', 1),
-    tmdb.getTrending('all', 2),
-    isRegional ? getRegionalTrendingAction(countryCode) : Promise.resolve({ results: [] })
-  ]);
+  let trendingPage1 = { results: [] };
+  let trendingPage2 = { results: [] };
+  let regionalTrendingRes = { results: [] };
+
+  try {
+    const responses = await Promise.all([
+      tmdb.getTrending('all', 1),
+      tmdb.getTrending('all', 2),
+      isRegional ? getRegionalTrendingAction(countryCode) : Promise.resolve({ results: [] })
+    ]);
+    trendingPage1 = responses[0] || { results: [] };
+    trendingPage2 = responses[1] || { results: [] };
+    regionalTrendingRes = responses[2] || { results: [] };
+  } catch (e) {
+    console.error("TrendingRowsFetcher failed:", e);
+  }
   
   const regionalTrending = regionalTrendingRes || { results: [] };
   const rawTrendingResults = [...(trendingPage1.results || []), ...(trendingPage2.results || [])];
@@ -129,65 +143,10 @@ async function TrendingRowsFetcher() {
   );
 }
 
-// Client rows wrapper component for coordinated loading
-async function PageBody() {
+export default async function Home() {
   const countryCode = await getCountryCode();
   const isRegional = REGIONAL_MARKETS.has(countryCode);
 
-  return (
-    <>
-      <div className="relative z-20 md:mt-4">
-        <ContinueWatching />
-      </div>
-
-      <div className="md:hidden block mt-4 z-20 relative">
-        <Suspense fallback={<RowSkeleton />}>
-          <TimeBasedWidgetFeed variant="mobile" />
-        </Suspense>
-      </div>
-
-      <div className="flex flex-col relative z-20 pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-16 md:mt-4 gap-6 md:gap-10">
-        <div className="mt-2">
-          <ProvidersGrid />
-        </div>
-        
-        <RegionalContent />
-        
-        <Suspense fallback={<RowSkeleton />}>
-          <CollectionsFeed countryCode={countryCode} />
-        </Suspense>
-        
-        <Suspense fallback={<div className="flex flex-col gap-6 md:gap-10"><RowSkeleton title="Recommended For You"/><RowSkeleton title="Top 10 Today"/><RowSkeleton title="Global Trending"/></div>}>
-          <TrendingRowsFetcher />
-        </Suspense>
-        
-        <div className="hidden md:block">
-          <Suspense fallback={<RowSkeleton />}>
-            <TimeBasedWidgetFeed variant="desktop" />
-          </Suspense>
-        </div>
-        
-        <Suspense fallback={<RowSkeleton />}>
-          <ClientProviderShelves />
-        </Suspense>
-
-        <Suspense fallback={<RowSkeleton />}>
-          <AnimeFeed />
-        </Suspense>
-        
-        <Suspense fallback={<RowSkeleton />}>
-          <TopRatedFeed countryCode={countryCode} isRegional={isRegional} />
-        </Suspense>
-
-        <Suspense fallback={<RowSkeleton />}>
-          <ClassicsFeed />
-        </Suspense>
-      </div>
-    </>
-  );
-}
-
-export default function Home() {
   return (
     <main className="w-full bg-void-950 min-h-screen overflow-x-hidden flex flex-col">
       <div className="flex flex-col -mt-[72px]">
@@ -195,9 +154,53 @@ export default function Home() {
           <HeroSectionFetcher />
         </Suspense>
         
-        <Suspense fallback={null}>
-          <PageBody />
-        </Suspense>
+        <div className="relative z-20 md:mt-4">
+          <ContinueWatching />
+        </div>
+
+        <div className="md:hidden block mt-4 z-20 relative">
+          <Suspense fallback={<RowSkeleton />}>
+            <TimeBasedWidgetFeed variant="mobile" />
+          </Suspense>
+        </div>
+
+        <div className="flex flex-col relative z-20 pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-16 md:mt-4 gap-6 md:gap-10">
+          <div className="mt-2">
+            <ProvidersGrid />
+          </div>
+          
+          <RegionalContent />
+          
+          <Suspense fallback={<RowSkeleton />}>
+            <CollectionsFeed countryCode={countryCode} />
+          </Suspense>
+          
+          <Suspense fallback={<div className="flex flex-col gap-6 md:gap-10"><RowSkeleton title="Recommended For You"/><RowSkeleton title="Top 10 Today"/><RowSkeleton title="Global Trending"/></div>}>
+            <TrendingRowsFetcher />
+          </Suspense>
+          
+          <div className="hidden md:block">
+            <Suspense fallback={<RowSkeleton />}>
+              <TimeBasedWidgetFeed variant="desktop" />
+            </Suspense>
+          </div>
+          
+          <Suspense fallback={<RowSkeleton />}>
+            <ClientProviderShelves />
+          </Suspense>
+
+          <Suspense fallback={<RowSkeleton />}>
+            <AnimeFeed />
+          </Suspense>
+          
+          <Suspense fallback={<RowSkeleton />}>
+            <TopRatedFeed countryCode={countryCode} isRegional={isRegional} />
+          </Suspense>
+
+          <Suspense fallback={<RowSkeleton />}>
+            <ClassicsFeed />
+          </Suspense>
+        </div>
       </div>
     </main>
   );
