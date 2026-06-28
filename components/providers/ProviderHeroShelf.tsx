@@ -20,21 +20,6 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
 
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('row-revealed');
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.05, rootMargin: '-60px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   // Cache dimensions to avoid layout thrashing
   const dimensions = useRef({ width: 0, client: 0 });
@@ -88,7 +73,7 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
   if (!items || items.length === 0) return null;
 
   return (
-    <section ref={sectionRef} className="relative group/row row-hidden mb-6 md:mb-10">
+    <section ref={sectionRef} className="relative group/row mb-6 md:mb-10">
       {/* Provider Header */}
       <div className="w-full max-w-[1920px] mx-auto px-4 md:px-14 mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">

@@ -21,23 +21,7 @@ export function CollectionsRow({ collections }: { collections: CollectionData[] 
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('row-revealed');
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.05, rootMargin: '-60px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-    // Cache dimensions to avoid layout thrashing
+  // Cache dimensions to avoid layout thrashing
   const dimensions = useRef({ width: 0, client: 0 });
 
   const checkScroll = useCallback(() => {
@@ -88,7 +72,7 @@ export function CollectionsRow({ collections }: { collections: CollectionData[] 
   };
 
   return (
-    <section ref={sectionRef} className="relative group/row row-hidden">
+    <section ref={sectionRef} className="relative group/row">
       {/* Header */}
       <SectionTitle
         title="Iconic Collections"

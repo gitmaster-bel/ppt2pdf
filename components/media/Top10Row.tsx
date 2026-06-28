@@ -87,11 +87,7 @@ export function Top10Row({ title, items, limit = 10 }: Top10RowProps & { limit?:
   if (!items || items.length === 0) return null;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-100px' }}
-      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+    <section
       className="relative group/row"
     >
       <SectionTitle
@@ -148,6 +144,6 @@ export function Top10Row({ title, items, limit = 10 }: Top10RowProps & { limit?:
           <div className="flex-shrink-0 w-4 md:w-8" aria-hidden="true" />
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 }

@@ -23,23 +23,7 @@ export function HorizontalRow({ title, subtitle, items, seeAllHref, variant = 'd
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
 
-  // ── CSS-based reveal (no Framer Motion IntersectionObserver overhead) ────────
-  // One shared IntersectionObserver class-swap instead of per-row Framer Motion
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('row-revealed');
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.05, rootMargin: '-60px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  // ── Scroll handling ────────
 
   // Cache dimensions to avoid layout thrashing
   const dimensions = useRef({ width: 0, client: 0 });
@@ -100,7 +84,7 @@ export function HorizontalRow({ title, subtitle, items, seeAllHref, variant = 'd
   return (
     <section
       ref={sectionRef}
-      className="relative group/row row-hidden"
+      className="relative group/row"
     >
       {/* Header */}
       <SectionTitle
