@@ -8,7 +8,7 @@ import { CastSection } from '@/components/media/CastSection';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Bookmark, Heart, Play, Video, ArrowLeft, Share2, Check } from 'lucide-react';
+import { Bookmark, Heart, Play, Video, ArrowLeft, Share2, Check, Info } from 'lucide-react';
 import { ShareModal } from '@/components/ui/ShareModal';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/tmdb';

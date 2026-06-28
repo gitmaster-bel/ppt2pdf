@@ -18,7 +18,7 @@ const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow
 
 // Async feed components
 import { CollectionsFeed } from '@/components/home/CollectionsFeed';
-import { ProviderShelvesFeed } from '@/components/home/ProviderShelvesFeed';
+const ClientProviderShelves = nextDynamic(() => import('@/components/home/ClientProviderShelves').then(mod => mod.ClientProviderShelves));
 import { TopRatedFeed } from '@/components/home/TopRatedFeed';
 import { ClassicsFeed } from '@/components/home/ClassicsFeed';
 import { AnimeFeed } from '@/components/home/AnimeFeed';
@@ -112,7 +112,7 @@ async function HomeDataFetcher() {
         </div>
         
         <Suspense fallback={<RowSkeleton />}>
-          <ProviderShelvesFeed countryCode={countryCode} isRegional={isRegional} />
+          <ClientProviderShelves />
         </Suspense>
 
         <Suspense fallback={<RowSkeleton />}>

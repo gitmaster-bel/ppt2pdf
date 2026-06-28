@@ -20,7 +20,7 @@ export interface Source {
   ) => string;
 }
 
-export const NORMAL_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads";
+export const NORMAL_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation";
 export const TIER_1_SANDBOX = NORMAL_SANDBOX;
 export const TIER_2_SANDBOX = NORMAL_SANDBOX;
 

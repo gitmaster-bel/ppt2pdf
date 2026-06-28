@@ -67,8 +67,8 @@ export function RegionalContent() {
         const data = await getRegionalTrendingAction(countryCode);
         if (isMounted) {
           if (data && data.results && data.results.length > 0) {
-            setMovies(data.movies || []);
-            setShows(data.shows || []);
+            setMovies((data.movies as Media[]) || []);
+            setShows((data.shows as Media[]) || []);
             // Extract the country name from the localized title, e.g., "Trending in India" -> "India"
             setCountryName(localizedTitle.replace('Trending in ', ''));
           }

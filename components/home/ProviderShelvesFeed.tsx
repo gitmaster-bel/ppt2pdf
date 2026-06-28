@@ -6,6 +6,26 @@ import { Media } from '@/types/tmdb';
 
 const ProviderHeroShelf = nextDynamic(() => import('@/components/providers/ProviderHeroShelf').then(mod => mod.ProviderHeroShelf));
 
+const getRegionalLangs = (countryCode: string) => {
+  const regionalLangs: Record<string, string[]> = {
+    'IN': ['hi', 'te', 'ta', 'kn', 'ml', 'bn', 'mr', 'gu', 'pa', 'ur', 'or', 'as'],
+    'PK': ['ur', 'pa', 'sd', 'ps'],
+    'JP': ['ja'],
+    'KR': ['ko'],
+    'BR': ['pt'],
+    'ES': ['es'],
+    'FR': ['fr'],
+    'DE': ['de'],
+    'IT': ['it'],
+    'MX': ['es'],
+    'PH': ['tl', 'fil'],
+    'TH': ['th'],
+    'ID': ['id'],
+    'TR': ['tr']
+  };
+  return regionalLangs[countryCode.toUpperCase()]?.join('|') || '';
+};
+
 export async function ProviderShelvesFeed({ countryCode, isRegional }: { countryCode: string; isRegional: boolean }) {
   const [
     netflixDataPage1,
@@ -29,10 +49,10 @@ export async function ProviderShelvesFeed({ countryCode, isRegional }: { country
     tmdb.discover('movie', { with_watch_providers: '119|9', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }).catch(() => ({ results: [] })),
     tmdb.discover('tv', { with_watch_providers: '119|9', watch_region: 'US', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })),
     tmdb.discover('tv', { with_watch_providers: '119|9', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }).catch(() => ({ results: [] })),
-    isRegional ? tmdb.discover('movie', { with_watch_providers: '8', watch_region: countryCode, with_origin_country: countryCode, sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-    isRegional ? tmdb.discover('tv', { with_watch_providers: '8', watch_region: countryCode, with_origin_country: countryCode, sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-    isRegional ? tmdb.discover('movie', { with_watch_providers: '119|9', watch_region: countryCode, with_origin_country: countryCode, sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-    isRegional ? tmdb.discover('tv', { with_watch_providers: '119|9', watch_region: countryCode, with_origin_country: countryCode, sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+    isRegional ? tmdb.discover('movie', { with_watch_providers: '8', watch_region: countryCode, with_original_language: getRegionalLangs(countryCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+    isRegional ? tmdb.discover('tv', { with_watch_providers: '8', watch_region: countryCode, with_original_language: getRegionalLangs(countryCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+    isRegional ? tmdb.discover('movie', { with_watch_providers: '119|9', watch_region: countryCode, with_original_language: getRegionalLangs(countryCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+    isRegional ? tmdb.discover('tv', { with_watch_providers: '119|9', watch_region: countryCode, with_original_language: getRegionalLangs(countryCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
   ]);
 
   const netflixData = { results: [...(netflixDataPage1?.results || []), ...(netflixDataPage2?.results || [])] };
@@ -52,24 +72,8 @@ export async function ProviderShelvesFeed({ countryCode, isRegional }: { country
     const rM = (regionalMovies || []).map(m => ({...m, media_type: 'movie'}));
     const rT = (regionalTv || []).map(t => ({...t, media_type: 'tv'}));
 
-    const regionalLangs: Record<string, string[]> = {
-      'IN': ['hi', 'te', 'ta', 'kn', 'ml', 'bn', 'mr', 'gu', 'pa', 'ur', 'or', 'as'],
-      'PK': ['ur', 'pa', 'sd', 'ps'],
-      'JP': ['ja'],
-      'KR': ['ko'],
-      'BR': ['pt'],
-      'ES': ['es'],
-      'FR': ['fr'],
-      'DE': ['de'],
-      'IT': ['it'],
-      'MX': ['es'],
-      'PH': ['tl', 'fil'],
-      'TH': ['th'],
-      'ID': ['id'],
-      'TR': ['tr']
-    };
     const curCode = countryCode.toUpperCase();
-    const rLangs = regionalLangs[curCode] || [];
+    const rLangs = getRegionalLangs(curCode).split('|').filter(Boolean);
 
     const isGlobalStrict = (item: any) => {
       const originCountries = item.origin_country || [];

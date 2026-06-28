@@ -5,7 +5,7 @@ import { MediaDetails } from '@/types/tmdb';
 import { getImageUrl } from '@/lib/tmdb';
 import { getSeasonDetailsAction } from '@/app/actions';
 import { VideoPlayer } from '@/components/media/VideoPlayer';
-import { ChevronDown, Play, Star, CheckCircle2, Circle, ArrowLeft, Share2, Check, CalendarDays, Bell } from 'lucide-react';
+import { Bookmark, Heart, MonitorPlay, Info, ChevronDown, Play, Star, CheckCircle2, Circle, ArrowLeft, Share2, Check, CalendarDays, Bell, Video } from 'lucide-react';
 import { ShareModal } from '@/components/ui/ShareModal';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -17,7 +17,6 @@ import { CastSection } from '@/components/media/CastSection';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useNotifications } from '@/hooks/useNotifications';
-import { Bookmark, Heart, Video } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { useAmbientColor } from '@/hooks/useAmbientColor';
 import { YoutubeBackgroundPlayer } from '@/components/media/YoutubeBackgroundPlayer';
@@ -350,6 +349,7 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                       </div>
                     </div>
                   ) : (
+                    <>
                     <VideoPlayer
                       type="tv"
                       id={idStr}
@@ -364,6 +364,32 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                       initialServer={serverParam}
                       blockTutorial={false}
                     />
+                    <div className="w-full max-w-7xl mx-auto mt-2 px-4">
+                      <div className="bg-brand-500/5 border border-brand-500/20 rounded-xl p-4 flex flex-col gap-2">
+                        <h3 className="text-brand-400 font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                          <Info className="w-4 h-4" /> 
+                          Developer&apos;s Tips for the Best Experience
+                        </h3>
+                        <p className="text-white/70 text-sm leading-relaxed">
+                          <strong>Experiencing video lag?</strong> Go <strong className="text-white">Full Screen (F)</strong>! This forces your browser to unlock butter-smooth 60fps playback.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-4 mt-2">
+                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
+                            <strong className="text-brand-400">🚀 Fast:</strong> Server 3
+                          </span>
+                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
+                            <strong className="text-brand-400">⭐ Best Quality:</strong> Server 2, Server 8
+                          </span>
+                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
+                            <strong className="text-brand-400">🎥 Emoji:</strong> Direct Source
+                          </span>
+                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
+                            <strong className="text-brand-400">🌐 Emoji:</strong> Web Scraped
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    </>
                   )}
                 </div>
               </div>

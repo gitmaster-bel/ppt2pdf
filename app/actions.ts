@@ -646,3 +646,122 @@ export async function getHistorySimilarsAction(historyData: { id: string, type: 
     return [];
   }
 }
+
+const getRegionalLangs = (countryCode: string) => {
+  const regionalLangs: Record<string, string[]> = {
+    'IN': ['hi', 'te', 'ta', 'kn', 'ml', 'bn', 'mr', 'gu', 'pa', 'ur', 'or', 'as'],
+    'PK': ['ur', 'pa', 'sd', 'ps'],
+    'JP': ['ja'],
+    'KR': ['ko'],
+    'BR': ['pt'],
+    'ES': ['es'],
+    'FR': ['fr'],
+    'DE': ['de'],
+    'IT': ['it'],
+    'MX': ['es'],
+    'PH': ['tl', 'fil'],
+    'TH': ['th'],
+    'ID': ['id'],
+    'TR': ['tr']
+  };
+  return regionalLangs[countryCode.toUpperCase()]?.join('|') || '';
+};
+
+export async function getRegionalProviderShelvesAction(countryCode: string) {
+  try {
+    const isRegional = countryCode !== 'US' && countryCode !== 'GB' && countryCode !== 'CA' && countryCode !== 'AU';
+    const curCode = countryCode.toUpperCase();
+    
+    const [
+      netflixDataPage1,
+      netflixDataPage2,
+      primeDataPage1,
+      primeDataPage2,
+      disneyDataPage1,
+      disneyDataPage2,
+      hboDataPage1,
+      hboDataPage2,
+      regionalMovies,
+      regionalTv,
+      globalMovies,
+      globalTv,
+      jioGlobalMovies,
+      jioGlobalTv,
+      jioRegionalMovies,
+      jioRegionalTv
+    ] = await Promise.all([
+      tmdb.discover('movie', { with_watch_providers: '8', watch_region: 'US', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })),
+      tmdb.discover('movie', { with_watch_providers: '8', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }).catch(() => ({ results: [] })),
+      tmdb.discover('movie', { with_watch_providers: '9', watch_region: 'US', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })),
+      tmdb.discover('movie', { with_watch_providers: '9', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }).catch(() => ({ results: [] })),
+      tmdb.discover('movie', { with_watch_providers: '337', watch_region: 'US', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })),
+      tmdb.discover('movie', { with_watch_providers: '337', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }).catch(() => ({ results: [] })),
+      tmdb.discover('movie', { with_watch_providers: '119|9', watch_region: 'US', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })),
+      tmdb.discover('movie', { with_watch_providers: '119|9', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }).catch(() => ({ results: [] })),
+      isRegional ? tmdb.discover('movie', { with_watch_providers: '8', watch_region: curCode, with_original_language: getRegionalLangs(curCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      isRegional ? tmdb.discover('tv', { with_watch_providers: '8', watch_region: curCode, with_original_language: getRegionalLangs(curCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      isRegional ? tmdb.discover('movie', { with_watch_providers: '119|9', watch_region: curCode, with_original_language: getRegionalLangs(curCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      isRegional ? tmdb.discover('tv', { with_watch_providers: '119|9', watch_region: curCode, with_original_language: getRegionalLangs(curCode), sort_by: 'popularity.desc' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      curCode === 'IN' ? tmdb.discover('movie', { with_watch_providers: '2336', watch_region: 'IN', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      curCode === 'IN' ? tmdb.discover('tv', { with_watch_providers: '2336', watch_region: 'IN', sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      curCode === 'IN' ? tmdb.discover('movie', { with_watch_providers: '2336', watch_region: 'IN', with_original_language: getRegionalLangs('IN'), sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+      curCode === 'IN' ? tmdb.discover('tv', { with_watch_providers: '2336', watch_region: 'IN', with_original_language: getRegionalLangs('IN'), sort_by: 'popularity.desc', page: '1' }).catch(() => ({ results: [] })) : Promise.resolve({ results: [] })
+    ]);
+
+    const netflixData = { results: [...(netflixDataPage1?.results || []), ...(netflixDataPage2?.results || [])] };
+    const primeData = { results: [...(primeDataPage1?.results || []), ...(primeDataPage2?.results || [])] };
+    const disneyData = { results: [...(disneyDataPage1?.results || []), ...(disneyDataPage2?.results || [])] };
+    const hboData = { results: [...(hboDataPage1?.results || []), ...(hboDataPage2?.results || [])] };
+
+    const getMixed = (regionalMovies: any, regionalTv: any, globalMovies: any, globalTv: any) => {
+      const rM = (regionalMovies || []).map((m: any) => ({...m, media_type: 'movie'}));
+      const rT = (regionalTv || []).map((t: any) => ({...t, media_type: 'tv'}));
+      const rLangs = getRegionalLangs(curCode).split('|').filter(Boolean);
+
+      const isGlobalStrict = (item: any) => {
+        const originCountries = item.origin_country || [];
+        if (originCountries.includes(curCode)) return false;
+        if (rLangs.includes(item.original_language)) return false;
+        return true;
+      };
+
+      const gM = (globalMovies || []).map((m: any) => ({...m, media_type: 'movie'})).filter(isGlobalStrict);
+      const gT = (globalTv || []).map((t: any) => ({...t, media_type: 'tv'})).filter(isGlobalStrict);
+
+      // 1. Regional Bucket (10 items)
+      const shuffledRT = rT.sort(() => Math.random() - 0.5);
+      const regionalTvSelected = shuffledRT.slice(0, 3);
+      const remainingRegional = [...shuffledRT.slice(3), ...rM].sort(() => Math.random() - 0.5);
+      let regionalBucket = [...regionalTvSelected, ...remainingRegional.slice(0, 7)];
+      regionalBucket.sort(() => Math.random() - 0.5);
+      const pinnedRegional = regionalBucket.slice(0, 3);
+      const unpinnedRegional = regionalBucket.slice(3);
+
+      // 2. Global Bucket (10 items)
+      const shuffledGT = gT.sort(() => Math.random() - 0.5);
+      const globalTvSelected = shuffledGT.slice(0, 3);
+      const remainingGlobal = [...shuffledGT.slice(3), ...gM].sort(() => Math.random() - 0.5);
+      let globalBucket = [...globalTvSelected, ...remainingGlobal.slice(0, 7)];
+
+      // 3. Final Arrangement
+      const mixedRest = [...unpinnedRegional, ...globalBucket].sort(() => Math.random() - 0.5);
+      const mixed = [...pinnedRegional, ...mixedRest];
+
+      return Array.from(new Map(mixed.map(item => [item.id, item])).values()).slice(0, 20);
+    };
+
+    const netflixMixed = isRegional ? getMixed(regionalMovies?.results, regionalTv?.results, netflixDataPage1?.results, netflixDataPage2?.results) : netflixData.results.slice(0, 20);
+    const primeMixed = isRegional ? getMixed(globalMovies?.results, globalTv?.results, primeDataPage1?.results, primeDataPage2?.results) : primeData.results.slice(0, 20);
+    const jioMixed = curCode === 'IN' ? getMixed(jioRegionalMovies?.results, jioRegionalTv?.results, jioGlobalMovies?.results, jioGlobalTv?.results) : [];
+
+    return {
+      netflix: netflixMixed as Media[],
+      prime: primeMixed as Media[],
+      disney: disneyData.results.slice(0, 20) as Media[],
+      hbo: hboData.results.slice(0, 20) as Media[],
+      jio: jioMixed as Media[]
+    };
+  } catch (e) {
+    return null;
+  }
+}

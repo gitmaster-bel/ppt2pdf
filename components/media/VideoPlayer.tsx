@@ -425,14 +425,25 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         // Progress sync: some embeds send currentTime/duration
         if (data.currentTime !== undefined && data.duration !== undefined && data.duration > 0) {
           const realProgress = Math.min(100, (data.currentTime / data.duration) * 100);
-          setProgress(realProgress);
-          if (title && id) {
-            addToHistory({ id, type, title, poster: poster || null, timestamp: Date.now(), season, episode, progress: realProgress, release_date: releaseYear });
-          }
-          if (onProgress) onProgress(realProgress);
-          if (type === 'tv' && hasNextEpisode && realProgress >= 90 && !showNextOverlayRef.current) {
-            setShowNextOverlay(true);
-          }
+          
+          setProgress(prev => {
+            // Only update state if progress changed by > 1% to prevent 60fps re-renders
+            if (Math.abs(prev - realProgress) > 1) {
+              const now = Date.now();
+              // Debounce history write inside iframe message listener to max once per 8 seconds
+              if (title && id && now - lastSaveRef.current > 8000) {
+                lastSaveRef.current = now;
+                addToHistory({ id, type, title, poster: poster || null, timestamp: now, season, episode, progress: realProgress, release_date: releaseYear });
+              }
+              if (onProgress) onProgress(realProgress);
+              
+              if (type === 'tv' && hasNextEpisode && realProgress >= 90 && !showNextOverlayRef.current) {
+                setShowNextOverlay(true);
+              }
+              return realProgress;
+            }
+            return prev;
+          });
         }
 
         // Episode change: some embeds send season/episode data when user navigates within embed
@@ -714,14 +725,11 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   ) : null;
 
   return (
-    <motion.div 
+    <div 
       ref={containerRef}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`flex flex-col w-full relative bg-void-950 overflow-hidden ${isFullscreen ? 'rounded-none border-none' : 'rounded-2xl border border-zinc-800/60'}`}
+      className={`flex flex-col w-full relative bg-void-950 overflow-hidden transition-all duration-700 ${isFullscreen ? 'rounded-none border-none' : 'rounded-2xl border border-zinc-800/60'}`}
       style={{
-        boxShadow: '0 0 80px -20px var(--brand-ambient), 0 0 30px -10px var(--brand-glow)',
+        boxShadow: (isConnecting || testingSources) ? '0 0 80px -20px var(--brand-ambient), 0 0 30px -10px var(--brand-glow)' : 'none',
         contain: 'layout style',
       }}
     >
@@ -860,7 +868,9 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         )}
       </AnimatePresence>
 
-      <div className={`relative w-full bg-black transition-all ${isFullscreen ? 'flex-1 h-full' : 'aspect-[4/3] sm:aspect-video w-full min-h-[260px] sm:min-h-[280px] md:min-h-0'}`}>
+      <div 
+        className={`relative w-full bg-black ${isFullscreen ? 'flex-1 h-full' : 'aspect-[4/3] sm:aspect-video w-full min-h-[260px] sm:min-h-[280px] md:min-h-0'}`}
+      >
 
         {testingSources ? (
           <TestingSourcesOverlay
@@ -878,16 +888,17 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
             <iframe
               key={`iframe-${currentSourceId}-${useSandbox ? 'sandbox' : 'nosandbox'}`}
               src={embedUrl}
-              className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-700 ${
-                isConnecting
-                  ? 'opacity-0 pointer-events-none'
-                  : showSupportPopup
-                    ? 'opacity-40 pointer-events-none'
-                    : 'pointer-events-auto opacity-100'
+              className={`absolute inset-0 w-full h-full border-0 ${
+                isConnecting ? 'opacity-0 pointer-events-none transition-opacity duration-700' : 
+                showSupportPopup ? 'opacity-40 pointer-events-none transition-opacity duration-700' : 'pointer-events-auto opacity-100'
               }`}
               allowFullScreen
-              allow="autoplay; fullscreen; picture-in-picture; xr-spatial-tracking; clipboard-write; encrypted-media; gyroscope; accelerometer"
-              referrerPolicy="strict-origin-when-cross-origin"
+              // @ts-ignore
+              webkitallowfullscreen="true"
+              // @ts-ignore
+              mozallowfullscreen="true"
+              referrerPolicy="origin"
+              loading="lazy"
               sandbox={sandboxAttrs}
             />
 
@@ -915,7 +926,6 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         {/* Support Popup: portal in normal mode, child in fullscreen mode. */}
         {supportPopup && (isFullscreen ? supportPopup : createPortal(supportPopup, document.body))}
       </div>
-
-    </motion.div>
+    </div>
   );
 }
