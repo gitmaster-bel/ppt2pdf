@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { tmdb } from '@/lib/tmdb';
 import { MediaGrid } from '@/components/media/MediaGrid';
 
-export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 const VALID_YEARS = Array.from({ length: 7 }, (_, i) => 2020 + i); // 2020-2026
 

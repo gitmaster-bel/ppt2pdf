@@ -97,6 +97,7 @@ export function HeroSlider({ items }: { items: Media[] }) {
             priority={currentIndex === 0}
             {...(currentIndex === 0 ? { fetchPriority: "high" } : { loading: "lazy" })}
             referrerPolicy="no-referrer"
+            unoptimized={true}
           />
           {/* Gradient overlays — brightened slightly for better visibility */}
           <div

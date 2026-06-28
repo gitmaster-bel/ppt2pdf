@@ -4,11 +4,10 @@ import { MovieClient } from './MovieClient';
 import { MediaGrid } from '@/components/media/MediaGrid';
 import { generateSlug } from '@/lib/utils';
 
-// ─── ISR DISABLED ─────────────────────────────────────────────────────────────
-// revalidate = false → once rendered, cached forever. Movie data doesn't change.
-// This eliminates ISR Writes entirely for movie pages (was the #1 cost driver).
-export const revalidate = false;
-
+// ─── ISR DISABLED & EDGE ENABLED ──────────────────────────────────────────────
+// Using Edge Runtime completely disables static generation (ISR Writes) for this route.
+// Vercel executes this instantly via V8 isolates, using 0 Fluid CPU and 0 Storage.
+export const runtime = 'edge';
 // generateStaticParams REMOVED — stop pre-building pages at build time.
 // On-demand rendering + infinite cache = zero ISR Writes after first visit.
 

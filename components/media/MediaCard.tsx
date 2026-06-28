@@ -248,6 +248,7 @@ export const MediaCard = memo(function MediaCard({
                 : "group-hover:scale-[1.05]"
             )}
             referrerPolicy="no-referrer"
+            unoptimized={true}
             placeholder="blur"
             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAAECAYAAABLLYUHAAAAGklEQVQI12NgYGD4z8BQDwAEgAF/QualIQAAAABJRU5ErkJggg=="
             draggable={false}

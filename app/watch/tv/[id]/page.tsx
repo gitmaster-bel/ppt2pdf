@@ -3,11 +3,10 @@ import { tmdb } from '@/lib/tmdb';
 import { TvPlayer } from './TvPlayer';
 import { MediaGrid } from '@/components/media/MediaGrid';
 
-// ─── ISR DISABLED ─────────────────────────────────────────────────────────────
-// revalidate = false → once rendered, cached forever. TV show metadata is static.
-// New episodes are handled client-side by TvPlayer. Zero ISR Writes.
-export const revalidate = false;
-
+// ─── ISR DISABLED & EDGE ENABLED ──────────────────────────────────────────────
+// Using Edge Runtime completely disables static generation (ISR Writes) for this route.
+// Vercel executes this instantly via V8 isolates, using 0 Fluid CPU and 0 Storage.
+export const runtime = 'edge';
 // generateStaticParams REMOVED — stop pre-building pages at build time.
 
 export async function generateMetadata({

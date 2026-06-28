@@ -4,9 +4,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { BackButton } from '@/components/ui/BackButton';
 
-
-export const revalidate = false; // Infinite cache — person data never changes. Zero ISR Writes.
-
+export const runtime = 'edge'; // Edge Runtime for zero ISR writes
 // generateStaticParams REMOVED — no pre-building, zero build-time ISR Writes.
 
 // ─── Metadata (title only — no SEO) ──────────────────────────────────────────
