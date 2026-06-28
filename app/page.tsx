@@ -36,7 +36,8 @@ async function HomeDataFetcher() {
     if (prefsStr) savedCountry = JSON.parse(prefsStr).country;
   } catch(e) {}
 
-  const countryCode = (savedCountry || headersList.get('x-vercel-ip-country') || 'US').toUpperCase();
+  const defaultCountry = process.env.NODE_ENV === 'development' ? 'IN' : 'US';
+  const countryCode = (savedCountry || headersList.get('x-vercel-ip-country') || defaultCountry).toUpperCase();
   const isRegional = REGIONAL_MARKETS.has(countryCode);
 
   // ONLY FETCH HERO DATA HERE to make page load instantly
