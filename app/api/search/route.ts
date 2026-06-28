@@ -15,7 +15,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const data = await searchMedia(q, page, include_adult);
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        // Cache globally for 24 hours to prevent repeated Edge Function Invocations
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200',
+      },
+    });
   } catch (error) {
     console.error('Search API proxy error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

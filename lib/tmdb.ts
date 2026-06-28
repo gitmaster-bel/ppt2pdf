@@ -21,18 +21,19 @@ export async function fetchTMDB<T>(
   const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
   // ── Revalidation strategy ────────────────────────────────────────────────
-  // - Search endpoints: 86400s (24h)
-  // - Trending/popular/discover/details: 2592000s (30 days)
-  const isSearch = path.startsWith('/search');
-  const revalidateSeconds = isSearch ? 86400 : 2592000;
+  // High-cardinality endpoints (search, specific movie/tv details) should NOT use
+  // Vercel's Data Cache (ISR) because they generate massive amounts of ISR Writes.
+  // Instead, they bypass Data Cache and rely on Edge CDN caching or TMDB directly.
+  const isHighCardinality = path.startsWith('/search') || path.match(/^\/(movie|tv|person)\/\d+/);
+  
+  const fetchOptions: RequestInit = isHighCardinality
+    ? { cache: 'no-store' as RequestCache, signal: controller.signal }
+    : { next: { revalidate: 2592000 }, signal: controller.signal }; // 30 days for low-cardinality
 
   const executeFetch = async (baseUrl: string, isFallback = false): Promise<T> => {
     const url = `${baseUrl}${path}?${queryString}`;
     try {
-      const res = await fetch(url, {
-        next: { revalidate: revalidateSeconds },
-        signal: controller.signal,
-      });
+      const res = await fetch(url, fetchOptions);
 
       if (!res.ok) {
         throw new Error(`TMDB API Error: ${res.status} ${res.statusText}`);

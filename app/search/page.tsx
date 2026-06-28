@@ -49,10 +49,13 @@ function SearchPageContent() {
   useEffect(() => {
     setHistory(storage.get().searchHistory || []);
     
-    // Fetch popular suggestions for empty/no-results page
-    getSearchSuggestions().then(res => {
-      setSuggestions(res.slice(0, 12));
-    }).catch(err => console.error("Error fetching suggestions:", err));
+    // Fetch popular suggestions for empty/no-results page via CDN API
+    fetch('/api/trending-suggestions')
+      .then(res => res.json())
+      .then(res => {
+        if (res.results) setSuggestions(res.results.slice(0, 12));
+      })
+      .catch(err => console.error("Error fetching suggestions:", err));
 
     const shuffled = [...AI_PROMPTS].sort(() => 0.5 - Math.random());
     setActivePrompts(shuffled.slice(0, 4).map(p => AI_PROMPTS.indexOf(p)));

@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePreferences } from '@/hooks/usePreferences';
-import { getRegionalProviderShelvesAction } from '@/app/actions';
 import { Media } from '@/types/tmdb';
 import { ProviderHeroShelf } from '@/components/providers/ProviderHeroShelf';
 import { ProviderRowSkeleton } from '@/components/ui/ProviderRowSkeleton';
@@ -16,9 +15,11 @@ export function ClientProviderShelves() {
     const fetchShelves = async () => {
       const countryCode = preferences.country || 'US';
       try {
-        const res = await getRegionalProviderShelvesAction(countryCode);
-        if (isMounted && res) {
-          setData(res);
+        const res = await fetch(`/api/regional-providers?country=${countryCode}`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        const json = await res.json();
+        if (isMounted && json) {
+          setData(json);
         }
       } catch (e) {
         console.error('Failed to fetch regional provider shelves', e);
