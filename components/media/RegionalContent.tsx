@@ -50,6 +50,8 @@ export function RegionalContent() {
           if (ipData && ipData.country_code) {
             countryCode = ipData.country_code;
             updatePreferences({ country: countryCode, locationAutoDetected: true });
+            // Sync to document.cookie so the Edge SSR can read it instantly on the next load
+            document.cookie = `user_country=${countryCode}; path=/; max-age=31536000; SameSite=Lax`;
             router.refresh();
           }
         } catch (e) {

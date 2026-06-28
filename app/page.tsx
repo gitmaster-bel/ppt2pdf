@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { ThemedLoader } from '@/components/ui/ThemedLoader';
 
-export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 export const revalidate = 0;
 import { tmdb, getHeroItemsWithLogos } from '@/lib/tmdb';
 import { HeroSlider } from '@/components/media/HeroSlider';
@@ -33,11 +33,13 @@ async function HomeDataFetcher() {
   const headersList = await headers();
   const cookieStore = await cookies();
   
-  let savedCountry = null;
-  try {
-    const prefsStr = cookieStore.get('preferences')?.value;
-    if (prefsStr) savedCountry = JSON.parse(prefsStr).country;
-  } catch(e) {}
+  let savedCountry = cookieStore.get('user_country')?.value || null;
+  if (!savedCountry) {
+    try {
+      const prefsStr = cookieStore.get('preferences')?.value;
+      if (prefsStr) savedCountry = JSON.parse(prefsStr).country;
+    } catch(e) {}
+  }
 
   const defaultCountry = process.env.NODE_ENV === 'development' ? 'IN' : 'US';
   const countryCode = (savedCountry || headersList.get('x-vercel-ip-country') || defaultCountry).toUpperCase();
