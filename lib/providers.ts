@@ -22,7 +22,7 @@ export const PROVIDERS: Provider[] = [
     id: 8,
     slug: 'netflix',
     name: 'Netflix',
-    logo: 'https://image.tmdb.org/t/p/original/9A1JSVmSxsyaBK4SUFsYVlNAYew.jpg',
+    logo: 'https://imglink.cc/cdn/RcXSKySesJ.jpg',
     color: '#E50914',
     gradient: 'from-[#E50914]/40 to-black',
     bgAccent: '#1a0000',

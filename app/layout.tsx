@@ -108,6 +108,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function() {
                 if (typeof window !== 'undefined') {
+                  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                  if (isLocal) return; // Allow console for local development
+                  
                   // Block console completely
                   const noop = () => {};
                   const methods = ['log', 'debug', 'info', 'warn', 'error', 'table', 'clear', 'trace', 'group', 'groupCollapsed', 'groupEnd', 'time', 'timeEnd', 'count', 'dir', 'dirxml', 'assert', 'profile', 'profileEnd'];
