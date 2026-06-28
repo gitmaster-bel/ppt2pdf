@@ -38,60 +38,72 @@ export function QuickServerStrip({
   return (
     <div className="px-3 pt-2.5 pb-1.5 bg-void-950 border-b border-zinc-800/40 shrink-0">
       {/* Desktop: all 7 always visible */}
-      <div className="hidden lg:flex items-center gap-1.5 flex-wrap">
-        {top7.map((s) => {
-              const isActive = s.id === currentSourceId;
-              const isMultilingual = s.hasLanguageOptions || multilingualIds.has(s.id);
-          return (
-            <button
-              key={s.id}
-              onClick={() => !isActive && handleSwitchServer(s.id)}
-              title={isActive ? `Currently on ${s.publicName}` : `Switch to ${s.publicName}${isMultilingual ? ' — Multi-language' : ''}`}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 border shrink-0 ${
-                isActive
-                  ? 'bg-brand-500/20 border-brand-500/60 text-brand-400 shadow-[0_0_10px_color-mix(in srgb, var(--brand-500) 20%, transparent)] cursor-default'
-                  : 'bg-void-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500 hover:text-white hover:bg-zinc-800/60 active:scale-95 cursor-pointer'
-              }`}
-            >
-              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-premium-gradient shadow-[0_0_6px_var(--brand-500)]' : 'bg-zinc-600'}`} />
-              {s.publicName}
-              {isActive && <span className="text-[9px] font-bold uppercase tracking-widest text-brand-500/80 ml-0.5">LIVE</span>}
-              {!isActive && s.noAds && <span className="text-[9px] text-emerald-500">●</span>}
-              {isMultilingual && <span title="Multi-language subtitles & dubs available">🌐</span>}
-            </button>
-          );
-        })}
+      <div className="hidden lg:flex items-center justify-between w-full gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap flex-1">
+          {top7.map((s) => {
+                const isActive = s.id === currentSourceId;
+                const isMultilingual = s.hasLanguageOptions || multilingualIds.has(s.id);
+            return (
+              <button
+                key={s.id}
+                onClick={() => !isActive && handleSwitchServer(s.id)}
+                title={isActive ? `Currently on ${s.publicName}` : `Switch to ${s.publicName}${isMultilingual ? ' — Multi-language' : ''}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 border shrink-0 ${
+                  isActive
+                    ? 'bg-brand-500/20 border-brand-500/60 text-brand-400 shadow-[0_0_10px_color-mix(in srgb, var(--brand-500) 20%, transparent)] cursor-default'
+                    : 'bg-void-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500 hover:text-white hover:bg-zinc-800/60 active:scale-95 cursor-pointer'
+                }`}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-premium-gradient shadow-[0_0_6px_var(--brand-500)]' : 'bg-zinc-600'}`} />
+                {s.publicName}
+                {isActive && <span className="text-[9px] font-bold uppercase tracking-widest text-brand-500/80 ml-0.5">LIVE</span>}
+                {!isActive && s.noAds && <span className="text-[9px] text-emerald-500">●</span>}
+                {isMultilingual && <span title="Multi-language subtitles & dubs available">🌐</span>}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => setShowSettingsModal(true)}
+          className="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-white transition-all duration-200 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-800 hover:border-zinc-600 group"
+        >
+          All {sources.length} servers
+          <span className="group-hover:translate-x-0.5 transition-transform duration-200">&rarr;</span>
+        </button>
       </div>
 
       {/* Tablet: first 5 */}
-      <div className="hidden md:flex lg:hidden items-center gap-1.5 flex-wrap">
-        {orderedStrip.slice(0, 5).map((s) => {
-              const isActive = s.id === currentSourceId;
-              const isMultilingual = s.hasLanguageOptions || multilingualIds.has(s.id);
-          return (
-            <button
-              key={s.id}
-              onClick={() => !isActive && handleSwitchServer(s.id)}
-              title={isActive ? `Currently on ${s.publicName}` : `Switch to ${s.publicName}`}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 border shrink-0 ${
-                isActive
-                  ? 'bg-brand-500/20 border-brand-500/60 text-brand-400 shadow-[0_0_10px_color-mix(in srgb, var(--brand-500) 20%, transparent)] cursor-default'
-                  : 'bg-void-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500 hover:text-white hover:bg-zinc-800/60 active:scale-95 cursor-pointer'
-              }`}
-            >
-              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-premium-gradient shadow-[0_0_6px_var(--brand-500)]' : 'bg-zinc-600'}`} />
-              {s.publicName}
-              {isActive && <span className="text-[9px] font-bold uppercase tracking-widest text-brand-500/80 ml-0.5">LIVE</span>}
-              {!isActive && s.noAds && <span className="text-[9px] text-emerald-500">●</span>}
-              {isMultilingual && <span title="Multi-language">🌐</span>}
-            </button>
-          );
-        })}
+      <div className="hidden md:flex lg:hidden items-center justify-between w-full gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap flex-1">
+          {orderedStrip.slice(0, 5).map((s) => {
+                const isActive = s.id === currentSourceId;
+                const isMultilingual = s.hasLanguageOptions || multilingualIds.has(s.id);
+            return (
+              <button
+                key={s.id}
+                onClick={() => !isActive && handleSwitchServer(s.id)}
+                title={isActive ? `Currently on ${s.publicName}` : `Switch to ${s.publicName}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 border shrink-0 ${
+                  isActive
+                    ? 'bg-brand-500/20 border-brand-500/60 text-brand-400 shadow-[0_0_10px_color-mix(in srgb, var(--brand-500) 20%, transparent)] cursor-default'
+                    : 'bg-void-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500 hover:text-white hover:bg-zinc-800/60 active:scale-95 cursor-pointer'
+                }`}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-premium-gradient shadow-[0_0_6px_var(--brand-500)]' : 'bg-zinc-600'}`} />
+                {s.publicName}
+                {isActive && <span className="text-[9px] font-bold uppercase tracking-widest text-brand-500/80 ml-0.5">LIVE</span>}
+                {!isActive && s.noAds && <span className="text-[9px] text-emerald-500">●</span>}
+                {isMultilingual && <span title="Multi-language">🌐</span>}
+              </button>
+            );
+          })}
+        </div>
         <button
           onClick={() => setShowSettingsModal(true)}
-          className="text-[10px] text-zinc-500 hover:text-white transition-colors px-2 py-1 rounded-full border border-zinc-800 hover:border-zinc-600"
+          className="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-white transition-all duration-200 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-800 hover:border-zinc-600 group"
         >
-          +{top7.length - 5} more
+          +{sources.length - 5}
+          <span className="group-hover:translate-x-0.5 transition-transform duration-200">&rarr;</span>
         </button>
       </div>
 
@@ -138,15 +150,7 @@ export function QuickServerStrip({
         </button>
       </div>
 
-      <p className="hidden md:block text-[10px] text-zinc-600 mt-1.5 leading-snug">
-        🌐 = Multi-language subtitles &amp; dubs &nbsp;·&nbsp; ● = No ads &nbsp;·&nbsp;{' '}
-        <button
-          onClick={() => setShowSettingsModal(true)}
-          className="text-zinc-400 hover:text-white underline underline-offset-2 transition-colors"
-        >
-          All {sources.length} servers ↑
-        </button>
-      </p>
+
     </div>
   );
 }
