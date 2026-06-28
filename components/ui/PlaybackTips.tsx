@@ -26,7 +26,7 @@ export function PlaybackTips() {
           <div>
             <h4 className="text-sm font-bold text-white mb-1.5 tracking-wide">Dev&apos;s Favorite Servers</h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Servers <strong className="text-zinc-200">2 & 8</strong> are best for multi-lingual dubs/subs and high availability. Server <strong className="text-zinc-200">3</strong> ⚡ is the fastest for low-lag streaming.
+              Servers <strong className="text-zinc-200">2 & 8</strong> are highly reliable. Look for symbols on the servers: ⚡ = Fastest speed, <span className="text-emerald-500">●</span> = No Ads, and 🌐 = Multi-lingual dubs/subs.
             </p>
           </div>
         </div>

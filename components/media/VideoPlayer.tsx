@@ -728,7 +728,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     <>
       <div 
         ref={containerRef}
-        className={`flex flex-col w-full relative bg-void-950 overflow-hidden transition-all duration-700 ${isFullscreen ? 'rounded-none border-none' : 'rounded-2xl border border-zinc-800/60'}`}
+        className={`flex flex-col w-full relative overflow-hidden transition-all outline-none ${isFullscreen ? 'bg-black rounded-none border-none outline-none ring-0 m-0 p-0 duration-0' : 'bg-void-950 rounded-2xl border border-zinc-800/60 duration-700'}`}
         style={{
           boxShadow: (isConnecting || testingSources) ? '0 0 80px -20px var(--brand-ambient), 0 0 30px -10px var(--brand-glow)' : 'none',
           contain: 'layout style',
@@ -889,7 +889,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
               <iframe
                 key={`iframe-${currentSourceId}-${useSandbox ? 'sandbox' : 'nosandbox'}`}
                 src={embedUrl}
-                className={`absolute inset-0 w-full h-full border-0 ${
+                className={`absolute inset-0 w-full h-full border-0 outline-none ring-0 ${
                   isConnecting ? 'opacity-0 pointer-events-none transition-opacity duration-700' : 
                   showSupportPopup ? 'opacity-40 pointer-events-none transition-opacity duration-700' : 'pointer-events-auto opacity-100'
                 }`}
