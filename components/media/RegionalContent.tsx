@@ -6,7 +6,7 @@ import { getRegionalTrendingAction } from '@/app/actions';
 import { Media } from '@/types/tmdb';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RowSkeleton } from '@/components/ui/RowSkeleton';
+import { CompactTop10Skeleton } from '@/components/ui/CompactTop10Skeleton';
 
 // Map of ISO 3166-1 alpha-2 country codes to localized row titles.
 // Global countries (US, GB, CA, AU) are intentionally omitted to avoid duplication with default trending rows.
@@ -105,8 +105,8 @@ export function RegionalContent() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="w-full flex flex-col gap-6 md:gap-10"
           >
-            <RowSkeleton title="Top Movies" />
-            <RowSkeleton title="Top TV Shows" />
+            <CompactTop10Skeleton title={preferences.country && REGIONAL_TITLES[preferences.country] ? `${REGIONAL_TITLES[preferences.country].replace('Trending in ', '')}'s Top Movies` : "Top Movies"} />
+            <CompactTop10Skeleton title={preferences.country && REGIONAL_TITLES[preferences.country] ? `${REGIONAL_TITLES[preferences.country].replace('Trending in ', '')}'s Top TV Shows` : "Top TV Shows"} />
           </motion.div>
         ) : (
           <motion.div

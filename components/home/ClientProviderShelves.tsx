@@ -4,6 +4,7 @@ import { usePreferences } from '@/hooks/usePreferences';
 import { getRegionalProviderShelvesAction } from '@/app/actions';
 import { Media } from '@/types/tmdb';
 import { ProviderHeroShelf } from '@/components/providers/ProviderHeroShelf';
+import { ProviderRowSkeleton } from '@/components/ui/ProviderRowSkeleton';
 import { PROVIDERS } from '@/lib/providers';
 
 export function ClientProviderShelves() {
@@ -27,7 +28,23 @@ export function ClientProviderShelves() {
     return () => { isMounted = false; };
   }, [preferences.country]);
 
-  if (!data) return null;
+  if (!data) {
+    const countryCode = preferences.country || 'US';
+    return (
+      <div className="flex flex-col gap-6 md:gap-10">
+        <ProviderRowSkeleton title="Popular on Netflix" provider={PROVIDERS.find(p => p.id === 8)} />
+        <ProviderRowSkeleton title="Popular on Prime Video" provider={PROVIDERS.find(p => p.id === 9)} />
+        {countryCode === 'IN' ? (
+          <ProviderRowSkeleton title="Popular on JioHotstar" provider={PROVIDERS.find(p => p.id === "122|532|2336")} />
+        ) : (
+          <>
+            <ProviderRowSkeleton title="Popular on Disney+" provider={PROVIDERS.find(p => p.id === 337)} />
+            <ProviderRowSkeleton title="Popular on Max" provider={PROVIDERS.find(p => p.id === 1899)} />
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 md:gap-10">
