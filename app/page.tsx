@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { ThemedLoader } from '@/components/ui/ThemedLoader';
+import { HeroSkeleton } from '@/components/ui/HeroSkeleton';
 
 export const runtime = 'edge';
 export const revalidate = 0;
@@ -29,7 +29,7 @@ import { TimeBasedWidgetFeed } from '@/components/home/TimeBasedWidgetFeed';
 
 const REGIONAL_MARKETS = new Set(['IN', 'PK', 'JP', 'KR', 'BR', 'ES', 'FR', 'DE', 'IT', 'MX', 'PH', 'TH', 'ID', 'NG', 'TR']);
 
-async function HomeDataFetcher() {
+async function getCountryCode() {
   const headersList = await headers();
   const cookieStore = await cookies();
   
@@ -42,10 +42,13 @@ async function HomeDataFetcher() {
   }
 
   const defaultCountry = process.env.NODE_ENV === 'development' ? 'IN' : 'US';
-  const countryCode = (savedCountry || headersList.get('x-vercel-ip-country') || defaultCountry).toUpperCase();
+  return (savedCountry || headersList.get('x-vercel-ip-country') || defaultCountry).toUpperCase();
+}
+
+async function HeroSectionFetcher() {
+  const countryCode = await getCountryCode();
   const isRegional = REGIONAL_MARKETS.has(countryCode);
 
-  // ONLY FETCH HERO DATA HERE to make page load instantly
   const [
     trendingPage1,
     trendingPage2,
@@ -88,9 +91,51 @@ async function HomeDataFetcher() {
   const heroItemsWithLogos = await getHeroItemsWithLogos(mixedHeroItems);
 
   return (
-    <div className="flex flex-col min-h-screen -mt-[72px]">
+    <div className="animate-in fade-in duration-500">
       <HeroSlider items={heroItemsWithLogos} />
-      
+    </div>
+  );
+}
+
+async function TrendingRowsFetcher() {
+  const countryCode = await getCountryCode();
+  const isRegional = REGIONAL_MARKETS.has(countryCode);
+
+  const [
+    trendingPage1,
+    trendingPage2,
+    regionalTrendingRes
+  ] = await Promise.all([
+    tmdb.getTrending('all', 1),
+    tmdb.getTrending('all', 2),
+    isRegional ? getRegionalTrendingAction(countryCode) : Promise.resolve({ results: [] })
+  ]);
+  
+  const regionalTrending = regionalTrendingRes || { results: [] };
+  const rawTrendingResults = [...(trendingPage1.results || []), ...(trendingPage2.results || [])];
+  const trendingResults = Array.from(new Map(rawTrendingResults.map((item: any) => [item.id, item])).values());
+  
+  const excludeIds = [
+    ...(regionalTrending.results ? regionalTrending.results.map((item: any) => item.id) : []),
+    ...(trendingResults.slice(0, 10).map((item: any) => item.id))
+  ];
+
+  return (
+    <div className="animate-in fade-in duration-500 flex flex-col gap-6 md:gap-10">
+      <RecommendedForYou mediaType="all" excludeIds={excludeIds} />
+      <Top10Row title="Top 10 Today" items={trendingResults.slice(0, 10) as Media[]} />
+      <HorizontalRow title="Global Trending" subtitle="What the world is watching today" items={trendingResults.slice(10) as Media[]} seeAllHref="/trending/all" />
+    </div>
+  );
+}
+
+// Client rows wrapper component for coordinated loading
+async function PageBody() {
+  const countryCode = await getCountryCode();
+  const isRegional = REGIONAL_MARKETS.has(countryCode);
+
+  return (
+    <>
       <div className="relative z-20 md:mt-4">
         <ContinueWatching />
       </div>
@@ -112,11 +157,9 @@ async function HomeDataFetcher() {
           <CollectionsFeed countryCode={countryCode} />
         </Suspense>
         
-        <RecommendedForYou mediaType="all" excludeIds={excludeIds} />
-
-        <Top10Row title="Top 10 Today" items={trendingResults.slice(0, 10) as Media[]} />
-        
-        <HorizontalRow title="Global Trending" subtitle="What the world is watching today" items={trendingResults.slice(10) as Media[]} seeAllHref="/trending/all" />
+        <Suspense fallback={<div className="flex flex-col gap-6 md:gap-10"><RowSkeleton title="Recommended For You"/><RowSkeleton title="Top 10 Today"/><RowSkeleton title="Global Trending"/></div>}>
+          <TrendingRowsFetcher />
+        </Suspense>
         
         <div className="hidden md:block">
           <Suspense fallback={<RowSkeleton />}>
@@ -140,16 +183,22 @@ async function HomeDataFetcher() {
           <ClassicsFeed />
         </Suspense>
       </div>
-    </div>
+    </>
   );
 }
 
 export default function Home() {
   return (
-    <main className="w-full bg-void-950 min-h-screen overflow-x-hidden">
-      <Suspense fallback={<div className="min-h-screen"><ThemedLoader /></div>}>
-        <HomeDataFetcher />
-      </Suspense>
+    <main className="w-full bg-void-950 min-h-screen overflow-x-hidden flex flex-col">
+      <div className="flex flex-col -mt-[72px]">
+        <Suspense fallback={<HeroSkeleton />}>
+          <HeroSectionFetcher />
+        </Suspense>
+        
+        <Suspense fallback={null}>
+          <PageBody />
+        </Suspense>
+      </div>
     </main>
   );
 }
