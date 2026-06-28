@@ -27,8 +27,8 @@ import { TimeBasedWidgetFeed } from '@/components/home/TimeBasedWidgetFeed';
 const REGIONAL_MARKETS = new Set(['IN', 'PK', 'JP', 'KR', 'BR', 'ES', 'FR', 'DE', 'IT', 'MX', 'PH', 'TH', 'ID', 'NG', 'TR']);
 
 async function HomeDataFetcher() {
-  const headersList = headers();
-  const cookieStore = cookies();
+  const headersList = await headers();
+  const cookieStore = await cookies();
   
   let savedCountry = null;
   try {
