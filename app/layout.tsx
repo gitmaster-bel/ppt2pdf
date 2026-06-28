@@ -101,6 +101,49 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
+        {/* ── Strict Anti-Hacker & Console Blocker ── */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window !== 'undefined') {
+                  // Block console completely
+                  const noop = () => {};
+                  const methods = ['log', 'debug', 'info', 'warn', 'error', 'table', 'clear', 'trace', 'group', 'groupCollapsed', 'groupEnd', 'time', 'timeEnd', 'count', 'dir', 'dirxml', 'assert', 'profile', 'profileEnd'];
+                  for (let i = 0; i < methods.length; i++) {
+                    window.console[methods[i]] = noop;
+                  }
+                  Object.freeze(window.console);
+                  
+                  // Block keyboard shortcuts
+                  document.addEventListener('keydown', function(e) {
+                    if (
+                      e.key === 'F12' || 
+                      (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+                      (e.ctrlKey && e.key === 'U') ||
+                      (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'J' || e.key === 'U'))
+                    ) {
+                      e.preventDefault();
+                      return false;
+                    }
+                  }, { capture: true });
+
+                  // Block right click / context menu
+                  document.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                  }, { capture: true });
+
+                  // Block devtools via debugger loop
+                  setInterval(function() {
+                    (function() { return false; })['constructor']('debugger')();
+                  }, 500);
+                }
+              })();
+            `
+          }}
+        />
+
         {/* ── Mobile Scroll Optimizer ── */}
         <script
           suppressHydrationWarning
