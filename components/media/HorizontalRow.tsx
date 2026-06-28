@@ -117,7 +117,7 @@ export function HorizontalRow({ title, subtitle, items, seeAllHref, variant = 'd
           onClick={() => scroll('left')}
           aria-label="Scroll left"
           className={`absolute left-0 md:left-14 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-10 md:h-10
-            flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
+            hidden md:flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
             ${canScrollLeft ? 'opacity-0 md:opacity-0 md:group-hover/scroll:opacity-100 hover:scale-110 active:scale-95' : 'opacity-0 pointer-events-none'}`}
           style={{ background: 'rgba(6,6,6,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
         >
@@ -127,8 +127,8 @@ export function HorizontalRow({ title, subtitle, items, seeAllHref, variant = 'd
           onClick={() => scroll('right')}
           aria-label="Scroll right"
           className={`absolute right-0 md:right-14 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-10 md:h-10
-            flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
-            ${canScrollRight ? (hasInteracted ? 'opacity-100' : 'opacity-80') + ' md:opacity-0 md:group-hover/scroll:opacity-100 hover:scale-110 active:scale-95' : 'opacity-0 pointer-events-none'}`}
+            hidden md:flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
+            ${canScrollRight ? 'opacity-0 md:opacity-0 md:group-hover/scroll:opacity-100 hover:scale-110 active:scale-95' : 'opacity-0 pointer-events-none'}`}
           style={{ background: 'rgba(6,6,6,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
         >
           <ChevronRight size={20} className="text-white" />

@@ -725,207 +725,224 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   ) : null;
 
   return (
-    <div 
-      ref={containerRef}
-      className={`flex flex-col w-full relative bg-void-950 overflow-hidden transition-all duration-700 ${isFullscreen ? 'rounded-none border-none' : 'rounded-2xl border border-zinc-800/60'}`}
-      style={{
-        boxShadow: (isConnecting || testingSources) ? '0 0 80px -20px var(--brand-ambient), 0 0 30px -10px var(--brand-glow)' : 'none',
-        contain: 'layout style',
-      }}
-    >
-      <PlayerToasts key={id} serverName={source.publicName} serverIsNoAds={source.noAds} isPaused={showTutorial} />
-
-      {/* First-time Tutorial Spotlight - Precise Tooltips */}
-      <TutorialSpotlight showTutorial={showTutorial} setShowTutorial={setShowTutorial} tutorialCountdown={tutorialCountdown} />
-
-      {/* Inline toast message (server switch) via portal */}
-      {mounted && typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {toastMessage && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed top-20 left-1/2 -translate-x-1/2 z-[9998] bg-black/80 text-white px-5 py-2.5 rounded-full font-bold tracking-widest text-xs backdrop-blur-md pointer-events-none border border-white/10"
-            >
-              {toastMessage}
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Value Saved Toast (Quantify Value) */}
-      {mounted && typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {showValueToast && (
-            <motion.div 
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 50 }}
-              className="fixed top-24 right-4 z-[9998] bg-[#0a080c] border border-brand-500/30 text-white p-4 sm:p-5 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] max-w-[320px] pointer-events-auto"
-            >
-              <h4 className="font-bold text-sm text-brand-400 mb-1.5 flex items-center gap-1.5 leading-tight"><Sparkles size={14} /> You just saved ~15 mins of ads!</h4>
-              <p className="text-[11px] text-zinc-400 leading-relaxed mb-4 font-medium">If you love the uninterrupted ZIVOX experience, please consider backing us.</p>
-              <Link href="/support" className="inline-flex items-center justify-center bg-brand-500 text-black px-3 py-2.5 rounded-xl text-[10px] font-black w-full uppercase tracking-widest hover:bg-brand-400 transition-colors shadow-lg active:scale-95">Buy us a coffee ☕</Link>
-              <button onClick={() => setShowValueToast(false)} className="absolute top-3 right-3 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-md p-1"><X size={12}/></button>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Rotate phone hint (mobile fullscreen portrait) */}
-      {mounted && typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {showRotateHint && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 z-[9997] flex items-center justify-center pointer-events-none"
-            >
-              <div className="flex flex-col items-center gap-3 bg-black/85 backdrop-blur-xl border border-white/10 rounded-2xl px-8 py-6 shadow-2xl">
-                <RotateCcw size={32} className="text-white animate-spin" style={{ animationDuration: '2s' }} />
-                <p className="text-white font-bold text-sm tracking-wide text-center">Rotate your phone<br/><span className="text-zinc-400 font-normal text-xs">for the best experience</span></p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Settings Modal via Portal (renders outside iframe, proper z-index on mobile) */}
-      {mounted && typeof document !== 'undefined' && createPortal(
-        <SettingsModal
-          showSettingsModal={showSettingsModal}
-          setShowSettingsModal={setShowSettingsModal}
-          sources={sources}
-          currentSourceId={currentSourceId}
-          handleSwitchServer={handleSwitchServer}
-          favoriteServers={favoriteServers}
-          toggleFavServer={toggleFavServer}
-          showAllServers={showAllServers}
-          setShowAllServers={setShowAllServers}
-          useSandbox={useSandbox}
-          setUseSandbox={setUseSandbox}
-          autoSandboxOnSwitch={autoSandboxOnSwitch}
-          setAutoSandboxOnSwitch={setAutoSandboxOnSwitch}
-          type={type}
-          autoPlayNext={autoPlayNext}
-          setAutoPlayNext={setAutoPlayNext}
-          dataSaver={dataSaver}
-          updatePreferences={updatePreferences}
-          showToast={showToast}
-          id={id}
-          storage={storage}
-        />, document.body)}
-
-      {/* Share Modal */}
-      <ShareModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        title={title || ''}
-        shareUrl={getShareUrl({ play: true, server: true })}
-        subtitle={`Via ${source.publicName}`}
-      />
-
-      {/* ── PLAYER TOP BAR & SERVER STRIP (Animated for Fullscreen) ── */}
-      <AnimatePresence initial={false}>
-        {!isFullscreen && (
-          <motion.div
-            key="player-controls"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="overflow-hidden w-full flex flex-col shrink-0"
-          >
-            <PlayerTopBar
-              isFullscreen={isFullscreen}
-              setShowSettingsModal={setShowSettingsModal}
-              source={source}
-              setShowShareModal={setShowShareModal}
-              useSandbox={useSandbox}
-              setUseSandbox={setUseSandbox}
-              currentSourceId={currentSourceId}
-              showToast={showToast}
-              isFav={isFav}
-              toggleFavorite={() => toggleFavorite({ id, type, title: title || '', poster, release_date: releaseYear })}
-              toggleFullscreen={toggleFullscreen}
-              serverLanguage={preferences.serverLanguage || 'en'}
-              updatePreferences={updatePreferences}
-            />
-            <QuickServerStrip
-              isFullscreen={isFullscreen}
-              currentSourceId={currentSourceId}
-              sources={sources}
-              handleSwitchServer={handleSwitchServer}
-              setShowSettingsModal={setShowSettingsModal}
-              activeTabRef={activeTabRef}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+    <>
       <div 
-        className={`relative w-full bg-black ${isFullscreen ? 'flex-1 h-full' : 'aspect-[4/3] sm:aspect-video w-full min-h-[260px] sm:min-h-[280px] md:min-h-0'}`}
+        ref={containerRef}
+        className={`flex flex-col w-full relative bg-void-950 overflow-hidden transition-all duration-700 ${isFullscreen ? 'rounded-none border-none' : 'rounded-2xl border border-zinc-800/60'}`}
+        style={{
+          boxShadow: (isConnecting || testingSources) ? '0 0 80px -20px var(--brand-ambient), 0 0 30px -10px var(--brand-glow)' : 'none',
+          contain: 'layout style',
+        }}
       >
+        <PlayerToasts key={id} serverName={source.publicName} serverIsNoAds={source.noAds} isPaused={showTutorial} />
 
-        {testingSources ? (
-          <TestingSourcesOverlay
-            testingSources={testingSources}
-            poster={poster}
-            testingCurrentName={testingCurrentName}
-            testProgress={testProgress}
-          />
-        ) : (
-          <>
-            {/* ── IFRAME — always rendered so content loads in background ──────────
-                During isConnecting, the iframe is invisible (opacity-0) but still
-                loading content. By the time the animation finishes, the video is ready.
-            */}
-            <iframe
-              key={`iframe-${currentSourceId}-${useSandbox ? 'sandbox' : 'nosandbox'}`}
-              src={embedUrl}
-              className={`absolute inset-0 w-full h-full border-0 ${
-                isConnecting ? 'opacity-0 pointer-events-none transition-opacity duration-700' : 
-                showSupportPopup ? 'opacity-40 pointer-events-none transition-opacity duration-700' : 'pointer-events-auto opacity-100'
-              }`}
-              allowFullScreen
-              // @ts-ignore
-              webkitallowfullscreen="true"
-              // @ts-ignore
-              mozallowfullscreen="true"
-              referrerPolicy="origin"
-              loading="lazy"
-              sandbox={sandboxAttrs}
-            />
+        {/* First-time Tutorial Spotlight - Precise Tooltips */}
+        <TutorialSpotlight showTutorial={showTutorial} setShowTutorial={setShowTutorial} tutorialCountdown={tutorialCountdown} />
 
-            {/* ── CONNECTING ANIMATION OVERLAY ─────────────────────────────────
-                Shows while the iframe loads in the background.
-            */}
-            <ConnectingOverlay
-              isConnecting={isConnecting}
-              poster={poster}
-              networkSpeed={networkSpeed}
-              source={source}
-              connectProgress={connectProgress}
-            />
-          </>
+        {/* Inline toast message (server switch) via portal */}
+        {mounted && typeof document !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {toastMessage && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="fixed top-20 left-1/2 -translate-x-1/2 z-[9998] bg-black/80 text-white px-5 py-2.5 rounded-full font-bold tracking-widest text-xs backdrop-blur-md pointer-events-none border border-white/10"
+              >
+                {toastMessage}
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
 
-        <UpNextOverlay
-          showNextOverlay={showNextOverlay}
-          hasNextEpisode={hasNextEpisode || false}
-          countdown={countdown}
-          setShowNextOverlay={setShowNextOverlay}
-          onPlayNext={onPlayNext}
+        {/* Value Saved Toast (Quantify Value) */}
+        {mounted && typeof document !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {showValueToast && (
+              <motion.div 
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 50 }}
+                className="fixed top-24 right-4 z-[9998] bg-[#0a080c] border border-brand-500/30 text-white p-4 sm:p-5 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] max-w-[320px] pointer-events-auto"
+              >
+                <h4 className="font-bold text-sm text-brand-400 mb-1.5 flex items-center gap-1.5 leading-tight"><Sparkles size={14} /> You just saved ~15 mins of ads!</h4>
+                <p className="text-[11px] text-zinc-400 leading-relaxed mb-4 font-medium">If you love the uninterrupted ZIVOX experience, please consider backing us.</p>
+                <Link href="/support" className="inline-flex items-center justify-center bg-brand-500 text-black px-3 py-2.5 rounded-xl text-[10px] font-black w-full uppercase tracking-widest hover:bg-brand-400 transition-colors shadow-lg active:scale-95">Buy us a coffee ☕</Link>
+                <button onClick={() => setShowValueToast(false)} className="absolute top-3 right-3 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-md p-1"><X size={12}/></button>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
+        {/* Rotate phone hint (mobile fullscreen portrait) */}
+        {mounted && typeof document !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {showRotateHint && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="fixed inset-0 z-[9997] flex items-center justify-center pointer-events-none"
+              >
+                <div className="flex flex-col items-center gap-3 bg-black/85 backdrop-blur-xl border border-white/10 rounded-2xl px-8 py-6 shadow-2xl">
+                  <RotateCcw size={32} className="text-white animate-spin" style={{ animationDuration: '2s' }} />
+                  <p className="text-white font-bold text-sm tracking-wide text-center">Rotate your phone<br/><span className="text-zinc-400 font-normal text-xs">for the best experience</span></p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
+        {/* Settings Modal via Portal (renders outside iframe, proper z-index on mobile) */}
+        {mounted && typeof document !== 'undefined' && createPortal(
+          <SettingsModal
+            showSettingsModal={showSettingsModal}
+            setShowSettingsModal={setShowSettingsModal}
+            sources={sources}
+            currentSourceId={currentSourceId}
+            handleSwitchServer={handleSwitchServer}
+            favoriteServers={favoriteServers}
+            toggleFavServer={toggleFavServer}
+            showAllServers={showAllServers}
+            setShowAllServers={setShowAllServers}
+            useSandbox={useSandbox}
+            setUseSandbox={setUseSandbox}
+            autoSandboxOnSwitch={autoSandboxOnSwitch}
+            setAutoSandboxOnSwitch={setAutoSandboxOnSwitch}
+            type={type}
+            autoPlayNext={autoPlayNext}
+            setAutoPlayNext={setAutoPlayNext}
+            dataSaver={dataSaver}
+            updatePreferences={updatePreferences}
+            showToast={showToast}
+            id={id}
+            storage={storage}
+          />, document.body)}
+
+        {/* Share Modal */}
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          title={title || ''}
+          shareUrl={getShareUrl({ play: true, server: true })}
+          subtitle={`Via ${source.publicName}`}
         />
 
-        {/* Support Popup: portal in normal mode, child in fullscreen mode. */}
-        {supportPopup && (isFullscreen ? supportPopup : createPortal(supportPopup, document.body))}
+        {/* ── PLAYER TOP BAR & SERVER STRIP (Animated for Fullscreen) ── */}
+        <AnimatePresence initial={false}>
+          {!isFullscreen && (
+            <motion.div
+              key="player-controls"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden w-full flex flex-col shrink-0"
+            >
+              <PlayerTopBar
+                isFullscreen={isFullscreen}
+                setShowSettingsModal={setShowSettingsModal}
+                source={source}
+                setShowShareModal={setShowShareModal}
+                useSandbox={useSandbox}
+                setUseSandbox={setUseSandbox}
+                currentSourceId={currentSourceId}
+                showToast={showToast}
+                isFav={isFav}
+                toggleFavorite={() => toggleFavorite({ id, type, title: title || '', poster, release_date: releaseYear })}
+                toggleFullscreen={toggleFullscreen}
+                serverLanguage={preferences.serverLanguage || 'en'}
+                updatePreferences={updatePreferences}
+              />
+              <QuickServerStrip
+                isFullscreen={isFullscreen}
+                currentSourceId={currentSourceId}
+                sources={sources}
+                handleSwitchServer={handleSwitchServer}
+                setShowSettingsModal={setShowSettingsModal}
+                activeTabRef={activeTabRef}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div 
+          className={`relative w-full bg-black ${isFullscreen ? 'flex-1 h-full' : 'aspect-[4/3] sm:aspect-video w-full min-h-[260px] sm:min-h-[280px] md:min-h-0'}`}
+        >
+
+          {testingSources ? (
+            <TestingSourcesOverlay
+              testingSources={testingSources}
+              poster={poster}
+              testingCurrentName={testingCurrentName}
+              testProgress={testProgress}
+            />
+          ) : (
+            <>
+              {/* ── IFRAME — always rendered so content loads in background ──────────
+                  During isConnecting, the iframe is invisible (opacity-0) but still
+                  loading content. By the time the animation finishes, the video is ready.
+              */}
+              <iframe
+                key={`iframe-${currentSourceId}-${useSandbox ? 'sandbox' : 'nosandbox'}`}
+                src={embedUrl}
+                className={`absolute inset-0 w-full h-full border-0 ${
+                  isConnecting ? 'opacity-0 pointer-events-none transition-opacity duration-700' : 
+                  showSupportPopup ? 'opacity-40 pointer-events-none transition-opacity duration-700' : 'pointer-events-auto opacity-100'
+                }`}
+                allowFullScreen
+                // @ts-ignore
+                webkitallowfullscreen="true"
+                // @ts-ignore
+                mozallowfullscreen="true"
+                referrerPolicy="origin"
+                loading="lazy"
+                sandbox={sandboxAttrs}
+              />
+
+              {/* ── CONNECTING ANIMATION OVERLAY ─────────────────────────────────
+                  Shows while the iframe loads in the background.
+              */}
+              <ConnectingOverlay
+                isConnecting={isConnecting}
+                poster={poster}
+                networkSpeed={networkSpeed}
+                source={source}
+                connectProgress={connectProgress}
+              />
+            </>
+          )}
+
+          <UpNextOverlay
+            showNextOverlay={showNextOverlay}
+            hasNextEpisode={hasNextEpisode || false}
+            countdown={countdown}
+            setShowNextOverlay={setShowNextOverlay}
+            onPlayNext={onPlayNext}
+          />
+
+          {/* Support Popup: portal in normal mode, child in fullscreen mode. */}
+          {supportPopup && (isFullscreen ? supportPopup : createPortal(supportPopup, document.body))}
+        </div>
       </div>
-    </div>
+
+      {/* ── Developer Suggestion Note ── */}
+      {!isFullscreen && (
+        <div className="w-full mt-4 p-4 bg-zinc-900/40 rounded-xl border border-zinc-800/50 flex flex-col gap-3 transition-opacity">
+          <p className="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm text-zinc-400 leading-snug">
+            <span className="text-brand-400 font-bold tracking-wide shrink-0">💡 PRO TIP:</span>
+            <span>If the video is lagging or buffering, try enabling <strong className="text-white">Fullscreen (F)</strong> or closing background tabs to allocate more system resources to the video player.</span>
+          </p>
+          <div className="h-[1px] w-full bg-zinc-800/40" />
+          <p className="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm text-zinc-400 leading-snug">
+            <span className="text-brand-400 font-bold tracking-wide shrink-0">⚡ SERVERS:</span>
+            <span>We highly recommend <strong className="text-white">Server 2</strong> and <strong className="text-white">Server 8</strong> for maximum stability. <strong className="text-amber-400">Server 3 ⚡</strong> is the Developer's Choice for fastest load times! The ⚡ icon indicates extreme speed.</span>
+          </p>
+        </div>
+      )}
+    </>
   );
 }

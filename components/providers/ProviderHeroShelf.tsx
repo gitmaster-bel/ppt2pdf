@@ -119,8 +119,8 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
           onClick={() => scroll('left')}
           aria-label="Scroll left"
           className={`absolute left-4 md:left-14 top-1/2 -translate-y-1/2 z-30 w-10 h-10
-            flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
-            ${canScrollLeft ? (hasInteracted ? 'opacity-100' : 'opacity-0') + ' md:opacity-0 md:group-hover/scroll:opacity-100 hover:scale-110 active:scale-95' : 'opacity-0 pointer-events-none'}`}
+            hidden md:flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
+            ${canScrollLeft ? 'opacity-0 md:opacity-0 md:group-hover/scroll:opacity-100 hover:scale-110 active:scale-95' : 'opacity-0 pointer-events-none'}`}
           style={{ background: 'rgba(6,6,6,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
         >
           <ChevronLeft size={20} className="text-white" />
@@ -129,8 +129,8 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
           onClick={() => scroll('right')}
           aria-label="Scroll right"
           className={`absolute right-4 md:right-14 top-1/2 -translate-y-1/2 z-30 w-10 h-10
-            flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
-            ${canScrollRight ? (hasInteracted ? 'opacity-100' : 'opacity-0') + ' md:opacity-0 md:group-hover/scroll:opacity-100 hover:scale-110 active:scale-95' : 'opacity-0 pointer-events-none'}`}
+            hidden md:flex items-center justify-center rounded-full transition-[opacity,transform] duration-200
+            ${canScrollRight ? 'opacity-0 md:opacity-0 md:group-hover/scroll:opacity-100 hover:scale-110 active:scale-95' : 'opacity-0 pointer-events-none'}`}
           style={{ background: 'rgba(6,6,6,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
         >
           <ChevronRight size={20} className="text-white" />
