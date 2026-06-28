@@ -143,7 +143,7 @@ export function HorizontalRow({ title, subtitle, items, seeAllHref, variant = 'd
           ref={scrollRef}
           onScroll={handleScroll}
           onTouchStart={() => setHasInteracted(true)}
-          className="flex gap-3 md:gap-4 overflow-x-auto overflow-y-hidden  no-scrollbar overscroll-x-contain"
+          className="flex gap-3 md:gap-4 overflow-x-auto overflow-y-hidden no-scrollbar overscroll-x-contain transform-gpu"
           style={{
             paddingLeft: 'clamp(1rem, 3.5vw, 3.5rem)',
             paddingRight: 'clamp(1rem, 3.5vw, 3.5rem)',

@@ -142,12 +142,11 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
         <div className="absolute right-0 top-0 bottom-0 w-24 z-20 pointer-events-none transition-opacity duration-300"
           style={{ background: 'linear-gradient(to left, #0a0a0f, transparent)', opacity: canScrollRight ? 1 : 0 }} />
 
-        {/* Scroll container */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           onPointerDown={() => setHasInteracted(true)}
-          className="w-full overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth"
+          className="w-full overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth transform-gpu will-change-transform"
           style={{ overscrollBehaviorX: 'contain', willChange: 'transform', transform: 'translateZ(0)' }}
         >
           <div className="flex gap-3 md:gap-4 px-4 md:px-14 pb-8 w-max">

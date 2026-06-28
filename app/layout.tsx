@@ -100,6 +100,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `
           }}
         />
+
+        {/* ── Mobile Scroll Optimizer ── */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                let scrollTimer;
+                window.addEventListener('scroll', function() {
+                  if (!document.body.classList.contains('disable-hover')) {
+                    document.body.classList.add('disable-hover');
+                  }
+                  clearTimeout(scrollTimer);
+                  scrollTimer = setTimeout(function() {
+                    document.body.classList.remove('disable-hover');
+                  }, 150);
+                }, { passive: true });
+              }
+            `
+          }}
+        />
       </head>
       <body className="bg-void-950 text-zinc-100 min-h-screen flex flex-col font-body" suppressHydrationWarning>
         {/* Ambient Background — Zivox Dark Violet */}

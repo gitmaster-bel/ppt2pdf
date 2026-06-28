@@ -132,7 +132,7 @@ export function Navbar() {
   return (
     <>
       {/* ── MOBILE TOP NAV ── */}
-      <nav className={`xl:hidden fixed top-0 left-0 right-0 z-[200] px-4 h-[52px] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#050505]/70 backdrop-blur-[20px] saturate-[1.6]' : 'bg-transparent'}`}>
+      <nav className={`xl:hidden fixed top-0 left-0 right-0 z-[200] px-4 h-[52px] flex items-center justify-between transition-all duration-300 transform-gpu will-change-transform ${scrolled ? 'bg-[#050505]/70 backdrop-blur-md shadow-md' : 'bg-transparent'}`}>
         <Logo size="md" onClick={(e) => handleNavigation(e, '/')} />
         <div className="flex items-center gap-4 z-10">
           <button onClick={() => setIsAISearchOpen(true)} className="text-white hover:text-white/80 transition-all duration-300 hover:scale-110 active:scale-95">

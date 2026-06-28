@@ -439,4 +439,7 @@ a {
   color: var(--premium-text, #ffffff);
 }
 
-
+/* ── Mobile Scroll Performance ── */
+body.disable-hover * {
+  pointer-events: none !important;
+}
