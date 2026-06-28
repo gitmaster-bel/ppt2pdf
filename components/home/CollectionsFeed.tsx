@@ -44,10 +44,10 @@ export async function CollectionsFeed({ countryCode }: { countryCode: string }) 
   regionalColls = shuffle(regionalColls);
   globalColls = shuffle(globalColls);
 
-  const finalIds = [
-    ...regionalColls.slice(0, 4),
-    ...globalColls.slice(0, 15 - Math.min(regionalColls.length, 4))
-  ];
+  const finalIds = shuffle([
+    ...regionalColls.slice(0, 7),
+    ...globalColls.slice(0, 15 - Math.min(regionalColls.length, 7))
+  ]);
 
   const rawCollections = await Promise.all(
     finalIds.map(id => tmdb.getCollection(id.toString()).catch(() => null))

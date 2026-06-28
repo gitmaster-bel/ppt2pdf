@@ -27,10 +27,17 @@ import { TimeBasedWidgetFeed } from '@/components/home/TimeBasedWidgetFeed';
 const REGIONAL_MARKETS = new Set(['IN', 'PK', 'JP', 'KR', 'BR', 'ES', 'FR', 'DE', 'IT', 'MX', 'PH', 'TH', 'ID', 'NG', 'TR']);
 
 async function HomeDataFetcher() {
-  // FORCED STATIC RENDER: We assume US for initial render to achieve 0 Fluid CPU and 100% CDN cache.
-  // Regional components hydrate their specific content purely on the client side using SWR/useEffect.
-  const countryCode = 'US';
-  const isRegional = false;
+  const headersList = headers();
+  const cookieStore = cookies();
+  
+  let savedCountry = null;
+  try {
+    const prefsStr = cookieStore.get('preferences')?.value;
+    if (prefsStr) savedCountry = JSON.parse(prefsStr).country;
+  } catch(e) {}
+
+  const countryCode = (savedCountry || headersList.get('x-vercel-ip-country') || 'US').toUpperCase();
+  const isRegional = REGIONAL_MARKETS.has(countryCode);
 
   // ONLY FETCH HERO DATA HERE to make page load instantly
   const [
