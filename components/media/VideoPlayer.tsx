@@ -929,20 +929,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         </div>
       </div>
 
-      {/* ── Developer Suggestion Note ── */}
-      {!isFullscreen && (
-        <div className="w-full mt-4 p-4 bg-zinc-900/40 rounded-xl border border-zinc-800/50 flex flex-col gap-3 transition-opacity">
-          <p className="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm text-zinc-400 leading-snug">
-            <span className="text-brand-400 font-bold tracking-wide shrink-0">💡 PRO TIP:</span>
-            <span>If the video is lagging or buffering, try enabling <strong className="text-white">Fullscreen (F)</strong> or closing background tabs to allocate more system resources to the video player.</span>
-          </p>
-          <div className="h-[1px] w-full bg-zinc-800/40" />
-          <p className="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm text-zinc-400 leading-snug">
-            <span className="text-brand-400 font-bold tracking-wide shrink-0">⚡ SERVERS:</span>
-            <span>We highly recommend <strong className="text-white">Server 2</strong> and <strong className="text-white">Server 8</strong> for maximum stability. <strong className="text-amber-400">Server 3 ⚡</strong> is the Developer's Choice for fastest load times! The ⚡ icon indicates extreme speed.</span>
-          </p>
-        </div>
-      )}
+
     </>
   );
 }

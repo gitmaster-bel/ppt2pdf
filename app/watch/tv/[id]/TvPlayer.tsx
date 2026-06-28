@@ -21,6 +21,7 @@ import { Select } from '@/components/ui/Select';
 import { useAmbientColor } from '@/hooks/useAmbientColor';
 import { YoutubeBackgroundPlayer } from '@/components/media/YoutubeBackgroundPlayer';
 import { UpcomingBanner, type UpcomingMeta, type UpcomingReason } from '@/components/media/UpcomingBanner';
+import { PlaybackTips } from '@/components/ui/PlaybackTips';
 
 
 // ΓöÇΓöÇΓöÇ TV Content State Engine ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -143,7 +144,7 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
 
   const [season, setSeason] = useState(parseInt(searchParams.get('season') || '1'));
   const [episode, setEpisode] = useState<number>(1);
-  const [layout, setLayout] = useState<'standard' | 'sidebar'>('standard');
+  const [layout, setLayout] = useState<'standard' | 'sidebar'>('sidebar');
 
   useEffect(() => {
     const savedLayout = localStorage.getItem('zivox_tv_layout');
@@ -320,8 +321,8 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                   style={{ backgroundColor: bgColor, willChange: 'background-color', transform: 'translateZ(0)' }}
                 />
                 <div
-                  className={`relative w-full border border-zinc-800 bg-void-950 group ${
-                    !isPlaying ? 'rounded-2xl overflow-hidden aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'min-h-[300px] flex flex-col'
+                  className={`relative w-full border bg-void-950 group ${
+                    !isPlaying ? 'border-zinc-800 rounded-2xl overflow-hidden aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'border-zinc-700/60 rounded-xl overflow-hidden shadow-2xl min-h-[300px] flex flex-col'
                   }`}
                   onClick={() => !isPlaying && setIsPlaying(true)}
                 >
@@ -378,33 +379,18 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                       initialServer={serverParam}
                       blockTutorial={false}
                     />
-                    <div className="w-full max-w-7xl mx-auto mt-2 px-4">
-                      <div className="bg-brand-500/5 border border-brand-500/20 rounded-xl p-4 flex flex-col gap-2">
-                        <h3 className="text-brand-400 font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-                          <Info className="w-4 h-4" /> 
-                          Developer&apos;s Tips for the Best Experience
-                        </h3>
-                        <p className="text-white/70 text-sm leading-relaxed">
-                          <strong>Experiencing video lag?</strong> Go <strong className="text-white">Full Screen (F)</strong>! This forces your browser to unlock butter-smooth 60fps playback.
-                        </p>
-                        <div className="flex flex-wrap items-center gap-4 mt-2">
-                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
-                            <strong className="text-brand-400">⚡ Fast:</strong> Server 3
-                          </span>
-                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
-                            <strong className="text-brand-400">🟢 No ads:</strong> Server 2, 4, 6, 7, 8
-                          </span>
-                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
-                            <strong className="text-brand-400">🌐 Multi-lingual:</strong> Server 2, 5, 7
-                          </span>
-                        </div>
-                      </div>
-                    </div>
                     </>
                   )}
                 </div>
               </div>
               </div>
+
+              {/* Tucked Playback Tips for Sidebar Mode */}
+              {isPlaying && layout === 'sidebar' && (
+                <div className="hidden xl:block">
+                  <PlaybackTips />
+                </div>
+              )}
 
               {/* Info panel ΓÇö smooth max-height collapse, no layout glitch */}
               <div
@@ -602,6 +588,13 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                     )}
                   </div>
                 </div>
+                
+                {/* Tucked Playback Tips for Standard Mode or Mobile */}
+                {isPlaying && (
+                  <div className={layout === 'sidebar' ? 'block xl:hidden mt-2' : 'block mt-2'}>
+                    <PlaybackTips />
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -5,6 +5,7 @@ import { MediaDetails } from '@/types/tmdb';
 import { VideoPlayer } from '@/components/media/VideoPlayer';
 import { TrailerModal } from '@/components/media/TrailerModal';
 import { CastSection } from '@/components/media/CastSection';
+import { PlaybackTips } from '@/components/ui/PlaybackTips';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -139,8 +140,8 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
                   style={{ backgroundColor: bgColor, willChange: 'background-color', transform: 'translateZ(0)' }}
                 />
                 <div
-                  className={`relative w-full border border-zinc-800 bg-void-950 group ${
-                    !isPlaying ? 'rounded-2xl overflow-hidden aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'min-h-[300px] flex flex-col'
+                  className={`relative w-full border bg-void-950 group ${
+                    !isPlaying ? 'border-zinc-800 rounded-2xl overflow-hidden aspect-video md:aspect-[2.39/1] max-h-[520px] cursor-pointer' : 'border-zinc-700/60 rounded-xl overflow-hidden shadow-2xl min-h-[300px] flex flex-col'
                   }`}
                   onClick={() => !isPlaying && setIsPlaying(true)}
                 >
@@ -186,6 +187,10 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
                   )}
                 </div>
               </div>
+              
+              {isPlaying && (
+                <PlaybackTips />
+              )}
             </div>
 
             {/* Info panel ΓÇö collapses cleanly with max-height transition (no layout glitch) */}
