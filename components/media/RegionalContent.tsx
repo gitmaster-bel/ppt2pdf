@@ -42,22 +42,8 @@ export function RegionalContent() {
     const detectAndFetch = async () => {
       let countryCode = preferences.country;
 
-      // 1. Auto-detect location if not already done
-      if (!preferences.locationAutoDetected) {
-        try {
-          const ipRes = await fetch('https://ipapi.co/json/');
-          const ipData = await ipRes.json();
-          if (ipData && ipData.country_code) {
-            countryCode = ipData.country_code;
-            updatePreferences({ country: countryCode, locationAutoDetected: true });
-            // Sync to document.cookie so the Edge SSR can read it instantly on the next load
-            document.cookie = `user_country=${countryCode}; path=/; max-age=31536000; SameSite=Lax`;
-            router.refresh();
-          }
-        } catch (e) {
-          console.warn('IP detection failed, using fallback country:', countryCode);
-        }
-      }
+      // 1. We rely on proxy.ts (edge middleware) and useAutoLocation.ts to handle location.
+      // No need to do a redundant fetch and router.refresh() here, which causes double skeletons.
 
       // 2. Check if country is in our highly-localized targets
       const localizedTitle = REGIONAL_TITLES[countryCode];
