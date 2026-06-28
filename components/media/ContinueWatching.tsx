@@ -4,6 +4,7 @@ import { HorizontalRow } from '@/components/media/HorizontalRow';
 import { RowSkeleton } from '@/components/ui/RowSkeleton';
 import { Media } from '@/types/tmdb';
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function ContinueWatching() {
   const { history } = useWatchHistory();
@@ -14,7 +15,11 @@ export function ContinueWatching() {
   }, []);
 
   if (!mounted) {
-    return <RowSkeleton title="Continue Watching" />;
+    return (
+      <div className="w-full relative min-h-[300px]">
+        <RowSkeleton title="Continue Watching" />
+      </div>
+    );
   }
 
   if (!history || history.length === 0) return null;
@@ -32,5 +37,19 @@ export function ContinueWatching() {
     contextType: 'history',
   })) as unknown as Media[];
 
-  return <HorizontalRow title="Continue Watching" items={historyMedia} />;
+  return (
+    <div className="w-full relative min-h-[300px]">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <HorizontalRow title="Continue Watching" items={historyMedia} />
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 }
