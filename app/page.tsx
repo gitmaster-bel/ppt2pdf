@@ -12,13 +12,13 @@ import { RowSkeleton } from '@/components/ui/RowSkeleton';
 
 import nextDynamic from 'next/dynamic';
 
-const RegionalContent = nextDynamic(() => import('@/components/media/RegionalContent').then(mod => mod.RegionalContent), { loading: () => <RowSkeleton /> });
+import { RegionalContent } from '@/components/media/RegionalContent';
 const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row), { loading: () => <RowSkeleton /> });
 const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow), { loading: () => <RowSkeleton /> });
 
 // Async feed components
 import { CollectionsFeed } from '@/components/home/CollectionsFeed';
-const ClientProviderShelves = nextDynamic(() => import('@/components/home/ClientProviderShelves').then(mod => mod.ClientProviderShelves), { loading: () => <RowSkeleton /> });
+import { ProviderShelvesFeed } from '@/components/home/ProviderShelvesFeed';
 import { TopRatedFeed } from '@/components/home/TopRatedFeed';
 import { ClassicsFeed } from '@/components/home/ClassicsFeed';
 import { AnimeFeed } from '@/components/home/AnimeFeed';
@@ -101,7 +101,9 @@ async function HomeDataFetcher() {
           <ProvidersGrid />
         </div>
         
-        <RegionalContent />
+        <Suspense fallback={<RowSkeleton />}>
+          <RegionalContent countryCode={countryCode} />
+        </Suspense>
         
         <Suspense fallback={<RowSkeleton />}>
           <CollectionsFeed countryCode={countryCode} />
@@ -120,7 +122,7 @@ async function HomeDataFetcher() {
         </div>
         
         <Suspense fallback={<RowSkeleton />}>
-          <ClientProviderShelves />
+          <ProviderShelvesFeed countryCode={countryCode} isRegional={isRegional} />
         </Suspense>
 
         <Suspense fallback={<RowSkeleton />}>
