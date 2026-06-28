@@ -5,7 +5,7 @@ import { MediaDetails } from '@/types/tmdb';
 import { getImageUrl } from '@/lib/tmdb';
 import { getSeasonDetailsAction } from '@/app/actions';
 import { VideoPlayer } from '@/components/media/VideoPlayer';
-import { Bookmark, Heart, MonitorPlay, Info, ChevronDown, Play, Star, CheckCircle2, Circle, ArrowLeft, Share2, Check, CalendarDays, Bell, Video } from 'lucide-react';
+import { Bookmark, Heart, MonitorPlay, Info, ChevronDown, Play, Star, CheckCircle2, Circle, ArrowLeft, Share2, Check, CalendarDays, Bell, Video, LayoutList, Sidebar } from 'lucide-react';
 import { ShareModal } from '@/components/ui/ShareModal';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -142,7 +142,21 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
   const isUpcoming = tvState === 'fully_upcoming';
 
   const [season, setSeason] = useState(parseInt(searchParams.get('season') || '1'));
-  const [episode, setEpisode] = useState(parseInt(searchParams.get('episode') || '1'));
+  const [episode, setEpisode] = useState<number>(1);
+  const [layout, setLayout] = useState<'standard' | 'sidebar'>('standard');
+
+  useEffect(() => {
+    const savedLayout = localStorage.getItem('zivox_tv_layout');
+    if (savedLayout === 'standard' || savedLayout === 'sidebar') {
+      setLayout(savedLayout);
+    }
+  }, []);
+
+  const handleLayoutToggle = () => {
+    const newLayout = layout === 'standard' ? 'sidebar' : 'standard';
+    setLayout(newLayout);
+    localStorage.setItem('zivox_tv_layout', newLayout);
+  };
   const [episodes, setEpisodes] = useState<any[]>([]);
   const { history, addToHistory } = useWatchHistory();
   const autoPlay = searchParams.get('play') === '1';
@@ -296,8 +310,8 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
           {/* Mid-season "next episode" info will now be integrated directly into the player below */}
 
           {/* ΓöÇΓöÇ Player section ΓöÇΓöÇ */}
-          <div className={`flex gap-8 transition-all duration-500 ${isPlaying ? 'flex-col items-center' : 'flex-col xl:flex-row'}`}>
-            <div className={`flex flex-col gap-6 w-full ${isPlaying ? 'xl:w-full' : 'flex-1'}`}>
+          <div className={`flex gap-8 transition-all duration-500 ${layout === 'standard' ? 'flex-col items-center' : 'flex-col xl:flex-row items-start'}`}>
+            <div className={`flex flex-col gap-6 w-full ${layout === 'standard' ? 'xl:w-full' : 'flex-1'}`}>
               {/* Sticky player on mobile */}
               <div className="sticky top-[56px] md:static z-30 md:z-auto">
               <div className="relative w-full max-w-5xl mx-auto">
@@ -375,16 +389,13 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                         </p>
                         <div className="flex flex-wrap items-center gap-4 mt-2">
                           <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
-                            <strong className="text-brand-400">🚀 Fast:</strong> Server 3
+                            <strong className="text-brand-400">⚡ Fast:</strong> Server 3
                           </span>
                           <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
-                            <strong className="text-brand-400">⭐ Best Quality:</strong> Server 2, Server 8
+                            <strong className="text-brand-400">🟢 No ads:</strong> Server 2, 4, 6, 7, 8
                           </span>
                           <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
-                            <strong className="text-brand-400">🎥 Emoji:</strong> Direct Source
-                          </span>
-                          <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
-                            <strong className="text-brand-400">🌐 Emoji:</strong> Web Scraped
+                            <strong className="text-brand-400">🌐 Multi-lingual:</strong> Server 2, 5, 7
                           </span>
                         </div>
                       </div>
@@ -500,10 +511,11 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
               </div>
             </div>
             {availableSeasons.length > 0 && (
-              <div className={`w-full flex flex-col gap-4 transition-all duration-500 delay-100 ${isPlaying ? 'xl:w-full max-w-5xl mx-auto' : 'xl:w-96'}`}>
-                <div className="relative z-50">
-                  <Select
-                    value={season}
+              <div className={`w-full flex flex-col gap-4 transition-all duration-500 delay-100 ${layout === 'standard' ? 'xl:w-full max-w-5xl mx-auto' : 'xl:w-96 shrink-0'}`}>
+                <div className="relative z-50 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Select
+                      value={season}
                     onChange={(val) => { setSeason(val as number); setEpisode(1); }}
                     options={availableSeasons.map(s => ({
                       label: s.name,
@@ -511,6 +523,18 @@ function TvPlayerContent({ show }: { show: MediaDetails }) {
                       description: `(${s.episode_count} Episodes)`,
                     }))}
                   />
+                  </div>
+                  <button
+                    onClick={handleLayoutToggle}
+                    className="hidden xl:flex items-center gap-2 px-3 py-2 rounded-xl bg-void-900 hover:bg-void-800 border border-zinc-800 text-zinc-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider shrink-0"
+                    title={layout === 'standard' ? 'Switch to Sidebar View' : 'Switch to Standard View'}
+                  >
+                    {layout === 'standard' ? (
+                      <><Sidebar size={14} /> Sidebar</>
+                    ) : (
+                      <><LayoutList size={14} /> Standard</>
+                    )}
+                  </button>
                 </div>
 
                 <div className="bg-void-950 rounded-xl border border-zinc-800 overflow-hidden flex flex-col max-h-[600px] shadow-lg">
