@@ -1,8 +1,8 @@
 export const SUPPORT_ACCESS_KEY = 'has_supported_zivox';
 export const SUPPORT_ACCESS_UPDATED_EVENT = 'zivox_support_access_updated';
 
-export const SHARE_ACCESS_MS = 2 * 24 * 60 * 60 * 1000;
-export const MONTH_ACCESS_MS = 30 * 24 * 60 * 60 * 1000;
+export const SHARE_ACCESS_MS = 8 * 60 * 60 * 1000; // 8 hours
+export const MONTH_ACCESS_MS = 365 * 24 * 60 * 60 * 1000; // 1 year
 
 export type SupportAccess = {
   isActive: boolean;

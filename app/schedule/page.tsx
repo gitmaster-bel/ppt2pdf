@@ -125,7 +125,7 @@ function getSubLabel(item: Media, tab: SidebarTab): string {
 const ScheduleCard = React.memo(function ScheduleCard({ item, tab }: { item: Media; tab: SidebarTab }) {
   return (
     <div className="flex flex-col gap-2 w-full">
-      <MediaCard media={item} isUpcoming={tab === 'upcoming'} />
+      <MediaCard media={item} isUpcoming={tab === 'upcoming'} hideTitle={true} />
       <div className="px-0.5 space-y-0.5">
         <p className="text-[13px] font-bold text-white/90 line-clamp-2 leading-snug">
           {item.title || item.name || ''}

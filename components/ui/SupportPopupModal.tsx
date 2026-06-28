@@ -36,7 +36,7 @@ export function SupportPopupModal({ isOpen, onComplete, onClose, title, mediaTyp
       if (navigator.share) {
         await navigator.share(shareData);
         startCountdown('share');
-        setShareFeedback({ type: 'success', message: 'Success! You unlocked 2 Days of Premium.' });
+        setShareFeedback({ type: 'success', message: 'Success! You unlocked 8 Hours of Premium.' });
       } else {
         await navigator.clipboard.writeText(window.location.href);
         setHasShared(true);
@@ -120,10 +120,7 @@ export function SupportPopupModal({ isOpen, onComplete, onClose, title, mediaTyp
             Enjoying the {mediaType === 'movie' ? 'movie' : 'show'}?
           </h2>
           <p className="text-sm text-zinc-400 mb-6 leading-relaxed relative z-10">
-            ZIVOX delivers a premium, ad-free cinematic experience entirely for free. Help us maintain our servers and keep the platform ad-free by supporting our mission. <br/><br/>
-            <span className="text-white font-bold block mb-1">🎁 Your Rewards:</span>
-            <span className="block text-brand-400">Share with a friend → <span className="text-white">2 Full Days</span> uninterrupted</span>
-            <span className="block text-brand-400">Become a Supporter → <span className="text-white">1 Full Month</span> uninterrupted</span>
+            Share if you want to have a clean 8-hour no-interruption experience, and donate for a 1-year interruption-free experience.
           </p>
           
           <p className="text-[10px] text-zinc-500 mb-6 relative z-10 italic">

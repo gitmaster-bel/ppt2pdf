@@ -20,12 +20,14 @@ export const MediaCard = memo(function MediaCard({
   onRemove,
   variant = 'default',
   isUpcoming = false,
+  hideTitle = false,
 }: {
   media: Media & { progress?: number; season?: number; episode?: number; contextType?: 'history' | 'watchlist' | 'favorites' | 'notifications' };
   className?: string;
   onRemove?: (id: string, type: 'history' | 'watchlist' | 'favorites' | 'notifications') => void;
   variant?: 'default' | 'top10';
   isUpcoming?: boolean;
+  hideTitle?: boolean;
 }) {
   const router = useRouter();
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
@@ -271,8 +273,12 @@ export const MediaCard = memo(function MediaCard({
                 : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
             }}
           >
-            <h3 className="text-white font-bold text-[14px] leading-tight truncate drop-shadow-md">{title}</h3>
-            <p className="text-white/60 font-semibold text-[11px] mt-0.5 drop-shadow-md">{year} • {isMovie ? 'Movie' : 'Series'}</p>
+            {!preferences.alwaysShowTitles && (
+              <>
+                <h3 className="text-white font-bold text-[14px] leading-tight truncate drop-shadow-md">{title}</h3>
+                <p className="text-white/60 font-semibold text-[11px] mt-0.5 drop-shadow-md">{year} • {isMovie ? 'Movie' : 'Series'}</p>
+              </>
+            )}
           </div>
 
           {/* Desktop Play Button */}
@@ -394,6 +400,14 @@ export const MediaCard = memo(function MediaCard({
           <span className="text-[10px] text-white/50 font-medium tracking-wide">
             S{media.season} E{media.episode}
           </span>
+        </div>
+      )}
+
+      {/* Always Show Titles Preference */}
+      {preferences.alwaysShowTitles && !hideTitle && (
+        <div className={`mt-2 px-1 transition-opacity duration-300 ${isExpanded ? 'opacity-0' : 'opacity-100'}`}>
+          <h3 className="text-white font-bold text-[13px] leading-tight truncate">{title}</h3>
+          <p className="text-white/50 text-[10px] mt-0.5 truncate">{year} • {isMovie ? 'Movie' : 'Series'}</p>
         </div>
       )}
 

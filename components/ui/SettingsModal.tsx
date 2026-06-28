@@ -247,6 +247,19 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               </button>
 
               <button 
+                onClick={() => updatePreferences({ alwaysShowTitles: !preferences.alwaysShowTitles })}
+                className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-left"
+              >
+                <div>
+                  <h4 className="font-semibold text-white">Always Show Titles</h4>
+                  <p className="text-zinc-400 text-xs mt-0.5">Show content titles permanently below posters</p>
+                </div>
+                <div className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${preferences.alwaysShowTitles ? 'bg-premium-gradient' : 'bg-black/50 border border-white/20'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${preferences.alwaysShowTitles ? 'translate-x-7' : 'translate-x-1'}`} />
+                </div>
+              </button>
+
+              <button 
                 onClick={() => updatePreferences({ showRatings: !preferences.showRatings })}
                 className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-left"
               >

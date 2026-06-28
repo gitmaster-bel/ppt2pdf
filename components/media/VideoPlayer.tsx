@@ -22,7 +22,7 @@ import { TestingSourcesOverlay } from './player/TestingSourcesOverlay';
 import { UpNextOverlay } from './player/UpNextOverlay';
 
 
-const SUPPORT_PROMPT_DELAY_MS = 30 * 1000;
+const SUPPORT_PROMPT_DELAY_MS = 12 * 60 * 1000; // 12 minutes
 const SUPPORT_TIMER_SLICE_MS = 12 * 60 * 60 * 1000;
 
 interface VideoPlayerProps {
@@ -67,8 +67,6 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   const [showSupportPopup, setShowSupportPopup] = useState(false);
   const [showValueToast, setShowValueToast] = useState(false);
   const hasSupportedRef = useRef(false);
-  const hasDismissedSupportRef = useRef(false);
-
   const [testingSources, setTestingSources] = useState(!initialServer);
   const [testProgress, setTestProgress] = useState(0);
   const [testingCurrentName, setTestingCurrentName] = useState('');
@@ -182,9 +180,9 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     }
   }, [blockTutorial]);
 
-  // ── Support Popup Timer (2 Minutes) ──
   useEffect(() => {
     if (testingSources) return;
+    if (showSupportPopup) return; // Wait until modal is closed before restarting timer
 
     let timer: NodeJS.Timeout | null = null;
 
@@ -210,7 +208,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
           return;
         }
 
-        if (!latestAccess.isActive && !showSupportPopup && !hasDismissedSupportRef.current) {
+        if (!latestAccess.isActive && !showSupportPopup) {
           // Force exit native fullscreen ONLY if the iframe itself is the fullscreen element.
           // If our container is fullscreen, the React overlay will naturally appear on top.
           if (document.fullscreenElement && document.fullscreenElement !== containerRef.current) {
@@ -710,7 +708,6 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         window.dispatchEvent(new Event('zivox_donation_update'));
       }}
       onClose={() => {
-        hasDismissedSupportRef.current = true;
         setShowSupportPopup(false);
       }}
     />

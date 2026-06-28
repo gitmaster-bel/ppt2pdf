@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePreferences } from '@/hooks/usePreferences';
-import { HorizontalRow } from './HorizontalRow';
+import { CompactTop10Row } from './CompactTop10Row';
 import { getRegionalTrendingAction } from '@/app/actions';
 import { Media } from '@/types/tmdb';
 import { useRouter } from 'next/navigation';
@@ -29,9 +29,10 @@ const REGIONAL_TITLES: Record<string, string> = {
 export function RegionalContent() {
   const router = useRouter();
   const { preferences, updatePreferences } = usePreferences();
-  const [content, setContent] = useState<Media[]>([]);
+  const [movies, setMovies] = useState<Media[]>([]);
+  const [shows, setShows] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rowTitle, setRowTitle] = useState('');
+  const [countryName, setCountryName] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -66,8 +67,10 @@ export function RegionalContent() {
         const data = await getRegionalTrendingAction(countryCode);
         if (isMounted) {
           if (data && data.results && data.results.length > 0) {
-            setContent(data.results as Media[]);
-            setRowTitle(localizedTitle);
+            setMovies(data.movies || []);
+            setShows(data.shows || []);
+            // Extract the country name from the localized title, e.g., "Trending in India" -> "India"
+            setCountryName(localizedTitle.replace('Trending in ', ''));
           }
         }
       } catch (e) {
@@ -84,16 +87,24 @@ export function RegionalContent() {
     };
   }, [preferences.country, preferences.locationAutoDetected]); // depend on country directly
 
-  if (loading || content.length === 0) return null;
+  if (loading || (movies.length === 0 && shows.length === 0)) return null;
 
   return (
-    <div className="w-full">
-      <HorizontalRow
-        title={rowTitle}
-        subtitle="Blockbusters & Hits from your region"
-        items={content}
-        // seeAllHref can be added later if a dedicated regional page is built
-      />
+    <div className="w-full flex flex-col gap-6 md:gap-10">
+      {movies.length > 0 && (
+        <CompactTop10Row
+          title={`${countryName}'s Top Movies`}
+          items={movies}
+          limit={15}
+        />
+      )}
+      {shows.length > 0 && (
+        <CompactTop10Row
+          title={`${countryName}'s Top Shows`}
+          items={shows}
+          limit={15}
+        />
+      )}
     </div>
   );
 }

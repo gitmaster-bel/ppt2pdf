@@ -149,14 +149,25 @@ const blendProviderData = (
     }
 
     // Helper to shuffle
+    const getDailyRandom = () => {
+      const d = new Date();
+      let seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+      return () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      };
+    };
+    const rng = getDailyRandom();
+    
     const shuffle = (array: any[]) => {
       const arr = [...array];
       for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(rng() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
       }
       return arr;
     };
+
 
     // --- REGIONAL SELECTION (Exactly 10, At least 3 TV) ---
     const shuffledRM = shuffle(rM);
@@ -256,10 +267,20 @@ const blendProviderData = (
   let regionalColls = allIds.filter(id => regionalIds.includes(id));
   let globalColls = allIds.filter(id => !regionalIds.includes(id));
 
+  const getDailyRandom = () => {
+    const d = new Date();
+    let seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    return () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+  };
+  const rng = getDailyRandom();
+
   const shuffle = (array: any[]) => {
     const arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(rng() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
@@ -296,26 +317,27 @@ const blendProviderData = (
       <div className="md:hidden block mt-4 z-20 relative">
         <TimeBasedWidget items={widgetPool} variant="mobile" />
       </div>
-
       <div className="flex flex-col relative z-20 pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-16 md:mt-4 gap-6 md:gap-10">
+        <div className="mt-2">
+          <ProvidersGrid />
+        </div>
+        
         <RegionalContent />
         
-        <div className="hidden md:block">
-          <Top10Row title="Top 10 Today" items={trendingResults.slice(0, 10) as Media[]} />
-        </div>
+
         
         {collectionsData.length > 0 && <CollectionsRow collections={collectionsData} />}
         
         <RecommendedForYou mediaType="all" excludeIds={excludeIds} />
+
+        <div className="hidden md:block">
+          <Top10Row title="Top 10 Today" items={trendingResults.slice(0, 10) as Media[]} />
+        </div>
         
         <HorizontalRow title="Global Trending" subtitle="What the world is watching today" items={trendingResults.slice(10) as Media[]} seeAllHref="/trending/all" />
         
         <div className="hidden md:block">
           <TimeBasedWidget items={widgetPool} variant="desktop" />
-        </div>
-        
-        <div className="mt-2">
-          <ProvidersGrid />
         </div>
         
         <ProviderHeroShelf 
@@ -364,7 +386,8 @@ async function HomeDataFetcher() {
   ]);
   
   const regionalTrending = regionalTrendingRes || { results: [] };
-  const trendingResults = [...(trendingPage1.results || []), ...(trendingPage2.results || [])];
+  const rawTrendingResults = [...(trendingPage1.results || []), ...(trendingPage2.results || [])];
+  const trendingResults = Array.from(new Map(rawTrendingResults.map((item: any) => [item.id, item])).values());
   const trendingMovies = trendingResults.filter((item: any) => item.media_type === 'movie');
   const trendingTvs = trendingResults.filter((item: any) => item.media_type === 'tv');
 

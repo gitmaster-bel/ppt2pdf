@@ -571,19 +571,32 @@ export async function getRegionalTrendingAction(countryCode: string) {
       index === self.findIndex((t) => t.id === item.id)
     );
 
+    // De-duplicate movies and shows arrays as well
+    let finalMovies = movies.map(m => ({...m, media_type: 'movie'})).filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
+    let finalShows = shows.map(s => ({...s, media_type: 'tv'})).filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
+
     // Injection of TV 262838 in India
     if (targetTvDetails && countryCode.toUpperCase() === 'IN') {
       const targetTv = { ...targetTvDetails, media_type: 'tv' };
       // Filter out if already in array
       combined = combined.filter(item => item.id !== targetTv.id);
+      finalShows = finalShows.filter(item => item.id !== targetTv.id);
+      
       // Place in first 5 slots (index 0 to 4) randomly
-      const insertIdx = Math.floor(Math.random() * Math.min(5, combined.length + 1));
+      const getDailyRandom = () => {
+        const d = new Date();
+        let seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+        return () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      };
+      const insertIdx = Math.floor(getDailyRandom()() * Math.min(5, combined.length + 1));
+      
       combined.splice(insertIdx, 0, targetTv);
+      finalShows.splice(Math.min(insertIdx, finalShows.length), 0, targetTv);
     }
 
-    return { results: combined };
+    return { results: combined, movies: finalMovies, shows: finalShows };
   } catch (e) {
-    return { results: [] };
+    return { results: [], movies: [], shows: [] };
   }
 }
 

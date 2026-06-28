@@ -52,6 +52,8 @@ export function useAutoLocation() {
         const region = data.region_code || ''; // e.g. "MH", "TN", "DL"
         let nativeLangs = COUNTRY_TO_LANG[country] ? [...COUNTRY_TO_LANG[country]] : [];
         
+        let serverLanguage: string | undefined;
+        
         // Netflix-tier hyper-localized state engine for India
         if (country === 'IN') {
           // South Indian ISO 3166-2 Codes: Tamil Nadu, Andhra Pradesh, Telangana, Karnataka, Kerala, Puducherry
@@ -63,6 +65,8 @@ export function useAutoLocation() {
           } else {
              // For North/Rest of India, aggressively prioritize Hindi
              nativeLangs = ['hi', 'te', 'ta', 'kn', 'ml'];
+             // Set default server language to Hindi for server 2
+             serverLanguage = 'hi';
           }
         }
         
@@ -73,10 +77,15 @@ export function useAutoLocation() {
           }
         });
 
-        updatePreferences({
+        const prefsUpdate: Partial<Parameters<typeof updatePreferences>[0]> = {
           originalLanguage,
           locationAutoDetected: true,
-        });
+        };
+        if (serverLanguage && !storage.get()?.preferences?.serverLanguage) {
+          prefsUpdate.serverLanguage = serverLanguage;
+        }
+
+        updatePreferences(prefsUpdate);
       } catch (err) {
         console.error('Failed to auto-detect location:', err);
         updatePreferences({ locationAutoDetected: true });

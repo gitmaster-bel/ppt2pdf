@@ -12,6 +12,7 @@ export type Preferences = {
   theme: 'red' | 'blue' | 'violet' | 'emerald' | 'mono' | 'rose' | 'amber' | 'cyan' | 'silicon';
   dataSaver?: boolean;
   serverLanguage?: string;
+  alwaysShowTitles?: boolean;
 };
 
 const defaultPreferences: Preferences = {
@@ -24,6 +25,7 @@ const defaultPreferences: Preferences = {
   locationAutoDetected: false,
   theme: 'violet',
   serverLanguage: 'en',
+  alwaysShowTitles: true,
 };
 
 export function usePreferences() {

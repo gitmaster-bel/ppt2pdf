@@ -135,8 +135,8 @@ export function HorizontalRow({ title, subtitle, items, seeAllHref, variant = 'd
         </button>
 
         {/* Edge fades */}
-        <div className="absolute right-0 top-0 bottom-0 w-24 z-20 pointer-events-none transition-opacity duration-300"
-          style={{ background: 'linear-gradient(to left, #0a0a0f, transparent)', opacity: canScrollRight ? 1 : 0 }} />
+        <div className={`absolute left-0 top-0 bottom-0 w-8 md:w-24 z-20 pointer-events-none transition-opacity duration-300 bg-gradient-to-r from-[#0a0a0f] to-transparent ${canScrollLeft ? 'opacity-30 md:opacity-100' : 'opacity-0'}`} />
+        <div className={`absolute right-0 top-0 bottom-0 w-8 md:w-24 z-20 pointer-events-none transition-opacity duration-300 bg-gradient-to-l from-[#0a0a0f] to-transparent ${canScrollRight ? 'opacity-30 md:opacity-100' : 'opacity-0'}`} />
 
         {/* Scroll track */}
         <div

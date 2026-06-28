@@ -92,8 +92,15 @@ export function MovieClient({ movie }: { movie: MediaDetails }) {
       <div className="flex flex-wrap items-center gap-3 w-full -mb-2 md:-mb-6">
         <button
           onClick={() => {
-            if (isPlaying) setIsPlaying(false);
-            else router.back();
+            if (isPlaying) {
+              setIsPlaying(false);
+            } else {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                window.history.back();
+              } else {
+                router.push('/');
+              }
+            }
           }}
           className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors min-h-[44px] px-2 rounded-xl active:bg-white/5 md:active:bg-transparent shrink-0"
         >
