@@ -91,6 +91,7 @@ export function useAutoLocation() {
 
         const prefsUpdate: Partial<Parameters<typeof updatePreferences>[0]> = {
           originalLanguage,
+          country,
           locationAutoDetected: true,
         };
         if (serverLanguage && !storage.get()?.preferences?.serverLanguage) {
