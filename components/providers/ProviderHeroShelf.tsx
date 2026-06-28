@@ -90,10 +90,10 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
   return (
     <section ref={sectionRef} className="relative group/row row-hidden mb-6 md:mb-10">
       {/* Provider Header */}
-      <div className="w-full max-w-[1800px] mx-auto px-4 md:px-14 mb-4 flex items-center justify-between">
+      <div className="w-full max-w-[1920px] mx-auto px-4 md:px-14 mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Brand Accent Bar */}
-          <div className="w-1.5 h-7 rounded-full" style={{ backgroundColor: provider.color, boxShadow: `0 0 12px ${provider.color}80` }} />
+          <div className="w-1 h-5 md:w-1.5 md:h-6 rounded-full" style={{ backgroundColor: provider.color, boxShadow: `0 0 12px ${provider.color}80` }} />
           
           <Link href={`/providers/${provider.slug}`} className="group flex items-center gap-2 hover:opacity-80 transition-opacity">
             <img src={provider.logo} alt={provider.name} className="h-7 w-auto object-contain hidden sm:block" />
@@ -146,10 +146,16 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
           ref={scrollRef}
           onScroll={handleScroll}
           onPointerDown={() => setHasInteracted(true)}
-          className="w-full overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth transform-gpu will-change-transform"
-          style={{ overscrollBehaviorX: 'contain', willChange: 'transform', transform: 'translateZ(0)' }}
+          className="w-full flex gap-3 md:gap-4 overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth transform-gpu will-change-transform pb-8"
+          style={{ 
+            paddingLeft: 'clamp(1rem, 3.5vw, 3.5rem)',
+            paddingRight: 'clamp(1rem, 3.5vw, 3.5rem)',
+            overscrollBehaviorX: 'contain', 
+            willChange: 'transform', 
+            transform: 'translateZ(0)' 
+          }}
         >
-          <div className="flex gap-3 md:gap-4 px-4 md:px-14 pb-8 w-max">
+          <div className="flex gap-3 md:gap-4 w-max">
             {items.map((item, index) => (
               <div key={`${item.id}-${index}`} className="w-[140px] sm:w-[160px] md:w-[200px] lg:w-[220px] shrink-0">
                 <MediaCard media={item} />
