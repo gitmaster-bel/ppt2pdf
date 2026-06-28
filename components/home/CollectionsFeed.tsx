@@ -44,10 +44,28 @@ export async function CollectionsFeed({ countryCode }: { countryCode: string }) 
   regionalColls = shuffle(regionalColls);
   globalColls = shuffle(globalColls);
 
-  const finalIds = shuffle([
-    ...regionalColls.slice(0, 7),
-    ...globalColls.slice(0, 15 - Math.min(regionalColls.length, 7))
-  ]);
+  let finalIds: number[] = [];
+
+  if (regionalColls.length > 0) {
+    // 1. Take the first regional collection to strictly place it at the start
+    const firstRegional = regionalColls[0];
+    
+    // 2. Take up to 7 more regional collections (for roughly 50% of a 15-item row)
+    const remainingRegional = regionalColls.slice(1, 8); 
+    
+    // 3. Take the remaining slots from the global pool (to total 15)
+    const neededGlobalCount = 15 - (1 + remainingRegional.length);
+    const selectedGlobal = globalColls.slice(0, neededGlobalCount);
+    
+    // 4. Randomly mix the remaining regional and global collections together
+    const mixedRest = shuffle([...remainingRegional, ...selectedGlobal]);
+    
+    // 5. Final array: First item is guaranteed regional, the rest is a random 50/50 mix
+    finalIds = [firstRegional, ...mixedRest];
+  } else {
+    // Fallback if the country has no regional collections mapped
+    finalIds = globalColls.slice(0, 15);
+  }
 
   const rawCollections = await Promise.all(
     finalIds.map(id => tmdb.getCollection(id.toString()).catch(() => null))
