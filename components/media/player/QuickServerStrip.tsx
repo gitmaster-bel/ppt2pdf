@@ -40,8 +40,8 @@ export function QuickServerStrip({
       {/* Desktop: all 7 always visible */}
       <div className="hidden lg:flex items-center gap-1.5 flex-wrap">
         {top7.map((s) => {
-          const isActive = s.id === currentSourceId;
-          const isMultilingual = multilingualIds.has(s.id);
+              const isActive = s.id === currentSourceId;
+              const isMultilingual = s.hasLanguageOptions || multilingualIds.has(s.id);
           return (
             <button
               key={s.id}
@@ -66,8 +66,8 @@ export function QuickServerStrip({
       {/* Tablet: first 5 */}
       <div className="hidden md:flex lg:hidden items-center gap-1.5 flex-wrap">
         {orderedStrip.slice(0, 5).map((s) => {
-          const isActive = s.id === currentSourceId;
-          const isMultilingual = multilingualIds.has(s.id);
+              const isActive = s.id === currentSourceId;
+              const isMultilingual = s.hasLanguageOptions || multilingualIds.has(s.id);
           return (
             <button
               key={s.id}
@@ -104,7 +104,7 @@ export function QuickServerStrip({
           >
             {orderedStrip.map((s) => {
               const isActive = s.id === currentSourceId;
-              const isMultilingual = multilingualIds.has(s.id);
+              const isMultilingual = s.hasLanguageOptions || multilingualIds.has(s.id);
               return (
                 <button
                   key={s.id}

@@ -18,7 +18,7 @@ export async function fetchTMDB<T>(
   const queryString = queryParams.toString();
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
   // ── Revalidation strategy ────────────────────────────────────────────────
   // - Search endpoints: 86400s (24h)
@@ -48,9 +48,13 @@ export async function fetchTMDB<T>(
     } catch (err: unknown) {
       if (process.env.NODE_ENV === 'development') {
         const msg = err instanceof Error ? err.message : 'Unknown error';
-        console.error(`[TMDB ❌] ${path} | ${msg}`);
+        if (!msg.includes('404')) {
+          console.error(`[TMDB ❌] ${path} | ${msg}`);
+        }
       }
       throw err;
+    } finally {
+      clearTimeout(timeout);
     }
   };
 
@@ -150,8 +154,8 @@ const filterUnreleased = (results: any[]) => {
 };
 
 export const tmdb = {
-  getTrending: async (type: "all" | "movie" | "tv" | "person" = "all") =>
-    fetchTMDB<TMDBResponse<any>>(`/trending/${type}/week`).then(res => {
+  getTrending: async (type: "all" | "movie" | "tv" | "person" = "all", page: number = 1) =>
+    fetchTMDB<TMDBResponse<any>>(`/trending/${type}/week`, { page: page.toString() }).then(res => {
       res.results = filterUnreleased(res.results);
       return res;
     }).catch(() => ({
@@ -260,6 +264,16 @@ export const tmdb = {
       total_pages: 1,
       total_results: 12,
     })),
+  getSimilar: async (type: "movie" | "tv", id: string, page: string = "1") =>
+    fetchTMDB<TMDBResponse<Media>>(`/${type}/${id}/similar`, { page }).then(res => {
+      res.results = filterUnreleased(res.results);
+      return res;
+    }).catch(() => ({
+      page: 1,
+      results: [],
+      total_pages: 1,
+      total_results: 0,
+    })),
   discoverGlobalProvider: async (providerId: string, baseRegion: string = 'US') => {
     // Fetch from top regions to create a rich global catalog
     const regions = [baseRegion, 'US', 'IN', 'GB'];
@@ -316,7 +330,12 @@ export const tmdb = {
   getImages: async (type: "movie" | "tv", id: string) =>
     fetchTMDB<any>(`/${type}/${id}/images`, { include_image_language: "en,null" }).catch(() => null),
   getCollection: async (id: string, forceProxy?: boolean) =>
-    fetchTMDB<any>(`/collection/${id}`, {}, { forceProxy }).catch(() => null),
+    fetchTMDB<any>(`/collection/${id}`, {}, { forceProxy }).then(res => {
+      if (res && res.parts) {
+        res.parts = filterUnreleased(res.parts);
+      }
+      return res;
+    }).catch(() => null),
   searchCollections: async (query: string, page: number = 1) =>
     fetchTMDB<TMDBResponse<any>>("/search/collection", { query, page: page.toString() }).catch(() => ({
       page: 1,

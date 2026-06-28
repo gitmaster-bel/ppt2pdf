@@ -36,12 +36,47 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
     return () => observer.disconnect();
   }, []);
 
+  // Cache dimensions to avoid layout thrashing
+  const dimensions = useRef({ width: 0, client: 0 });
+
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    
+    if (dimensions.current.client === 0) {
+      dimensions.current.width = el.scrollWidth;
+      dimensions.current.client = el.clientWidth;
+    }
+    
+    const maxScroll = dimensions.current.width - dimensions.current.client;
     setCanScrollLeft(el.scrollLeft > 10);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+    setCanScrollRight(el.scrollLeft < maxScroll - 10);
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      dimensions.current.client = 0;
+      checkScroll();
+    };
+    handleResize();
+    const timer = setTimeout(handleResize, 500);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [checkScroll, items]);
+
+  const isScrolling = useRef(false);
+  const handleScroll = useCallback(() => {
+    if (!isScrolling.current) {
+      isScrolling.current = true;
+      requestAnimationFrame(() => {
+        checkScroll();
+        isScrolling.current = false;
+      });
+    }
+  }, [checkScroll]);
 
   const scroll = (dir: 'left' | 'right') => {
     const el = scrollRef.current;
@@ -110,10 +145,10 @@ export function ProviderHeroShelf({ provider, title, items }: ProviderHeroShelfP
         {/* Scroll container */}
         <div
           ref={scrollRef}
-          onScroll={checkScroll}
+          onScroll={handleScroll}
           onPointerDown={() => setHasInteracted(true)}
-          className="w-full overflow-x-auto no-scrollbar scroll-smooth"
-          style={{ overscrollBehaviorX: 'contain' }}
+          className="w-full overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth"
+          style={{ overscrollBehaviorX: 'contain', willChange: 'transform', transform: 'translateZ(0)' }}
         >
           <div className="flex gap-3 md:gap-4 px-4 md:px-14 pb-8 w-max">
             {items.map((item, index) => (

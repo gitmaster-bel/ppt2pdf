@@ -17,29 +17,31 @@ export function BackButton({ href }: BackButtonProps) {
       const sessionStack = sessionStorage.getItem('app_history_stack');
       const stack: string[] = sessionStack ? JSON.parse(sessionStack) : [];
       
-      // If we have more than 1 item in our internal app stack, 
-      // we can safely go back natively without leaving the app.
       if (stack.length > 1) {
         sessionStorage.setItem('is_back_nav', 'true');
-        router.back();
+        // Prefer window.history.back for immediate native response, 
+        // fallback to router.back()
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          router.back();
+        }
         return;
       }
     } catch (e) {
-      console.error('Failed to navigate back using history stack:', e);
+      console.error('Failed to navigate back:', e);
     }
 
-    // Fallback if no internal history (e.g. opened directly via a link)
-    // We use router.replace to prevent trapping the user in a forward-history loop
-    if (href) {
+    // Smart fallbacks based on pathname if history stack is empty
+    if (pathname.startsWith('/collection/')) {
+      const referrer = sessionStorage.getItem('zivox_collection_referrer');
+      router.replace(referrer || '/collections');
+    } else if (pathname.startsWith('/person/')) {
+      router.replace('/');
+    } else if (href) {
       router.replace(href);
     } else {
-      if (pathname.startsWith('/providers/')) {
-        router.replace('/providers');
-      } else if (pathname.startsWith('/collection/')) {
-        router.replace('/collections');
-      } else {
-        router.replace('/');
-      }
+      router.replace('/');
     }
   };
 

@@ -140,6 +140,86 @@ const UNUSED_RESOURCES = [
     url: (type: 'movie' | 'tv') => "https://trailers.videasy.net/getOldestTrailer?id=tt{imdbId}",
     type: "api",
     description: "Fetches trailer links by IMDB ID"
+  },
+  {
+    name: "VidPlus Pro",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://player2.vidplus.pro/embed/movie/{tmdbId}?autoplay=true" : "https://player2.vidplus.pro/embed/tv/{tmdbId}/{season}/{episode}?autoplay=true",
+    type: "iframe",
+    description: "New VidPlus Pro embed"
+  },
+  {
+    name: "VidPlus To",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://player.vidplus.to/embed/movie/{tmdbId}?autoplay=true" : "https://player.vidplus.to/embed/tv/{tmdbId}/{season}/{episode}?autoplay=true",
+    type: "iframe",
+    description: "VidPlus alternative domain"
+  },
+  {
+    name: "Autoembed CC",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://player.autoembed.cc/embed/movie/tt{imdbId}?server=2" : "https://player.autoembed.cc/embed/tv/tt{imdbId}/{season}/{episode}?server=2",
+    type: "iframe",
+    description: "Autoembed .cc proxy"
+  },
+  {
+    name: "YTHD",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://ythd.org/embed/{tmdbId}" : "https://ythd.org/embed/{tmdbId}/{season}-{episode}",
+    type: "iframe",
+    description: "YTHD streaming embed"
+  },
+  
+  {
+    name: "VidBox Dev",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://vidbox.dev/api/hdmovies/embed?type=movie&id=tt{imdbId}" : "https://vidbox.dev/api/hdmovies/embed?type=tv&id=tt{imdbId}&s={season}&e={episode}",
+    type: "iframe",
+    description: "Vidbox Dev iframe"
+  },
+  {
+    name: "Flicky Host",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://flicky.host/embed/movie/?id={tmdbId}" : "https://flicky.host/embed/tv/?id={tmdbId}/{season}/{episode}",
+    type: "iframe",
+    description: "Flicky host embed"
+  },
+  {
+    name: "VidSrc VIP",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://vidsrc.vip/embed/movie/{tmdbId}" : "https://vidsrc.vip/embed/tv/{tmdbId}/{season}/{episode}",
+    type: "iframe",
+    description: "VidSrc VIP proxy"
+  },
+  {
+    name: "111Movies COM",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://111movies.com/movie/{tmdbId}" : "https://111movies.com/tv/{tmdbId}/{season}/{episode}",
+    type: "iframe",
+    description: "111Movies alternative domain"
+  },
+  {
+    name: "MoviesAPI Club",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://moviesapi.club/movie/{tmdbId}" : "https://moviesapi.club/tv/{tmdbId}/{season}/{episode}",
+    type: "iframe",
+    description: "MoviesAPI Club embed"
+  },
+  {
+    name: "VidSrc RIP",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://vidsrc.rip/embed/movie/{tmdbId}" : "https://vidsrc.rip/embed/tv/{tmdbId}/{season}/{episode}",
+    type: "iframe",
+    description: "VidSrc RIP proxy"
+  },
+  
+  {
+    name: "GoDrivePlayer",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://godriveplayer.com/player.php?type=movie&tmdb={tmdbId}" : "https://godriveplayer.com/player.php?type=series&tmdb={tmdbId}&season={season}&episode={episode}",
+    type: "iframe",
+    description: "GoDrivePlayer PHP embed"
+  },
+  {
+    name: "VidSrc CC v2",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://vidsrc.cc/v2/embed/movie/{tmdbId}" : "https://vidsrc.cc/v2/embed/tv/{tmdbId}/{season}/{episode}",
+    type: "iframe",
+    description: "VidSrc CC v2 embed"
+  },
+  {
+    name: "VixSrc Direct",
+    url: (type: 'movie' | 'tv') => type === 'movie' ? "https://vixsrc.to/movie/{tmdbId}" : "https://vixsrc.to/tv/{tmdbId}/{season}/{episode}",
+    type: "iframe",
+    description: "VixSrc non-embed direct route"
   }
 ];
 
@@ -155,6 +235,7 @@ function TestSourcesClient() {
   const [type, setType] = useState<'movie' | 'tv'>(initialType);
   const [season, setSeason] = useState(initialSeason);
   const [episode, setEpisode] = useState(initialEpisode);
+  const [testLang, setTestLang] = useState('en');
 
   const [selectedSourceId, setSelectedSourceId] = useState(sources[0].id);
   const [useSandbox, setUseSandbox] = useState(true);
@@ -224,7 +305,7 @@ function TestSourcesClient() {
           .replace(/\{type\}/g, type);
     }
     
-    return currentSource ? currentSource.url(type, id, season, episode) : '';
+    return currentSource ? currentSource.url(type, id, season, episode, undefined, testLang) : '';
   };
 
   const getProxiedEmbedUrl = (url: string) => {
@@ -321,7 +402,7 @@ function TestSourcesClient() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">TMDB ID</label>
                   <input
@@ -344,6 +425,30 @@ function TestSourcesClient() {
                       placeholder="12879782"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Language</label>
+                  <select
+                    value={testLang}
+                    onChange={e => setTestLang(e.target.value)}
+                    className="w-full bg-black/50 border border-zinc-800 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-500 transition-colors"
+                  >
+                    <option value="en">English (en)</option>
+                    <option value="hindi">Hindi (hindi)</option>
+                    <option value="telugu">Telugu (telugu)</option>
+                    <option value="tamil">Tamil (tamil)</option>
+                    <option value="malayalam">Malayalam (malayalam)</option>
+                    <option value="kannada">Kannada (kannada)</option>
+                    <option value="ja">Japanese (ja)</option>
+                    <option value="ko">Korean (ko)</option>
+                    <option value="zh">Mandarin (zh)</option>
+                    <option value="es">Spanish (es)</option>
+                    <option value="fr">French (fr)</option>
+                    <option value="de">German (de)</option>
+                    <option value="ru">Russian (ru)</option>
+                    <option value="ar">Arabic (ar)</option>
+                  </select>
                 </div>
               </div>
 

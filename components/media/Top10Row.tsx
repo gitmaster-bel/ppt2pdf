@@ -37,12 +37,34 @@ export function Top10Row({ title, items }: Top10RowProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+    // Cache dimensions to avoid layout thrashing
+  const dimensions = useRef({ width: 0, client: 0 });
+
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    
+    if (dimensions.current.client === 0) {
+      dimensions.current.width = el.scrollWidth;
+      dimensions.current.client = el.clientWidth;
+    }
+    
+    const maxScroll = dimensions.current.width - dimensions.current.client;
     setCanScrollLeft(el.scrollLeft > 20);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 15);
+    setCanScrollRight(el.scrollLeft < maxScroll - 15);
   }, []);
+
+  // Throttle scroll events via requestAnimationFrame for 60fps buttery smooth scrolling
+  const isScrolling = useRef(false);
+  const handleScroll = useCallback(() => {
+    if (!isScrolling.current) {
+      isScrolling.current = true;
+      requestAnimationFrame(() => {
+        checkScroll();
+        isScrolling.current = false;
+      });
+    }
+  }, [checkScroll]);
 
   const scroll = (dir: 'left' | 'right') => {
     const el = scrollRef.current;
@@ -106,13 +128,15 @@ export function Top10Row({ title, items }: Top10RowProps) {
 
         <div
           ref={scrollRef}
-          onScroll={checkScroll}
-          className="flex gap-3 md:gap-4 overflow-x-auto  no-scrollbar scroll-smooth overscroll-x-contain"
+          onScroll={handleScroll}
+          className="flex gap-3 md:gap-4 overflow-x-auto overflow-y-hidden  no-scrollbar scroll-smooth overscroll-x-contain"
           style={{
             paddingLeft: 'clamp(1rem, 3.5vw, 3.5rem)',
             paddingRight: 'clamp(1rem, 3.5vw, 3.5rem)',
             paddingTop: '32px',
             paddingBottom: '24px',
+            willChange: 'transform',
+            transform: 'translateZ(0)',
             touchAction: 'pan-x pan-y',
           }}
         >

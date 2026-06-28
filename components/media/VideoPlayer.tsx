@@ -639,7 +639,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   const activeThemeHex = themeHexMap[preferences.theme || 'violet'] || '7c3aed';
 
   const source = getSource(currentSourceId);
-  const embedUrl = source.url(type, id, season, episode, activeThemeHex);
+  const embedUrl = source.url(type, id, season, episode, activeThemeHex, preferences.serverLanguage || 'en');
 
   const sandboxAttrs = useSandbox 
     ? source.sandboxFlags 
@@ -813,6 +813,8 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
               isFav={isFav}
               toggleFavorite={() => toggleFavorite({ id, type, title: title || '', poster, release_date: releaseYear })}
               toggleFullscreen={toggleFullscreen}
+              serverLanguage={preferences.serverLanguage || 'en'}
+              updatePreferences={updatePreferences}
             />
             <QuickServerStrip
               isFullscreen={isFullscreen}
@@ -852,6 +854,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
                     : 'pointer-events-auto opacity-100'
               }`}
               allowFullScreen
+              allow="autoplay; fullscreen; picture-in-picture; xr-spatial-tracking; clipboard-write; encrypted-media; gyroscope; accelerometer"
               referrerPolicy="strict-origin-when-cross-origin"
               sandbox={sandboxAttrs}
             />

@@ -373,7 +373,7 @@ export const MediaCard = memo(function MediaCard({
           </div>
 
           {/* Progress bar */}
-          {media.progress !== undefined && media.progress > 0 && (
+          {media.contextType === 'history' && media.progress !== undefined && media.progress > 0 && (
             <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 z-30">
               <div
                 className="h-full rounded-r-full"

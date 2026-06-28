@@ -1,4 +1,4 @@
-import { Share2, Shield, ShieldOff, Heart, Maximize, Server } from 'lucide-react';
+import { Share2, Shield, ShieldOff, Heart, Maximize, Server, Globe } from 'lucide-react';
 import { Source } from '@/lib/sources';
 
 interface PlayerTopBarProps {
@@ -13,6 +13,8 @@ interface PlayerTopBarProps {
   isFav: boolean;
   toggleFavorite: () => void;
   toggleFullscreen: () => void;
+  serverLanguage: string;
+  updatePreferences: (prefs: any) => void;
 }
 
 export function PlayerTopBar({
@@ -26,7 +28,9 @@ export function PlayerTopBar({
   showToast,
   isFav,
   toggleFavorite,
-  toggleFullscreen
+  toggleFullscreen,
+  serverLanguage,
+  updatePreferences
 }: PlayerTopBarProps) {
   return (
     <div className="relative flex items-center justify-between gap-2 px-2.5 py-2 bg-void-950 border-b border-zinc-800/60 shrink-0 w-full">
@@ -50,6 +54,38 @@ export function PlayerTopBar({
           <div className="h-4 w-px bg-zinc-800" />
           <span className="text-xs font-semibold text-zinc-300 truncate">{source.publicName}</span>
           {source.noAds && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded shrink-0">✓ No Ads</span>}
+          {source.hasLanguageOptions && (
+            <>
+              <div className="h-4 w-px bg-zinc-800 ml-1" />
+              <div className="relative flex items-center group">
+                <Globe size={12} className="text-brand-500 absolute left-2 pointer-events-none" />
+                <select
+                  value={serverLanguage}
+                  onChange={(e) => updatePreferences({ serverLanguage: e.target.value })}
+                  className="appearance-none bg-void-900 border border-zinc-800 hover:border-brand-500/50 text-white text-[10px] font-bold uppercase tracking-wider pl-6 pr-6 py-1 rounded-md focus:outline-none focus:border-brand-500 cursor-pointer transition-colors shadow-sm"
+                  title="Select Dub/Sub Language"
+                >
+                  <option value="en">English</option>
+                  <option value="hindi">Hindi</option>
+                  <option value="telugu">Telugu</option>
+                  <option value="tamil">Tamil</option>
+                  <option value="malayalam">Malayalam</option>
+                  <option value="kannada">Kannada</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="zh">Mandarin</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="ru">Russian</option>
+                  <option value="ar">Arabic</option>
+                </select>
+                <div className="absolute right-2 pointer-events-none text-zinc-500 group-hover:text-white transition-colors">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

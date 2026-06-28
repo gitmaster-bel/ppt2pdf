@@ -1,0 +1,99 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { usePreferences } from '@/hooks/usePreferences';
+import { HorizontalRow } from './HorizontalRow';
+import { getRegionalTrendingAction } from '@/app/actions';
+import { Media } from '@/types/tmdb';
+import { useRouter } from 'next/navigation';
+
+// Map of ISO 3166-1 alpha-2 country codes to localized row titles.
+// Global countries (US, GB, CA, AU) are intentionally omitted to avoid duplication with default trending rows.
+const REGIONAL_TITLES: Record<string, string> = {
+  IN: 'Trending in India',
+  PK: 'Trending in Pakistan',
+  JP: 'Trending in Japan',
+  KR: 'Trending in South Korea',
+  BR: 'Trending in Brazil',
+  ES: 'Trending in Spain',
+  FR: 'Trending in France',
+  DE: 'Trending in Germany',
+  IT: 'Trending in Italy',
+  MX: 'Trending in Mexico',
+  PH: 'Trending in Philippines',
+  TH: 'Trending in Thailand',
+  ID: 'Trending in Indonesia',
+  NG: 'Trending in Nigeria',
+  TR: 'Trending in Turkey',
+};
+
+export function RegionalContent() {
+  const router = useRouter();
+  const { preferences, updatePreferences } = usePreferences();
+  const [content, setContent] = useState<Media[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [rowTitle, setRowTitle] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const detectAndFetch = async () => {
+      let countryCode = preferences.country;
+
+      // 1. Auto-detect location if not already done
+      if (!preferences.locationAutoDetected) {
+        try {
+          const ipRes = await fetch('https://ipapi.co/json/');
+          const ipData = await ipRes.json();
+          if (ipData && ipData.country_code) {
+            countryCode = ipData.country_code;
+            updatePreferences({ country: countryCode, locationAutoDetected: true });
+            router.refresh();
+          }
+        } catch (e) {
+          console.warn('IP detection failed, using fallback country:', countryCode);
+        }
+      }
+
+      // 2. Check if country is in our highly-localized targets
+      const localizedTitle = REGIONAL_TITLES[countryCode];
+      if (!localizedTitle) {
+        if (isMounted) setLoading(false); // Global country, don't show the row
+        return;
+      }
+
+      // 3. Fetch regional content
+      try {
+        const data = await getRegionalTrendingAction(countryCode);
+        if (isMounted) {
+          if (data && data.results && data.results.length > 0) {
+            setContent(data.results as Media[]);
+            setRowTitle(localizedTitle);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch regional content', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    detectAndFetch();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [preferences.country, preferences.locationAutoDetected]); // depend on country directly
+
+  if (loading || content.length === 0) return null;
+
+  return (
+    <div className="w-full">
+      <HorizontalRow
+        title={rowTitle}
+        subtitle="Blockbusters & Hits from your region"
+        items={content}
+        // seeAllHref can be added later if a dedicated regional page is built
+      />
+    </div>
+  );
+}

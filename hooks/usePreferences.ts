@@ -11,6 +11,7 @@ export type Preferences = {
   locationAutoDetected?: boolean;
   theme: 'red' | 'blue' | 'violet' | 'emerald' | 'mono' | 'rose' | 'amber' | 'cyan' | 'silicon';
   dataSaver?: boolean;
+  serverLanguage?: string;
 };
 
 const defaultPreferences: Preferences = {
@@ -22,6 +23,7 @@ const defaultPreferences: Preferences = {
   country: 'US',
   locationAutoDetected: false,
   theme: 'violet',
+  serverLanguage: 'en',
 };
 
 export function usePreferences() {
@@ -31,7 +33,20 @@ export function usePreferences() {
     const loadPrefs = () => {
       const data = storage.get();
       if (data.preferences) {
+        // Migration: Purge banned Indian languages from legacy saves
+        const banned = ['bn', 'mr', 'gu', 'pa'];
+        if (data.preferences.originalLanguage && Array.isArray(data.preferences.originalLanguage)) {
+          const originalLen = data.preferences.originalLanguage.length;
+          data.preferences.originalLanguage = data.preferences.originalLanguage.filter((l: string) => !banned.includes(l));
+          if (data.preferences.originalLanguage.length !== originalLen) {
+            storage.set(data);
+          }
+        }
+
         setPreferences({ ...defaultPreferences, ...data.preferences });
+        if (typeof document !== 'undefined' && !document.cookie.includes(`user_country=${data.preferences.country}`)) {
+          document.cookie = `user_country=${data.preferences.country || 'US'}; max-age=31536000; path=/`;
+        }
       }
     };
     
@@ -49,6 +64,10 @@ export function usePreferences() {
     data.preferences = updated;
     storage.set(data);
     setPreferences(updated);
+    
+    if (newPrefs.country && typeof document !== 'undefined') {
+      document.cookie = `user_country=${newPrefs.country}; max-age=31536000; path=/`;
+    }
     
     // Dispatch global event so other components using this hook update immediately
     setTimeout(() => {

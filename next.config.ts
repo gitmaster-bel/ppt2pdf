@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 604800, // 7 days
     deviceSizes: [640, 828, 1080, 1200, 1920],
     imageSizes: [48, 96, 192, 256, 384],
+    qualities: [75, 85],
   },
   turbopack: {},
   async headers() {

@@ -165,7 +165,16 @@ export async function discoverMedia(type: "movie" | "tv", params: Record<string,
       next: { revalidate: 1800 }, // 30 min data-layer cache
     });
     if (!res.ok) return { results: [], total_pages: 1, total_results: 0 };
-    return res.json();
+    const data = await res.json();
+    if (data.results) {
+      const now = new Date().toISOString().split('T')[0];
+      data.results = data.results.filter((item: any) => {
+        const date = item.release_date || item.first_air_date;
+        if (!date) return false;
+        return date <= now;
+      });
+    }
+    return data;
   } catch {
     return { results: [], total_pages: 1, total_results: 0 };
   }
@@ -317,8 +326,27 @@ export async function getCollectionsAction(ids: number[], forceProxy: boolean = 
 // Now uses the static curated list — zero live TMDB calls, instant response.
 export async function getDynamicCollectionsAction(_pageChunk: number) {
   try {
-    const { getCuratedCollections } = await import('@/lib/collectionsData');
-    const collections = await getCuratedCollections();
+    const { getCuratedCollectionsPool } = await import('@/lib/collectionsData');
+    const { tmdb } = await import('@/lib/tmdb');
+    const { uniqueIds, CURATED_TAGLINES } = getCuratedCollectionsPool();
+
+    // Chunk the fetches to prevent network exhaustion
+    const chunkSize = 20;
+    const rawCollections = [];
+    for (let i = 0; i < uniqueIds.length; i += chunkSize) {
+      const chunk = uniqueIds.slice(i, i + chunkSize);
+      const res = await Promise.all(chunk.map(id => tmdb.getCollection(id.toString()).catch(() => null)));
+      rawCollections.push(...res);
+    }
+
+    const collections = rawCollections.filter(Boolean).map((c: any) => ({
+      id: c.id,
+      name: c.name.replace(' Collection', ''),
+      backdrop: c.backdrop_path || (c.parts && c.parts.length > 0 ? c.parts[0].backdrop_path : null),
+      poster: c.poster_path,
+      movieCount: c.parts?.length || 0,
+      tagline: CURATED_TAGLINES[c.id] || ''
+    }));
 
     // Map to the shape the collections page expects
     const results = collections.map(c => ({
@@ -513,5 +541,95 @@ export async function searchProviderAction(
       console.error('Provider search failed:', e);
     }
     return { page: 1, results: [], total_pages: 1, total_results: 0 };
+  }
+}
+
+
+export async function getRegionalTrendingAction(countryCode: string) {
+  try {
+    const { tmdb } = await import('@/lib/tmdb');
+    const [movie1, movie2, tv1, tv2, targetTvDetails] = await Promise.all([
+      tmdb.discover('movie', { with_origin_country: countryCode, sort_by: 'popularity.desc', 'vote_count.gte': '10', page: '1' }).catch(() => null),
+      tmdb.discover('movie', { with_origin_country: countryCode, sort_by: 'popularity.desc', 'vote_count.gte': '10', page: '2' }).catch(() => null),
+      tmdb.discover('tv', { with_origin_country: countryCode, sort_by: 'popularity.desc', 'vote_count.gte': '10', page: '1' }).catch(() => null),
+      tmdb.discover('tv', { with_origin_country: countryCode, sort_by: 'popularity.desc', 'vote_count.gte': '10', page: '2' }).catch(() => null),
+      countryCode.toUpperCase() === 'IN' ? tmdb.getDetails('tv', '262838').catch(() => null) : Promise.resolve(null)
+    ]);
+
+    const movies = [...(movie1?.results || []), ...(movie2?.results || [])].slice(0, 20);
+    const shows = [...(tv1?.results || []), ...(tv2?.results || [])].slice(0, 20);
+    
+    let combined: any[] = [];
+    const maxLen = Math.max(movies.length, shows.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (movies[i]) combined.push({ ...movies[i], media_type: 'movie' });
+      if (shows[i]) combined.push({ ...shows[i], media_type: 'tv' });
+    }
+
+    // De-duplicate
+    combined = combined.filter((item, index, self) =>
+      index === self.findIndex((t) => t.id === item.id)
+    );
+
+    // Injection of TV 262838 in India
+    if (targetTvDetails && countryCode.toUpperCase() === 'IN') {
+      const targetTv = { ...targetTvDetails, media_type: 'tv' };
+      // Filter out if already in array
+      combined = combined.filter(item => item.id !== targetTv.id);
+      // Place in first 5 slots (index 0 to 4) randomly
+      const insertIdx = Math.floor(Math.random() * Math.min(5, combined.length + 1));
+      combined.splice(insertIdx, 0, targetTv);
+    }
+
+    return { results: combined };
+  } catch (e) {
+    return { results: [] };
+  }
+}
+
+export async function getHistorySimilarsAction(historyData: { id: string, type: 'movie'|'tv', progress: number }[]) {
+  try {
+    const { tmdb } = await import('@/lib/tmdb');
+    // 1. Filter out items watched > 50%
+    const validHistory = historyData.filter(h => h.progress < 0.5).slice(0, 5); // Limit to top 5 recent valid ones
+    
+    const allSimilar: any[] = [];
+    
+    // 2. Fetch details AND similars for each
+    await Promise.all(validHistory.map(async (seed) => {
+      try {
+        // We need the original language of the seed to match
+        const details = await tmdb.getDetails(seed.type, seed.id);
+        const originalLang = details?.original_language;
+        
+        const similarsRes = await tmdb.getSimilar(seed.type, seed.id);
+        if (similarsRes && similarsRes.results && similarsRes.results.length > 0) {
+          // Filter similars by same language
+          let matching = similarsRes.results;
+          if (originalLang) {
+             matching = matching.filter(m => m.original_language === originalLang);
+          }
+          
+          if (matching.length > 0) {
+            // Sort by vote average or popularity
+            matching.sort((a, b) => b.vote_average - a.vote_average);
+            // Pick ONLY ONE top rated
+            allSimilar.push(matching[0]);
+          }
+        }
+      } catch (e) {
+        // ignore individual failures
+      }
+    }));
+    
+    // Deduplicate
+    const unique = Array.from(new Map(allSimilar.map(item => [item.id, item])).values());
+    
+    // Final sort
+    unique.sort((a, b) => b.popularity - a.popularity);
+    
+    return unique;
+  } catch (e) {
+    return [];
   }
 }

@@ -127,12 +127,31 @@ export const COLLECTION_CATEGORIES: Record<string, number[]> = {
   ]
 };
 
-export async function getCuratedCollections() {
+export function getCuratedCollectionsPool() {
   const collectionIds = [
+    // Global
     263, 119, 230, 131292, 1241, 84, 10, 404609, 87359, 645, 2344, 328, 10194, 173710, 9485,
-    350309, 44976, 246091, 619537, 210303, 131635, 8650, 295, 531330
+    8650, 295, 531330, 131635, 344830, 264, 304, 528, 556, 86311, 131295, 131296, 284433, 531241, 618529, 8537, 121938, 8091, 948485, 151, 468222, 120794, 1709, 9744, 535313, 1570, 1575, 748, 2602, 31562, 391860, 313086, 86055, 553717, 14890, 8580, 86066, 488924, 720879, 14740, 90863, 70068, 1069584, 295130, 2150, 77816, 89137, 8354, 656, 8864, 727761, 325470, 1022790, 544669, 85943, 1733, 17235, 645,
+    
+    // Regional (India)
+    350309, 44976, 246091, 483464, 142015, 485645, 256433, 44722, 921781, 977824, 506940, 259256, 1029834, 142022, 657153, 1213248, 489399, 557748, 282971, 605068, 20970, 343944, 244500, 1397777, 341455, 505479, 1639816, 736592,
+    
+    // Regional (Japan)
+    210303, 425164, 23616, 39199, 148065, 117354, 247028, 263101, 143302, 374509, 374511, 96850, 386410,
+    
+    // Regional (Korea)
+    619537, 619802, 531566, 619533, 660359, 1517098, 736824, 707622, 535790, 620873, 1185967, 421904,
+    
+    // Regional (Spain)
+    74508, 388180, 2248, 624920, 492969, 669836, 9649, 778680, 86027, 117354,
+
+    // Regional (Brazil)
+    119581, 455278, 342577, 743415, 369380, 429234, 620873, 386410, 263101, 148065, 39199
   ];
-  const rawCollections = await Promise.all(collectionIds.map(id => tmdb.getCollection(id.toString())));
+
+  // Deduplicate
+  const uniqueIds = Array.from(new Set(collectionIds));
+
   
   const CURATED_TAGLINES: Record<number, string> = {
     263: "Nolan's definitive superhero epic", 119: "The greatest fantasy trilogy", 230: "Cinema's greatest achievement",
@@ -141,16 +160,119 @@ export async function getCuratedCollections() {
     645: "60 years of the greatest spy", 2344: "The sci-fi landmark", 328: "30 years of dino carnage",
     10194: "Pixar's timeless masterpiece", 173710: "The reboot done right", 9485: "Family. Always.",
     350309: "India's greatest epic", 44976: "High-octane Bollywood heist", 246091: "India's beloved superhero",
-    619537: "Korean zombie masterpiece", 210303: "Japanese mecha phenomenon", 131635: "May the odds be ever in your favor",
-    8650: "Robots in disguise", 295: "A pirate's life for me", 531330: "The titans clash"
+    483464: "Bollywood's biggest comedy franchise", 142015: "Crazy family drama & comedy", 485645: "The ultimate Indian spy universe",
+    619537: "Korean zombie masterpiece", 619802: "Ma Seok-do's brutal justice", 210303: "Japanese mecha phenomenon", 
+    425164: "The iconic anime saga", 23616: "The path of the ninja",
+    131635: "May the odds be ever in your favor", 8650: "Robots in disguise", 295: "A pirate's life for me", 
+    531330: "The titans clash", 344830: "The intense romance trilogy",
+    74508: "Spanish found-footage terror", 119581: "Brazil's explosive crime saga",
+    264: "Time-traveling adventures in a DeLorean",
+    304: "The slickest heist crew ever assembled",
+    528: "Humanity's war against the machines",
+    556: "With great power comes great responsibility",
+    86311: "Earth's mightiest heroes, united",
+    131295: "The star-spangled supersoldier saga",
+    131296: "The God of Thunder strikes again",
+    284433: "Intergalactic misfits save the universe",
+    531241: "Your friendly neighborhood hero's MCU journey",
+    618529: "Sorcery, multiverses, and pure madness",
+    8537: "The original superhero's legendary arc",
+    121938: "An unexpected journey through Middle-earth",
+    8091: "In space, no one can hear you scream",
+    948485: "A darker, grittier Dark Knight rises",
+    151: "Boldly going where no one has gone before",
+    468222: "The world's most extraordinary superhero family",
+    120794: "Burton and Schumacher's Gothic Gotham saga",
+    1709: "When apes ruled and humans cowered",
+    9744: "Marvel's first family of superheroes",
+    535313: "Monsters of legend clash on the big screen",
+    256433: "Salman Khan's fearless cop universe",
+    44722: "Gangster with a heart of gold",
+    921781: "The fiery rise of a sandalwood king",
+    977824: "Bollywood's iconic haunted horror comedy",
+    506940: "Tiger Shroff's explosive rebel action saga",
+    259256: "High-stakes betrayal and Bollywood thrills",
+    1029834: "A father's desperate bid to save his family",
+    142022: "Bollywood's most beloved comedy trio",
+    657153: "Rocky's blood-soaked rise to power",
+    1213248: "Brotherhood forged in fire and war",
+    39199: "The tiny detective with a giant mind",
+    148065: "A robotic cat's magical adventures",
+    117354: "Japan's naughtiest kid saves the day",
+    247028: "Japan's legendary wandering swordsman",
+    263101: "The iconic 90s magical girl trilogy",
+    143302: "The mecha saga that defined a generation",
+    374509: "The original kaiju monster epics",
+    374511: "Japan's iconic monster reborn for a new era",
+    96850: "Humanity's last stand against the Angels",
+    386410: "Goku's legendary journey begins here",
+    531566: "Korea's epic journey through the afterlife",
+    619533: "Cloned warriors and science gone wrong",
+    660359: "Korea's greatest naval hero on screen",
+    1517098: "Korea's sweeping saga of sacrifice and love",
+    736824: "North-South detectives partner up for justice",
+    707622: "Conan's live-action mystery drama specials",
+    535790: "Kaiju apocalypse 20,000 years in the future",
+    620873: "Super Saiyan battles beyond all limits",
+    1185967: "The world's greatest thief strikes again",
+    421904: "The Dark Knight's animated legacy collected",
+    388180: "Spain's funniest north-meets-south romcom",
+    2248: "Spain's hilariously corrupt detective saga",
+    624920: "Spain's beloved bumbling secret agents",
+    492969: "Spain's animated Indiana Jones adventure",
+    669836: "Spain's chaotic family comedy franchise",
+    9649: "Rodriguez's explosive guitar-case trilogy",
+    778680: "Spain's beloved animated comic classics",
+    86027: "A magical world of wishes and wonders",
+    455278: "Brazil's most beloved comedy mom",
+    342577: "A lottery win turns life upside down",
+    743415: "Brazil's hilarious sex shop comedy saga",
+    369380: "Brazil's iconic body-swap comedy trilogy",
+    429234: "Brazil's cult horror icon haunts forever",
+    1570: "Wrong place, wrong time, right hero",
+    1575: "Philadelphia's underdog fights to the top",
+    748: "Mutants fighting a world that fears them",
+    2602: "Ghostface never truly goes away",
+    31562: "A spy who forgot — and remembered everything",
+    391860: "Manners maketh the deadliest spy",
+    313086: "The Warrens face unspeakable terror",
+    86055: "Protecting Earth one alien at a time",
+    553717: "Apollo's son fights for his legacy",
+    14890: "Miami's baddest cops ride or die",
+    8580: "Wax on, wax off — legends never die",
+    86066: "Gru's chaotic family defies all evil",
+    488924: "A Peruvian bear wins London's heart",
+    720879: "Gotta go fast and save the world",
+    14740: "Zoo animals gone wonderfully wild",
+    90863: "East meets West at breakneck speed",
+    70068: "Wing Chun's legendary grandmaster rises",
+    1069584: "Rome's arena demands blood and glory",
+    295130: "Escape the maze, face the scorched truth",
+    2150: "Happily ever after was never this messy",
+    77816: "This panda is the chosen one",
+    89137: "A Viking and his dragon conquer everything",
+    8354: "A mammoth, sloth and tiger survive everything",
+    656: "Jigsaw wants to play a deadly game",
+    8864: "Death has a design — and it never stops",
+    489399: "Delhi's lovable idiots strike lucky gold",
+    557748: "India's underdog lawyer fights for justice",
+    282971: "Love, heartbreak and music bound forever",
+    605068: "Mumbai's underworld dynasties in bloody war",
+    20970: "India's Godfather commands absolute power",
+    343944: "Tamil Nadu's fearless lion roars loudly",
+    244500: "Coal mafia's brutal multigenerational blood feud",
+    1397777: "An incorruptible taxman vs ruthless power",
+    341455: "Small-town romance, very big complications",
+    505479: "Three guys, three girls, zero logic",
+    727761: "Art the Clown never stops killing",
+    325470: "Everything is awesome when built in bricks",
+    1022790: "Every emotion lives inside Riley's mind",
+    544669: "Yellow, chaotic, and utterly unstoppable",
+    85943: "History comes shockingly alive after dark",
+    1733: "Ancient curses and relentless undead terror",
+    17235: "Hell's own hero fights for humankind",
+    736592: "Rani Mukerji battles child trafficking alone"
   };
 
-  return rawCollections.filter(Boolean).map(c => ({
-    id: c.id,
-    name: c.name.replace(' Collection', ''), // Clean up name
-    backdrop: c.backdrop_path,
-    poster: c.poster_path,
-    movieCount: c.parts?.length || 0,
-    tagline: CURATED_TAGLINES[c.id] || ''
-  }));
+  return { uniqueIds, CURATED_TAGLINES };
 }

@@ -1,7 +1,7 @@
 import { tmdb, getHeroItemsWithLogos } from '@/lib/tmdb';
 import { HeroSlider } from '@/components/media/HeroSlider';
 import { RecommendedForYou } from '@/components/media/RecommendedForYou';
-import { getCuratedCollections } from '@/lib/collectionsData';
+import { getCuratedCollectionsPool } from '@/lib/collectionsData';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -44,7 +44,23 @@ export default async function MoviesPage() {
   const top6Trending = trendingMovies.results?.slice(0, 6) || [];
   const heroItemsWithLogos = await getHeroItemsWithLogos(top6Trending);
   
-  const collectionsData = await getCuratedCollections();
+  const { uniqueIds, CURATED_TAGLINES } = getCuratedCollectionsPool();
+  // Fisher-Yates shuffle
+  const shuffledIds = [...uniqueIds];
+  for (let i = shuffledIds.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledIds[i], shuffledIds[j]] = [shuffledIds[j], shuffledIds[i]];
+  }
+  const randomIds = shuffledIds.slice(0, 15);
+  const rawCollections = await Promise.all(randomIds.map(id => tmdb.getCollection(id.toString()).catch(() => null)));
+  const collectionsData = rawCollections.filter(Boolean).map(c => ({
+    id: c.id,
+    name: c.name.replace(' Collection', ''),
+    backdrop: c.backdrop_path || (c.parts && c.parts.length > 0 ? c.parts[0].backdrop_path : null),
+    poster: c.poster_path,
+    movieCount: c.parts?.length || 0,
+    tagline: CURATED_TAGLINES[c.id] || ''
+  }));
 
   return (
     <div className="flex flex-col min-h-screen pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-20 bg-[#050505] -mt-[72px]">

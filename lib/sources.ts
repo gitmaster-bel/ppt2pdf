@@ -7,6 +7,7 @@ export interface Source {
   feature: string;
   hasPopups: boolean;
   noAds: boolean;
+  hasLanguageOptions?: boolean;
   autoDisableSandbox?: boolean; // e.g. peachify needs sandbox off
   sandboxFlags: string;
   url: (
@@ -14,7 +15,8 @@ export interface Source {
     id: string,
     season?: number,
     episode?: number,
-    themeHex?: string
+    themeHex?: string,
+    lang?: string
   ) => string;
 }
 
@@ -35,25 +37,27 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://cinemaos.tech/player/${id}`
         : `https://cinemaos.tech/player/${id}/${season}/${episode}`
   },
+  
   {
-    id: "1embed",
-    name: "1Embed.cc",
+    id: "nxsha",
+    name: "Nxsha App",
     publicName: "Server 2",
     type: "iframe",
     tier: 1,
-    feature: "Good UI, smooth playback, Ad-free",
+    feature: "Fast global CDN, multi-language dubs/subs, Ad-free",
     hasPopups: false,
     noAds: true,
+    hasLanguageOptions: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
-        ? `https://1embed.cc/embed/movie/${id}?color=${themeHex || '7c3aed'}&auto_play=1`
-        : `https://1embed.cc/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}&auto_play=1`
+        ? `https://web.nxsha.app/embed/movie/${id}?lang=${lang || 'en'}&autoplay=true`
+        : `https://web.nxsha.app/embed/tv/${id}/${season}/${episode}?lang=${lang || 'en'}&autoplay=true`
   },
   {
     id: "vidnest",
@@ -66,7 +70,7 @@ export const sources: Source[] = [
     noAds: false,
     autoDisableSandbox: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidnest.fun/movie/${id}`
         : `https://vidnest.fun/tv/${id}/${season}/${episode}`
@@ -81,7 +85,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsrc.wtf/1/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidsrc.wtf/1/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -97,7 +101,7 @@ export const sources: Source[] = [
     noAds: false,
     autoDisableSandbox: true, // Sandbox auto-disabled for this server
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://peachify.top/embed/movie/${id}?accent=${themeHex || '7c3aed'}`
         : `https://peachify.top/embed/tv/${id}/${season}/${episode}?accent=${themeHex || '7c3aed'}`
@@ -112,7 +116,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://autoembed.co/movie/tmdb/${id}?color=${themeHex || '7c3aed'}`
         : `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}?color=${themeHex || '7c3aed'}`
@@ -127,7 +131,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsrc.wtf/2/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidsrc.wtf/2/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -142,22 +146,52 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://screenscape.me/embed?tmdb=${id}&type=movie`
         : `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
   },
   {
+    id: "spencerdevs",
+    name: "SpencerDevs",
+    publicName: "Server 9",
+    type: "iframe",
+    tier: 1,
+    feature: "Fast reliable streams, clean player, Ad-free",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex, lang) =>
+      type === "movie"
+        ? `https://spencerdevs.xyz/movie/${id}`
+        : `https://spencerdevs.xyz/tv/${id}/${season}/${episode}`
+  },
+  {
+    id: "1embed",
+    name: "1Embed.cc",
+    publicName: "Server 10",
+    type: "iframe",
+    tier: 1,
+    feature: "Highly resilient backup · Ad-free",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex, lang) =>
+      type === "movie"
+        ? `https://1embed.cc/embed/movie/${id}`
+        : `https://1embed.cc/embed/tv/${id}/${season}/${episode}`
+  },
+  {
     id: "vidlux",
     name: "VidLux",
-    publicName: "Server 9",
+    publicName: "Server 11",
     type: "iframe",
     tier: 1,
     feature: "Good, fast, Ad-free",
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidlux.xyz/embed/movie/${id}`
         : `https://vidlux.xyz/embed/tv/${id}/${season}/${episode}`
@@ -165,14 +199,14 @@ export const sources: Source[] = [
   {
     id: "smashystream",
     name: "SmashyStream",
-    publicName: "Server 10",
+    publicName: "Server 12",
     type: "iframe",
     tier: 1,
     feature: "Extensive backup links · Multi-language subtitles · High uptime · Good fallback option",
     hasPopups: true,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://embed.smashystream.com/playere.php?tmdb=${id}&color=${themeHex || '7c3aed'}`
         : `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}&color=${themeHex || '7c3aed'}`
@@ -180,14 +214,14 @@ export const sources: Source[] = [
   {
     id: "cinesrc",
     name: "CineSrc",
-    publicName: "Server 11",
+    publicName: "Server 13",
     type: "iframe",
     tier: 1,
     feature: "Auto-play enabled · Premium servers · Ad-free · Reliable uptime · Great for TV shows",
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://cinesrc.st/embed/movie/${id}?color=%23${themeHex || '7c3aed'}&autoplay=true`
         : `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}&color=%23${themeHex || '7c3aed'}&autoplay=true`
@@ -203,7 +237,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://mapple.uk/watch/movie/${id}`
         : `https://mapple.uk/watch/tv/${id}-${season}-${episode}`
@@ -218,7 +252,7 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://111movies.net/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://111movies.net/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -233,7 +267,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://rivestream.ru/embed?type=movie&id=${id}&agg=2`
         : `https://rivestream.ru/embed?type=tv&id=${id}&season=${season}&episode=${episode}&agg=2`
@@ -248,7 +282,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://www.vidking.net/embed/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://www.vidking.net/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -263,7 +297,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vixsrc.to/embed/movie/${id}`
         : `https://vixsrc.to/embed/tv/${id}/${season}/${episode}`
@@ -278,7 +312,7 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://embedmaster.link/movie/${id}`
         : `https://embedmaster.link/tv/${id}/${season}/${episode}`
@@ -293,7 +327,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://player.vidzee.wtf/embed/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://player.vidzee.wtf/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -308,7 +342,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidfast.pro/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidfast.pro/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -323,7 +357,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://www.nontongo.win/embed/movie/${id}`
         : `https://www.nontongo.win/embed/tv/${id}/${season}/${episode}`
@@ -338,7 +372,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidcore.net/embed/movie/${id}`
         : `https://vidcore.net/embed/tv/${id}/${season}/${episode}`
@@ -353,7 +387,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsrc.wtf/3/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidsrc.wtf/3/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -368,7 +402,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsrc.wtf/4/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidsrc.wtf/4/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -383,7 +417,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_1_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidrock.ru/embed/movie/${id}`
         : `https://vidrock.ru/embed/tv/${id}/${season}/${episode}`
@@ -398,7 +432,7 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidlink.pro/movie/${id}?autoplay=false&primaryColor=${themeHex || '7c3aed'}`
         : `https://vidlink.pro/tv/${id}/${season}/${episode}?autoplay=false&primaryColor=${themeHex || '7c3aed'}`
@@ -413,7 +447,7 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsrc.me/embed/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidsrc.me/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -428,7 +462,7 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsrc.to/embed/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidsrc.to/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -443,7 +477,7 @@ export const sources: Source[] = [
     hasPopups: false,
     noAds: false,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://player.videasy.net/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://player.videasy.net/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
@@ -458,7 +492,7 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://www.2embed.cc/embed/${id}?color=${themeHex || '7c3aed'}`
         : `https://www.2embed.cc/embedtv/${id}?s=${season}&e=${episode}&color=${themeHex || '7c3aed'}`
@@ -473,7 +507,7 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://bcine.ru/embed/movie/${id}`
         : `https://bcine.ru/embed/tv/${id}/${season}/${episode}`
@@ -489,7 +523,7 @@ export const sources: Source[] = [
     noAds: false,
     autoDisableSandbox: true,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsync.xyz/embed/movie/${id}`
         : `https://vidsync.xyz/embed/tv/${id}/${season}/${episode}`
@@ -504,16 +538,16 @@ export const sources: Source[] = [
     hasPopups: true,
     noAds: false,
     sandboxFlags: TIER_2_SANDBOX,
-    url: (type, id, season, episode, themeHex) =>
+    url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
         ? `https://vidsrc.xyz/embed/movie/${id}?color=${themeHex || '7c3aed'}`
         : `https://vidsrc.xyz/embed/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}`
   }
 ];
 
-export const TOP_8_IDS = ["cinemaos", "1embed", "vidnest", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "screenscape"];
+export const TOP_8_IDS = ["cinemaos", "nxsha", "vidnest", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "screenscape"];
 /** Servers 9-11 appear in the Settings "Recommended" section but NOT in the quick-switch header strip */
-export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "vidlux", "smashystream", "cinesrc"];
+export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "spencerdevs", "1embed", "vidlux", "smashystream", "cinesrc"];
 
 export const getSource = (id?: string): Source =>
   sources.find((s) => s.id === id) || sources[0];
@@ -535,6 +569,7 @@ const SERVER_CODENAMES: Record<string, string> = {
   'screenscape':  'orion',
   '1embed':       'flare',
   // Additional servers
+  'spencerdevs': 'sirius',
   'mappletv':     'mars',
   '111movies':    'saturn',
   'rivestream':   'venus',

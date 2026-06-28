@@ -1,9 +1,10 @@
 'use client';
 import { useEffect } from 'react';
 import { usePreferences } from '@/hooks/usePreferences';
+import { storage } from '@/lib/storage';
 
 const COUNTRY_TO_LANG: Record<string, string[]> = {
-  IN: ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'gu', 'pa'], // India -> Major languages
+  IN: ['hi', 'ta', 'te', 'ml', 'kn'], // India -> Major languages (Punjabi, Bengali, Marathi, Gujarati removed)
   FR: ['fr'], // France -> French
   ES: ['es'], // Spain -> Spanish
   DE: ['de'], // Germany -> German
@@ -28,8 +29,6 @@ const COUNTRY_TO_LANG: Record<string, string[]> = {
   PL: ['pl'], // Poland -> Polish
 };
 
-import { storage } from '@/lib/storage';
-
 export function useAutoLocation() {
   const { updatePreferences } = usePreferences();
 
@@ -50,7 +49,22 @@ export function useAutoLocation() {
         if (storage.get()?.preferences?.locationAutoDetected) return;
 
         const country = data.country_code || 'US';
-        const nativeLangs = COUNTRY_TO_LANG[country] || [];
+        const region = data.region_code || ''; // e.g. "MH", "TN", "DL"
+        let nativeLangs = COUNTRY_TO_LANG[country] ? [...COUNTRY_TO_LANG[country]] : [];
+        
+        // Netflix-tier hyper-localized state engine for India
+        if (country === 'IN') {
+          // South Indian ISO 3166-2 Codes: Tamil Nadu, Andhra Pradesh, Telangana, Karnataka, Kerala, Puducherry
+          const southIndianStates = ['TN', 'AP', 'TG', 'TS', 'KA', 'KL', 'PY'];
+          
+          if (southIndianStates.includes(region)) {
+             // For South India, aggressively prioritize South Indian languages over Hindi
+             nativeLangs = ['ta', 'te', 'ml', 'kn', 'hi']; 
+          } else {
+             // For North/Rest of India, aggressively prioritize Hindi
+             nativeLangs = ['hi', 'te', 'ta', 'kn', 'ml'];
+          }
+        }
         
         const originalLanguage = ['en'];
         nativeLangs.forEach(lang => {
@@ -60,22 +74,12 @@ export function useAutoLocation() {
         });
 
         updatePreferences({
-          country: country,
-          originalLanguage: originalLanguage,
-          preferredGenres: [], // Clear any default genres
+          originalLanguage,
           locationAutoDetected: true,
         });
-
-      } catch (error) {
-        console.error('Auto-location failed:', error);
-        if (storage.get()?.preferences?.locationAutoDetected) return;
-        // On failure, default to US and English
-        updatePreferences({
-          country: 'US',
-          originalLanguage: ['en'],
-          preferredGenres: [],
-          locationAutoDetected: true,
-        });
+      } catch (err) {
+        console.error('Failed to auto-detect location:', err);
+        updatePreferences({ locationAutoDetected: true });
       }
     };
 
