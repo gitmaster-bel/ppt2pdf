@@ -22,9 +22,9 @@ export async function fetchTMDB<T>(
 
   // ── Revalidation strategy ────────────────────────────────────────────────
   // - Search endpoints: 86400s (24h)
-  // - Trending/popular/discover/details: 604800s (7 days)
+  // - Trending/popular/discover/details: 2592000s (30 days)
   const isSearch = path.startsWith('/search');
-  const revalidateSeconds = isSearch ? 86400 : 604800;
+  const revalidateSeconds = isSearch ? 86400 : 2592000;
 
   const executeFetch = async (baseUrl: string, isFallback = false): Promise<T> => {
     const url = `${baseUrl}${path}?${queryString}`;
@@ -368,7 +368,7 @@ export const getImageUrl = (
   // We force downgrade them to w1280 (HD, ~150kb) which looks identical but loads instantly.
   const optimizedSize = size === "original" ? "w1280" : size;
   
-  return `https://image.tmdb.org/t/p/${optimizedSize}${path}`;
+  return `https://media.themoviedb.org/t/p/${optimizedSize}${path}`;
 };
 
 export async function getHeroItemsWithLogos(items: Media[]) {

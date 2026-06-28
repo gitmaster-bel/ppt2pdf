@@ -654,7 +654,7 @@ export function AnimeDashboard({ trendingAnime, topRatedAnime }: AnimeDashboardP
                       <div className="flex flex-col md:flex-row items-center gap-6 p-2">
                         <div className="relative w-36 aspect-[2/3] rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl border border-pink-400/20">
                           <img
-                            src={`https://image.tmdb.org/t/p/w500${quizMatch.poster_path}`}
+                            src={`https://media.themoviedb.org/t/p/w500${quizMatch.poster_path}`}
                             alt={quizMatch.name || quizMatch.title}
                             className="object-cover w-full h-full"
                           />
@@ -744,7 +744,7 @@ export function AnimeDashboard({ trendingAnime, topRatedAnime }: AnimeDashboardP
                         {/* SSR Holographic Card Body */}
                         <div className="relative w-36 aspect-[2/3] rounded-2xl overflow-hidden flex-shrink-0 shadow-[0_0_30px_rgba(255,121,198,0.4)] border-2 border-pink-400/50 group select-none">
                           <img
-                            src={`https://image.tmdb.org/t/p/w500${gachaResult.poster_path}`}
+                            src={`https://media.themoviedb.org/t/p/w500${gachaResult.poster_path}`}
                             alt={gachaResult.name || gachaResult.title}
                             className="object-cover w-full h-full"
                           />

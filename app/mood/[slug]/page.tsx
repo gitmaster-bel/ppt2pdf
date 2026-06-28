@@ -57,7 +57,7 @@ export default async function MoodPage({ params }: { params: Promise<{ slug: str
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src={`https://image.tmdb.org/t/p/original${mood.image}`}
+            src={`https://media.themoviedb.org/t/p/original${mood.image}`}
             alt={mood.label}
             fill
             className="object-cover"

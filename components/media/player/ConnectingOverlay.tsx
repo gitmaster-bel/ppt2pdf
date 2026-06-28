@@ -25,7 +25,7 @@ export function ConnectingOverlay({ isConnecting, poster, networkSpeed, source, 
             <div
               className="absolute inset-0 opacity-[0.07]"
               style={{
-                backgroundImage: `url(https://image.tmdb.org/t/p/w500${poster})`,
+                backgroundImage: `url(https://media.themoviedb.org/t/p/w500${poster})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 filter: 'blur(50px) saturate(2)',

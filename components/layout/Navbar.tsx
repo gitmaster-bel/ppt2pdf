@@ -294,7 +294,7 @@ export function Navbar() {
                   >
                     <div className="relative w-full aspect-[2/3] bg-void-950">
                        {randomMoviePreview.poster_path && (
-                         <img src={`https://image.tmdb.org/t/p/w300${randomMoviePreview.poster_path}`} className="object-cover w-full h-full" alt="Poster" />
+                         <img src={`https://media.themoviedb.org/t/p/w300${randomMoviePreview.poster_path}`} className="object-cover w-full h-full" alt="Poster" />
                        )}
                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                        <div className="absolute bottom-0 left-0 right-0 p-3 flex flex-col">

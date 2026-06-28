@@ -37,7 +37,7 @@ export default function GuidePage() {
           {/* Real-looking Video Player Mockup */}
           <div className="relative w-full aspect-video rounded-xl bg-black border border-white/10 overflow-hidden group shadow-2xl">
             {/* Fake Video Frame */}
-            <div className="absolute inset-0 bg-[url('https://image.tmdb.org/t/p/original/t5zCBSB5xMDKcDqe91qahCOUYVV.jpg')] bg-cover bg-center opacity-40 transition-opacity duration-1000 group-hover:opacity-80" />
+            <div className="absolute inset-0 bg-[url('https://media.themoviedb.org/t/p/original/t5zCBSB5xMDKcDqe91qahCOUYVV.jpg')] bg-cover bg-center opacity-40 transition-opacity duration-1000 group-hover:opacity-80" />
             
             {/* Player Gradient Overlays */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -159,7 +159,7 @@ export default function GuidePage() {
                  {/* Mock Upcoming Card */}
                  <div className="flex items-center gap-4 bg-black/40 border border-white/10 p-3 rounded-xl relative group overflow-hidden">
                     <div className="w-16 h-24 bg-zinc-800 rounded-lg overflow-hidden shrink-0 relative">
-                       <div className="absolute inset-0 bg-[url('https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg')] bg-cover bg-center opacity-80 group-hover:scale-110 transition-transform duration-500" />
+                       <div className="absolute inset-0 bg-[url('https://media.themoviedb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg')] bg-cover bg-center opacity-80 group-hover:scale-110 transition-transform duration-500" />
                     </div>
                     <div className="flex flex-col justify-center gap-1 z-10">
                        <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">JULY 19, 2023</span>
@@ -175,7 +175,7 @@ export default function GuidePage() {
                  {/* Mock Upcoming Card 2 */}
                  <div className="flex items-center gap-4 bg-black/40 border border-white/10 p-3 rounded-xl relative group overflow-hidden opacity-70">
                     <div className="w-16 h-24 bg-zinc-800 rounded-lg overflow-hidden shrink-0 relative">
-                       <div className="absolute inset-0 bg-[url('https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2JGqqO9n.jpg')] bg-cover bg-center opacity-80 group-hover:scale-110 transition-transform duration-500" />
+                       <div className="absolute inset-0 bg-[url('https://media.themoviedb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2JGqqO9n.jpg')] bg-cover bg-center opacity-80 group-hover:scale-110 transition-transform duration-500" />
                     </div>
                     <div className="flex flex-col justify-center gap-1 z-10">
                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">FEB 27, 2024</span>
@@ -239,7 +239,7 @@ export default function GuidePage() {
               
               {/* Gacha Banner Mockup */}
               <div className="w-full rounded-2xl bg-gradient-to-br from-purple-900/50 to-pink-900/50 border border-pink-400/40 p-6 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden group cursor-pointer">
-                 <div className="absolute inset-0 bg-[url('https://image.tmdb.org/t/p/original/t5zCBSB5xMDKcDqe91qahCOUYVV.jpg')] bg-cover bg-center opacity-10 group-hover:scale-110 transition-transform duration-700" />
+                 <div className="absolute inset-0 bg-[url('https://media.themoviedb.org/t/p/original/t5zCBSB5xMDKcDqe91qahCOUYVV.jpg')] bg-cover bg-center opacity-10 group-hover:scale-110 transition-transform duration-700" />
                  
                  <div className="relative z-10 flex flex-col gap-2 md:max-w-[60%]">
                     <span className="text-pink-300 font-black text-[10px] uppercase tracking-widest">Don't know what to watch?</span>
@@ -400,7 +400,7 @@ export default function GuidePage() {
         </div>
 
         {/* Call to Action */}
-        <div className="mt-8 text-center p-12 md:p-20 rounded-3xl bg-[url('https://image.tmdb.org/t/p/original/1pdfLvkbY9ohJlCjQH2JGqqO9n.jpg')] bg-cover bg-center border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div className="mt-8 text-center p-12 md:p-20 rounded-3xl bg-[url('https://media.themoviedb.org/t/p/original/1pdfLvkbY9ohJlCjQH2JGqqO9n.jpg')] bg-cover bg-center border border-white/10 shadow-2xl relative overflow-hidden group">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm group-hover:bg-black/60 transition-colors duration-700" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[2px] bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-70" />
           

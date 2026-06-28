@@ -126,7 +126,7 @@ export default async function MoviesPage() {
                 }}
               >
                 <Image
-                  src={`https://image.tmdb.org/t/p/w500${mood.image}`}
+                  src={`https://media.themoviedb.org/t/p/w500${mood.image}`}
                   alt={mood.label}
                   fill
                   className="object-cover opacity-50 group-hover:opacity-80 transition-all duration-700 group-hover:scale-[1.1]"

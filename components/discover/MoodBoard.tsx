@@ -31,7 +31,7 @@ export function MoodBoard({ onSelectMood }: { onSelectMood: (genreId: number) =>
           >
             {/* Backdrop Image */}
             <Image
-              src={`https://image.tmdb.org/t/p/w500${mood.image}`}
+              src={`https://media.themoviedb.org/t/p/w500${mood.image}`}
               alt={mood.label}
               fill
               className="object-cover opacity-40 group-hover:opacity-70 transition-all duration-700 group-hover:scale-[1.1]"

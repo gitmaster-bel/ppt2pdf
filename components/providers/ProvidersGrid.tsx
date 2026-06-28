@@ -42,7 +42,6 @@ function ProviderCard({ p }: { p: typeof PROVIDERS[0] }) {
             className="object-contain opacity-85 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg"
             sizes="130px"
             onError={() => setImgError(true)}
-            unoptimized={p.logo.includes('tmdb')} // Bypass optimization if TMDB blocks server IP
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full">

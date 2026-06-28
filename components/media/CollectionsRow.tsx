@@ -144,7 +144,7 @@ export function CollectionsRow({ collections }: { collections: CollectionData[] 
               {/* Backdrop image */}
               {col.backdrop && (
                 <Image
-                  src={`https://image.tmdb.org/t/p/w780${col.backdrop}`}
+                  src={`https://media.themoviedb.org/t/p/w780${col.backdrop}`}
                   alt={col.name}
                   fill
                   sizes="(max-width: 640px) 70vw, (max-width: 1024px) 30vw, 20vw"

@@ -342,7 +342,7 @@ export function AISearchModal({ isOpen, onClose }: AISearchModalProps) {
                         <div className="w-12 h-[72px] rounded-lg overflow-hidden shrink-0 bg-zinc-800">
                           {item.poster_path ? (
                             <Image
-                              src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
+                              src={`https://media.themoviedb.org/t/p/w92${item.poster_path}`}
                               alt={getTitle(item)}
                               width={48}
                               height={72}

@@ -16,7 +16,7 @@ export function TestingSourcesOverlay({ testingSources, poster, testingCurrentNa
         <div
           className="absolute inset-0 opacity-20 pointer-events-none"
           style={{
-            backgroundImage: `url(https://image.tmdb.org/t/p/w500${poster})`,
+            backgroundImage: `url(https://media.themoviedb.org/t/p/w500${poster})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             filter: 'blur(40px) saturate(1.5)',
