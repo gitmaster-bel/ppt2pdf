@@ -7,7 +7,7 @@ import { ProviderHeroShelf } from '@/components/providers/ProviderHeroShelf';
 import { ProviderRowSkeleton } from '@/components/ui/ProviderRowSkeleton';
 import { PROVIDERS } from '@/lib/providers';
 
-export function ClientProviderShelves() {
+export function ClientProviderShelves({ countryCode: initialCountryCode }: { countryCode?: string }) {
   const { preferences } = usePreferences();
   const [data, setData] = useState<{ netflix: Media[]; prime: Media[]; disney: Media[]; hbo: Media[]; jio?: Media[] } | null>(null);
 
@@ -29,7 +29,7 @@ export function ClientProviderShelves() {
   }, [preferences.country]);
 
   if (!data) {
-    const countryCode = preferences.country || 'US';
+    const countryCode = preferences.country || initialCountryCode || 'US';
     return (
       <div className="flex flex-col gap-6 md:gap-10">
         <ProviderRowSkeleton title="Popular on Netflix" provider={PROVIDERS.find(p => p.id === 8)} />

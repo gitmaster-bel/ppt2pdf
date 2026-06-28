@@ -15,7 +15,7 @@ export function PlaybackTips() {
           <div>
             <h4 className="text-sm font-bold text-white mb-1.5 tracking-wide">Lagging or buffering?</h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Hit <strong className="text-white bg-white/10 px-1.5 py-0.5 rounded mx-0.5">F</strong> for Fullscreen. Browsers dedicate more resources to fullscreen videos, unlocking buttery smooth 60fps playback.
+              Hit <strong className="text-white bg-white/10 px-1.5 py-0.5 rounded mx-0.5">F</strong> for Fullscreen. Browsers dedicate more resources to fullscreen videos, unlocking buttery smooth 60fps playback. Press <strong className="text-white bg-white/10 px-1.5 py-0.5 rounded mx-0.5">ESC</strong> to exit.
             </p>
           </div>
         </div>

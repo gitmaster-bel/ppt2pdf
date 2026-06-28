@@ -28,7 +28,7 @@ const REGIONAL_TITLES: Record<string, string> = {
   TR: 'Trending in Turkey',
 };
 
-export function RegionalContent() {
+export function RegionalContent({ countryCode: initialCountryCode }: { countryCode?: string }) {
   const router = useRouter();
   const { preferences, updatePreferences } = usePreferences();
   const [movies, setMovies] = useState<Media[]>([]);
@@ -105,8 +105,16 @@ export function RegionalContent() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="w-full flex flex-col gap-6 md:gap-10"
           >
-            <CompactTop10Skeleton title={preferences.country && REGIONAL_TITLES[preferences.country] ? `${REGIONAL_TITLES[preferences.country].replace('Trending in ', '')}'s Top Movies` : "Top Movies"} />
-            <CompactTop10Skeleton title={preferences.country && REGIONAL_TITLES[preferences.country] ? `${REGIONAL_TITLES[preferences.country].replace('Trending in ', '')}'s Top TV Shows` : "Top TV Shows"} />
+            <CompactTop10Skeleton title={
+              (preferences.country || initialCountryCode) && REGIONAL_TITLES[preferences.country || initialCountryCode!] 
+                ? `${REGIONAL_TITLES[preferences.country || initialCountryCode!].replace('Trending in ', '')}'s Top Movies` 
+                : "Top Movies"
+            } />
+            <CompactTop10Skeleton title={
+              (preferences.country || initialCountryCode) && REGIONAL_TITLES[preferences.country || initialCountryCode!] 
+                ? `${REGIONAL_TITLES[preferences.country || initialCountryCode!].replace('Trending in ', '')}'s Top TV Shows` 
+                : "Top TV Shows"
+            } />
           </motion.div>
         ) : (
           <motion.div
