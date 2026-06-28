@@ -22,7 +22,7 @@ import { TestingSourcesOverlay } from './player/TestingSourcesOverlay';
 import { UpNextOverlay } from './player/UpNextOverlay';
 
 
-const SUPPORT_PROMPT_DELAY_MS = 12 * 60 * 1000;
+const SUPPORT_PROMPT_DELAY_MS = 30 * 1000;
 const SUPPORT_TIMER_SLICE_MS = 12 * 60 * 60 * 1000;
 
 interface VideoPlayerProps {
@@ -43,6 +43,8 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({ type, id, season, episode, title, poster, releaseYear, onProgress, onPlayNext, hasNextEpisode, initialServer, blockTutorial = false }: VideoPlayerProps) {
+  const { preferences, updatePreferences } = usePreferences();
+  const dataSaver = preferences.dataSaver ?? false;
   const [currentSourceId, setCurrentSourceId] = useState(sources[0].id);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [useSandbox, setUseSandbox] = useState(true);
@@ -65,6 +67,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
   const [showSupportPopup, setShowSupportPopup] = useState(false);
   const [showValueToast, setShowValueToast] = useState(false);
   const hasSupportedRef = useRef(false);
+  const hasDismissedSupportRef = useRef(false);
 
   const [testingSources, setTestingSources] = useState(!initialServer);
   const [testProgress, setTestProgress] = useState(0);
@@ -82,6 +85,12 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       try {
         setFavoriteServers(JSON.parse(savedFavs));
       } catch (e) {}
+    }
+
+    // ── Handle ?lang= URL param ──
+    const langParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('lang') : null;
+    if (langParam) {
+      updatePreferences({ serverLanguage: langParam });
     }
 
     // ── Handle ?server= URL param ──
@@ -201,7 +210,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
           return;
         }
 
-        if (!latestAccess.isActive && !showSupportPopup) {
+        if (!latestAccess.isActive && !showSupportPopup && !hasDismissedSupportRef.current) {
           // Force exit native fullscreen ONLY if the iframe itself is the fullscreen element.
           // If our container is fullscreen, the React overlay will naturally appear on top.
           if (document.fullscreenElement && document.fullscreenElement !== containerRef.current) {
@@ -229,6 +238,23 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
       window.removeEventListener('storage', handleStorageUpdate);
     };
   }, [testingSources, showSupportPopup]);
+
+  // ── Sync current server and language to browser URL address bar ──
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('server', encodeServer(currentSourceId));
+      if (preferences.serverLanguage) {
+        url.searchParams.set('lang', preferences.serverLanguage);
+      } else {
+        url.searchParams.delete('lang');
+      }
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {
+      console.error('Failed to update URL search parameters', e);
+    }
+  }, [currentSourceId, preferences.serverLanguage, mounted]);
 
   useEffect(() => {
     if (testingSources) return;
@@ -623,8 +649,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     showToast(toastMsg);
   };
 
-  const { preferences, updatePreferences } = usePreferences();
-  const dataSaver = preferences.dataSaver ?? false;
+  // preferences and dataSaver declarations moved to top of component
   
   const themeHexMap: Record<string, string> = {
     violet: '7c3aed',
@@ -661,6 +686,12 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         url.searchParams.delete('server');
       }
 
+      if (preferences.serverLanguage) {
+        url.searchParams.set('lang', preferences.serverLanguage);
+      } else {
+        url.searchParams.delete('lang');
+      }
+
       url.searchParams.delete('t');
       return url.toString();
     } catch {
@@ -677,6 +708,10 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
         setShowSupportPopup(false);
         hasSupportedRef.current = true;
         window.dispatchEvent(new Event('zivox_donation_update'));
+      }}
+      onClose={() => {
+        hasDismissedSupportRef.current = true;
+        setShowSupportPopup(false);
       }}
     />
   ) : null;

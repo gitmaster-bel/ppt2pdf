@@ -9,11 +9,12 @@ import { grantSupportAccess, MONTH_ACCESS_MS, SHARE_ACCESS_MS } from '@/lib/supp
 interface SupportPopupModalProps {
   isOpen: boolean;
   onComplete: () => void;
+  onClose?: () => void;
   title?: string;
   mediaType: 'movie' | 'tv';
 }
 
-export function SupportPopupModal({ isOpen, onComplete, title, mediaType }: SupportPopupModalProps) {
+export function SupportPopupModal({ isOpen, onComplete, onClose, title, mediaType }: SupportPopupModalProps) {
   const [mounted, setMounted] = useState(false);
   const [hasShared, setHasShared] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -97,6 +98,15 @@ export function SupportPopupModal({ isOpen, onComplete, title, mediaType }: Supp
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="relative w-full max-w-[min(28rem,calc(100vw-1.5rem))] max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(90dvh,720px)] overflow-y-auto no-scrollbar bg-[rgba(10,8,12,0.95)] border border-[rgba(255,255,255,0.08)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col items-center text-center shadow-2xl z-10"
             >
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/5 z-20 cursor-pointer"
+                  title="Close"
+                >
+                  <X size={20} />
+                </button>
+              )}
           {/* Ambient Background glows */}
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-brand-500/20 rounded-full blur-[80px] pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-pink-500/10 rounded-full blur-[80px] pointer-events-none" />
