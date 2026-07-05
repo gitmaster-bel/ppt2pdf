@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, X, Server, Heart, Shield, ShieldOff, Play, Wifi, WifiOff } from 'lucide-react';
+import { Settings, X, Server, Heart, Shield, ShieldOff, Play, Wifi, WifiOff, Globe } from 'lucide-react';
 import { Source, TOP_8_IDS } from '@/lib/sources';
 
 interface SettingsModalProps {
@@ -20,10 +20,11 @@ interface SettingsModalProps {
   autoPlayNext: boolean;
   setAutoPlayNext: (play: boolean) => void;
   dataSaver: boolean;
-  updatePreferences: (prefs: { dataSaver: boolean }) => void;
+  updatePreferences: (prefs: { dataSaver?: boolean; serverLanguage?: string }) => void;
   showToast: (msg: string) => void;
   id: string; // for caching
   storage: any; // injected dependency or import it inside
+  serverLanguage: string;
 }
 
 export function SettingsModal({
@@ -47,7 +48,8 @@ export function SettingsModal({
   updatePreferences,
   showToast,
   id,
-  storage
+  storage,
+  serverLanguage
 }: SettingsModalProps) {
   if (!showSettingsModal) return null;
 
@@ -215,8 +217,45 @@ export function SettingsModal({
               </div>
             </div>
 
-            {/* Right: Security controls */}
+            {/* Right: Security & Preferences */}
             <div className="w-full lg:w-80 shrink-0 flex flex-col gap-2 overflow-y-auto px-4 md:px-5 pb-4 md:pb-5 border-t lg:border-t-0 lg:border-l border-[oklch(1_0_0/0.08)] pt-4">
+              {(() => {
+                const currentSource = sources.find(s => s.id === currentSourceId);
+                if (currentSource?.hasLanguageOptions) {
+                  return (
+                    <div className="mb-4 shrink-0">
+                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-1.5 flex items-center gap-1.5"><Globe size={11} className="text-brand-500" /> Language / Audio</h4>
+                      <div className="bg-black/20 border border-[oklch(1_0_0/0.08)] rounded-lg p-3 flex flex-col gap-2">
+                        <select
+                          value={serverLanguage}
+                          onChange={(e) => {
+                            updatePreferences({ serverLanguage: e.target.value });
+                            showToast(`Audio set to ${e.target.options[e.target.selectedIndex].text}`);
+                          }}
+                          className="w-full bg-void-900 border border-zinc-800 hover:border-brand-500/50 text-white text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md focus:outline-none focus:border-brand-500 cursor-pointer transition-colors shadow-sm"
+                        >
+                          <option value="en">English</option>
+                          <option value="hi">Hindi</option>
+                          <option value="te">Telugu</option>
+                          <option value="ta">Tamil</option>
+                          <option value="ml">Malayalam</option>
+                          <option value="kn">Kannada</option>
+                          <option value="ja">Japanese</option>
+                          <option value="ko">Korean</option>
+                          <option value="zh">Mandarin</option>
+                          <option value="es">Spanish</option>
+                          <option value="fr">French</option>
+                          <option value="de">German</option>
+                          <option value="ru">Russian</option>
+                          <option value="ar">Arabic</option>
+                        </select>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              
               <h4 className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Security</h4>
               
               {/* Sandbox Shield */}

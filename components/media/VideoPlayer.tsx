@@ -322,8 +322,12 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
           const savedPref = localStorage.getItem('sandbox_pref_' + cachedSource.id);
           setUseSandbox(savedPref !== null ? savedPref === 'true' : true);
           setTestingSources(false);
-        showToast("Loaded from cache");
-        return;
+          const isFav = favoriteServers.includes(cachedSource.id);
+          const msg = isFav 
+            ? `Connected to Favorite Server (${cachedSource.publicName})` 
+            : `Connected to Best Server (${cachedSource.publicName})`;
+          showToast(msg);
+          return;
       }
 
       for (let i = 0; i < sources.length; i++) {
@@ -351,7 +355,11 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
             sessionStorage.setItem(`working_source_${id}`, s.id);
             setTestingSources(false);
             setTestProgress(100);
-            showToast(`Connected to ${s.publicName}`);
+            const isFav = favoriteServers.includes(s.id);
+            const msg = isFav 
+              ? `Connected to Favorite Server (${s.publicName})` 
+              : `Connected to Best Server (${s.publicName})`;
+            showToast(msg);
           }
           break;
         }
@@ -634,7 +642,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     const s = sources.find(x => x.id === sId)!;
     setCurrentSourceId(sId);
     
-    let toastMsg = `Switched to ${s.publicName}`;
+    let toastMsg = '';
     
     if (sId === 'peachify') {
       setUseSandbox(false);
@@ -655,7 +663,9 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     
     sessionStorage.setItem(`working_source_${id}`, sId);
     setShowSettingsModal(false);
-    showToast(toastMsg);
+    if (toastMsg) {
+      showToast(toastMsg);
+    }
   };
 
   // preferences and dataSaver declarations moved to top of component
@@ -726,6 +736,54 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
 
   return (
     <>
+      {/* Mobile Language Selector Chips - Rendered above player, hidden in fullscreen */}
+      {!isFullscreen && !testingSources && source.hasLanguageOptions && (
+        <div className="block md:hidden w-full mb-3 shrink-0">
+          <div className="flex items-center gap-2 px-1">
+            <div className="flex items-center gap-1 text-zinc-400 text-[10px] font-bold uppercase tracking-wider shrink-0 bg-void-950/60 border border-zinc-800/40 px-2.5 py-1.5 rounded-lg">
+              <Globe size={11} className="text-brand-500" />
+              <span>Audio</span>
+            </div>
+            <div className="flex-1 overflow-x-auto no-scrollbar flex items-center gap-1.5 py-0.5 scroll-smooth">
+              {[
+                { code: 'en', name: 'English' },
+                { code: 'hi', name: 'Hindi' },
+                { code: 'te', name: 'Telugu' },
+                { code: 'ta', name: 'Tamil' },
+                { code: 'ml', name: 'Malayalam' },
+                { code: 'kn', name: 'Kannada' },
+                { code: 'ja', name: 'Japanese' },
+                { code: 'ko', name: 'Korean' },
+                { code: 'zh', name: 'Mandarin' },
+                { code: 'es', name: 'Spanish' },
+                { code: 'fr', name: 'French' },
+                { code: 'de', name: 'German' },
+                { code: 'ru', name: 'Russian' },
+                { code: 'ar', name: 'Arabic' }
+              ].map((lang) => {
+                const isActive = (preferences.serverLanguage || 'en') === lang.code;
+                return (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      updatePreferences({ serverLanguage: lang.code });
+                      showToast(`Audio set to ${lang.name}`);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap active:scale-95 border ${
+                      isActive 
+                        ? 'bg-brand-500/10 border-brand-500/30 text-brand-400 font-extrabold shadow-sm' 
+                        : 'bg-void-900/40 border-zinc-800/40 text-zinc-400 hover:text-white hover:bg-void-800/60'
+                    }`}
+                  >
+                    {lang.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         ref={containerRef}
         className={`flex flex-col w-full relative overflow-hidden transition-all outline-none ${isFullscreen ? 'bg-black rounded-none border-none outline-none ring-0 m-0 p-0 duration-0' : 'bg-void-950 rounded-2xl border border-zinc-800/60 duration-700'}`}
@@ -820,6 +878,7 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
             showToast={showToast}
             id={id}
             storage={storage}
+            serverLanguage={preferences.serverLanguage || 'en'}
           />, document.body)}
 
         {/* Share Modal */}

@@ -49,13 +49,16 @@ export function PlayerTopBar({
           <span className="hidden xs:hidden sm:inline">Servers &amp; Settings</span>
           <span className="inline sm:hidden">Servers</span>
         </button>
-        {/* Current server name + no-ads badge — hidden on very small screens */}
-        <div className="hidden md:flex items-center gap-2 min-w-0">
-          <div className="h-4 w-px bg-zinc-800" />
-          <span className="text-xs font-semibold text-zinc-300 truncate">{source.publicName}</span>
-          {source.noAds && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded shrink-0">✓ No Ads</span>}
+        {/* Current server info & language options */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="hidden md:flex items-center gap-2 min-w-0">
+            <div className="h-4 w-px bg-zinc-800" />
+            <span className="text-xs font-semibold text-zinc-300 truncate">{source.publicName}</span>
+            {source.noAds && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded shrink-0">✓ No Ads</span>}
+          </div>
+          
           {source.hasLanguageOptions && (
-            <>
+            <div className="hidden md:flex items-center gap-2">
               <div className="h-4 w-px bg-zinc-800 ml-1" />
               <div className="relative flex items-center group">
                 <Globe size={12} className="text-brand-500 absolute left-2 pointer-events-none" />
@@ -66,11 +69,11 @@ export function PlayerTopBar({
                   title="Select Dub/Sub Language"
                 >
                   <option value="en">English</option>
-                  <option value="hindi">Hindi</option>
-                  <option value="telugu">Telugu</option>
-                  <option value="tamil">Tamil</option>
-                  <option value="malayalam">Malayalam</option>
-                  <option value="kannada">Kannada</option>
+                  <option value="hi">Hindi</option>
+                  <option value="te">Telugu</option>
+                  <option value="ta">Tamil</option>
+                  <option value="ml">Malayalam</option>
+                  <option value="kn">Kannada</option>
                   <option value="ja">Japanese</option>
                   <option value="ko">Korean</option>
                   <option value="zh">Mandarin</option>
@@ -84,7 +87,7 @@ export function PlayerTopBar({
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

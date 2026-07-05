@@ -91,14 +91,6 @@ export function PlayerToasts({ serverName, serverIsNoAds, isPaused }: PlayerToas
       prevServerName.current = serverName;
       return;
     }
-    if (prevServerName.current && serverName && prevServerName.current !== serverName) {
-      const serverToast: ToastData = {
-        id: `server-${Date.now()}`,
-        icon: 'server',
-        message: `Switched to ${serverName}`
-      };
-      setToasts(prev => [...prev, serverToast]);
-    }
     prevServerName.current = serverName;
   }, [serverName, mounted]);
 

@@ -28,21 +28,20 @@ export const TIER_2_SANDBOX = NORMAL_SANDBOX;
 // Their real names are only revealed inside the Settings modal
 export const sources: Source[] = [
   {
-    id: "cinemaos",
-    name: "CinemaOS",
+    id: "allyoucanwatch",
+    name: "AllYouCanWatch",
     publicName: "Server 1",
     type: "iframe",
     tier: 1,
-    feature: "Ultra-fast premium streams · Zero ads · Crisp 1080p · No popups · Best for movies",
+    feature: "Ultra-fast premium streams · Zero ads · Crisp 1080p",
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
     url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
-        ? `https://cinemaos.tech/player/${id}`
-        : `https://cinemaos.tech/player/${id}/${season}/${episode}`
+        ? `https://allyoucanwatch.net/player/new_player.html?tmdb=${id}&prefServer=auto&prefQuality=auto`
+        : `https://allyoucanwatch.net/player/new_player.html?tmdb=${id}&type=series&s=${season}&e=${episode}&prefServer=auto&prefQuality=auto`
   },
-  
   {
     id: "nxsha",
     name: "Nxsha App",
@@ -107,19 +106,19 @@ export const sources: Source[] = [
         : `https://peachify.top/embed/tv/${id}/${season}/${episode}?accent=${themeHex || '7c3aed'}`
   },
   {
-    id: "autoembed",
-    name: "AutoEmbed",
+    id: "vidsuper",
+    name: "VidSuper",
     publicName: "Server 6",
     type: "iframe",
     tier: 1,
-    feature: "TMDB exact-match engine · Zero ads · Instant source selection · Wide library coverage",
+    feature: "High quality streams · No ads · Skip intro supported",
     hasPopups: false,
     noAds: true,
     sandboxFlags: TIER_1_SANDBOX,
     url: (type, id, season, episode, themeHex, lang) =>
       type === "movie"
-        ? `https://autoembed.co/movie/tmdb/${id}?color=${themeHex || '7c3aed'}`
-        : `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}?color=${themeHex || '7c3aed'}`
+        ? `https://vidsuper.net/movie/${id}?color=${themeHex || '7c3aed'}&overlay=true`
+        : `https://vidsuper.net/tv/${id}/${season}/${episode}?color=${themeHex || '7c3aed'}&overlay=true&skip_intro=true&nextEpisode=true`
   },
   {
     id: "vidsrcwtf2",
@@ -227,6 +226,67 @@ export const sources: Source[] = [
         : `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}&color=%23${themeHex || '7c3aed'}&autoplay=true`
   },
   // ── Additional Servers (shown with real names) ───────────────────────────
+  {
+    id: "filmu",
+    name: "Filmu",
+    publicName: "Filmu",
+    type: "iframe",
+    tier: 1,
+    feature: "High quality streams · Zero ads",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex, lang) =>
+      type === "movie"
+        ? `https://embed.filmu.in/movie/${id}?autoplay=true`
+        : `https://embed.filmu.in/tv/${id}/${season}/${episode}?autoplay=true`
+  },
+  {
+    id: "nextgencloudfabric",
+    name: "NextGenCloud",
+    publicName: "NextGenCloud",
+    type: "iframe",
+    tier: 1,
+    feature: "Cloud streamed content",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex, lang) =>
+      type === "movie"
+        ? `https://nextgencloudfabric.com/embed/movie/${id}`
+        : `https://nextgencloudfabric.com/embed/tv/${id}/${season}/${episode}`
+  },
+  {
+    id: "autoembed",
+    name: "AutoEmbed",
+    publicName: "AutoEmbed",
+    type: "iframe",
+    tier: 1,
+    feature: "TMDB exact-match engine · Zero ads · Instant source selection · Wide library coverage",
+    hasPopups: false,
+    noAds: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex, lang) =>
+      type === "movie"
+        ? `https://autoembed.co/movie/tmdb/${id}?color=${themeHex || '7c3aed'}`
+        : `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}?color=${themeHex || '7c3aed'}`
+  },
+  {
+    id: "cinemaos",
+    name: "CinemaOS",
+    publicName: "CinemaOS",
+    type: "iframe",
+    tier: 1,
+    feature: "Ultra-fast premium streams · Zero ads · Crisp 1080p · No popups · Best for movies",
+    hasPopups: false,
+    noAds: true,
+    autoDisableSandbox: true,
+    sandboxFlags: TIER_1_SANDBOX,
+    url: (type, id, season, episode, themeHex, lang) =>
+      type === "movie"
+        ? `https://cinemaos.tech/player/${id}?theme=${themeHex || '7c3aed'}`
+        : `https://cinemaos.tech/player/${id}/${season}/${episode}?theme=${themeHex || '7c3aed'}`
+  },
   {
     id: "mappletv",
     name: "MappleTV",
@@ -545,7 +605,7 @@ export const sources: Source[] = [
   }
 ];
 
-export const TOP_8_IDS = ["cinemaos", "nxsha", "vidnest", "vidsrcwtf1", "peachify", "autoembed", "vidsrcwtf2", "screenscape"];
+export const TOP_8_IDS = ["allyoucanwatch", "nxsha", "vidnest", "vidsrcwtf1", "peachify", "vidsuper", "vidsrcwtf2", "screenscape"];
 /** Servers 9-11 appear in the Settings "Recommended" section but NOT in the quick-switch header strip */
 export const EXTENDED_TOP_IDS = [...TOP_8_IDS, "spencerdevs", "1embed", "vidlux", "smashystream", "cinesrc"];
 
@@ -557,11 +617,16 @@ export const getSource = (id?: string): Source =>
 // ?server=alpha, ?server=beta etc. are what users see.
 const SERVER_CODENAMES: Record<string, string> = {
   // Top 8
-  'cinemaos':     'alpha',
+  'allyoucanwatch': 'alpha',
+  'cinemaos':     'gamma',
+  'filmu':        'zeta',
+  'nextgencloudfabric': 'theta',
+  'nxsha':        'kappa',
   'cinesrc':      'beta',
   'vidsrcwtf1':   'nova',
   'peachify':     'delta',
-  'autoembed':    'echo',
+  'vidsuper':     'echo',
+  'autoembed':    'omega3',
   'vidsrcwtf2':   'sigma',
   'smashystream': 'omega',
   'vidnest':      'nebula',
