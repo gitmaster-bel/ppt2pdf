@@ -511,16 +511,18 @@ export function VideoPlayer({ type, id, season, episode, title, poster, releaseY
     let countInterval: NodeJS.Timeout;
     if (showNextOverlay && countdown > 0) {
       countInterval = setInterval(() => {
-        setCountdown(c => {
-          if (c <= 1) {
-             if (autoPlayNext && onPlayNext) onPlayNext();
-             return 0;
-          }
-          return c - 1;
-        });
+        setCountdown(c => Math.max(0, c - 1));
       }, 1000);
     }
     return () => clearInterval(countInterval);
+  }, [showNextOverlay, countdown]);
+
+  useEffect(() => {
+    if (showNextOverlay && countdown === 0) {
+      if (autoPlayNext && onPlayNext) {
+        onPlayNext();
+      }
+    }
   }, [showNextOverlay, countdown, autoPlayNext, onPlayNext]);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
