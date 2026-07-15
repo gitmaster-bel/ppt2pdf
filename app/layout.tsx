@@ -8,7 +8,7 @@ import { ScrollToTop } from '@/components/ui/ScrollToTop';
 import { WelcomeModal } from '@/components/ui/WelcomeModal';
 import { NotificationToaster } from '@/components/ui/NotificationToaster';
 import { GlobalLoader } from '@/components/ui/GlobalLoader';
-import { Analytics } from '@vercel/analytics/react';
+import Script from 'next/script';
 
 import { SecurityGuard } from '@/components/ui/SecurityGuard';
 import { ThemePromptModal } from "@/components/ui/ThemePromptModal";
@@ -239,7 +239,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GlobalDonationVerifier />
         <NotificationToaster />
         <SecurityGuard />
-        <Analytics />
+        <Script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "YOUR_CF_ANALYTICS_TOKEN"}'
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

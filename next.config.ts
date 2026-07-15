@@ -21,6 +21,8 @@ const nextConfig: NextConfig = {
     imageSizes: [48, 96, 192, 256, 384],
     qualities: [75, 85],
   },
+  // turbopack: {} required in Next.js 16 to silence build error when a webpack config also exists.
+  // The webpack config only runs in dev (DISABLE_HMR=true), so both coexist safely.
   turbopack: {},
   async headers() {
     return [

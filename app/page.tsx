@@ -63,7 +63,16 @@ async function getCountryCode() {
   }
 
   const defaultCountry = process.env.NODE_ENV === 'development' ? 'IN' : 'US';
-  return (savedCountry || headersList.get('x-user-country') || headersList.get('x-vercel-ip-country') || defaultCountry).toUpperCase();
+  return (
+    savedCountry ||
+    // Cloudflare Workers injects CF-IPCountry
+    headersList.get('cf-ipcountry') ||
+    // Vercel injects x-vercel-ip-country (kept as fallback)
+    headersList.get('x-vercel-ip-country') ||
+    // Custom override header
+    headersList.get('x-user-country') ||
+    defaultCountry
+  ).toUpperCase();
 }
 
 async function HeroSectionFetcher() {

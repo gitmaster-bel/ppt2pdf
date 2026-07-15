@@ -1,14 +1,11 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// ─── Edge Runtime ──────────────────────────────────────────────────────────────
-// Runs at Vercel's Edge Network — near-zero CPU cost, doesn't count against
-// Function Invocations on Hobby plan. This is the first line of defense.
-// Note: Middleware is edge by default, no export needed.
+// ─── Edge Middleware ─────────────────────────────────────────────────────────
+// Runs at the Edge (Cloudflare Workers / Vercel Edge Network).
+// No Node.js APIs used — pure Web APIs only. Fully CF-compatible.
 
-// ─── Known Bot User-Agent Fragments ────────────────────────────────────────────
-// Comprehensive list covering search engines, AI scrapers, SEO tools, and
-// social media crawlers. All lowercase for case-insensitive matching.
+// ─── Known Bot User-Agent Fragments ─────────────────────────────────────────
 const BLOCKED_BOT_PATTERNS = [
   // Search engines
   'googlebot', 'bingbot', 'yandexbot', 'baiduspider', 'duckduckbot',
@@ -37,8 +34,7 @@ const BLOCKED_BOT_PATTERNS = [
   'curl/', 'phpcrawl', 'headlesschrome',
 ];
 
-// ─── Scraper Paths ─────────────────────────────────────────────────────────────
-// Paths that only bots/scanners request. Real users never hit these.
+// ─── Scraper Paths ───────────────────────────────────────────────────────────
 const SCRAPER_PATHS = [
   '/sitemap', '/sitemap.xml', '/sitemap_index.xml',
   '/feed', '/rss', '/atom.xml',
@@ -48,8 +44,7 @@ const SCRAPER_PATHS = [
   '/phpmyadmin', '/cgi-bin',
 ];
 
-// ─── Minimal 403 Response ──────────────────────────────────────────────────────
-// Ultra-lightweight HTML — no Next.js rendering, no function cost.
+// ─── Minimal 403 Response ────────────────────────────────────────────────────
 const BLOCKED_RESPONSE = new Response(
   '<!DOCTYPE html><html><head><title>403</title></head><body><h1>403 Forbidden</h1></body></html>',
   {
@@ -62,46 +57,43 @@ const BLOCKED_RESPONSE = new Response(
   }
 );
 
-export default function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
   const userAgent = (request.headers.get('user-agent') || '').toLowerCase();
   const pathname = request.nextUrl.pathname;
 
-  // ── 1. Block scraper paths immediately ───────────────────────────────────
-  const isScraperPath = SCRAPER_PATHS.some(p => pathname.startsWith(p));
-  if (isScraperPath) {
+  // ── 1. Block scraper paths immediately ──────────────────────────────────
+  if (SCRAPER_PATHS.some(p => pathname.startsWith(p))) {
     return BLOCKED_RESPONSE.clone();
   }
 
   // ── 2. Block empty or missing user agents ────────────────────────────────
-  // Real browsers always send a user agent. Empty = bot/scanner.
   if (!userAgent || userAgent.length < 10) {
     return BLOCKED_RESPONSE.clone();
   }
 
   // ── 3. Block known bot user agents ───────────────────────────────────────
-  const isBot = BLOCKED_BOT_PATTERNS.some(pattern => userAgent.includes(pattern));
-  if (isBot) {
+  if (BLOCKED_BOT_PATTERNS.some(pattern => userAgent.includes(pattern))) {
     return BLOCKED_RESPONSE.clone();
   }
 
-  // ── 4. Add security headers and location data ─────────────────────────────
-  const country = request.geo?.country || request.headers.get('x-vercel-ip-country');
-  
+  // ── 4. Geo detection: Cloudflare injects CF-IPCountry, Vercel uses x-vercel-ip-country
+  const country =
+    request.headers.get('cf-ipcountry') ||
+    request.headers.get('x-vercel-ip-country') ||
+    null;
+
   const requestHeaders = new Headers(request.headers);
-  if (country) {
+  if (country && country !== 'XX') {
+    // XX = Cloudflare's code for unknown country — treat as no country
     requestHeaders.set('x-user-country', country);
   }
 
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-  
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+
   response.headers.set('X-Robots-Tag', 'noindex, nofollow, noai, noimageai');
 
-  // Automatically set the cookie on the very first visit so client components can read it instantly
-  if (country && !request.cookies.has('user_country')) {
+  // ── 5. Set country cookie on first visit so client components read it instantly
+  if (country && country !== 'XX' && !request.cookies.has('user_country')) {
     response.cookies.set('user_country', country, {
       path: '/',
       maxAge: 31536000,
@@ -112,8 +104,8 @@ export default function proxy(request: NextRequest) {
   return response;
 }
 
-// ─── Matcher ───────────────────────────────────────────────────────────────────
-// Skip static assets — they don't need bot checking and this saves edge compute.
+// ─── Matcher ─────────────────────────────────────────────────────────────────
+// Skip static assets — saves edge compute.
 export const config = {
   matcher: '/((?!_next/static|_next/image|favicon.ico|icon.png|manifest.json|sw.js).*)',
 };

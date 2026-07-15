@@ -1,5 +1,6 @@
-'use server';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const runtime = 'edge';
 
 // Switch to the requested proxy API
 const TMDB_BASE = 'https://db.videasy.to/3';

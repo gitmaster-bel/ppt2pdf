@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 // Forwards messages and images directly to Discord Webhook via FormData.
 // 100% Anonymous. No databases. No logs.
 
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {

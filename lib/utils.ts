@@ -24,9 +24,15 @@ export function generateSlug(id: number | string, title?: string): string {
 }
 
 export function getSiteUrl(): string {
+  // Explicit override — works everywhere (set this in CF Pages env vars)
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
+  // Cloudflare Pages auto-injects CF_PAGES_URL
+  if (process.env.CF_PAGES_URL) {
+    return process.env.CF_PAGES_URL;
+  }
+  // Vercel auto-injects NEXT_PUBLIC_VERCEL_URL (kept as fallback)
   if (process.env.NEXT_PUBLIC_VERCEL_URL) {
     return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
   }
