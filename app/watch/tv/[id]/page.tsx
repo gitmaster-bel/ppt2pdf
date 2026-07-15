@@ -6,7 +6,7 @@ import { MediaGrid } from '@/components/media/MediaGrid';
 // ─── ISR DISABLED & EDGE ENABLED ──────────────────────────────────────────────
 // Using Edge Runtime completely disables static generation (ISR Writes) for this route.
 // Vercel executes this instantly via V8 isolates, using 0 Fluid CPU and 0 Storage.
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 // generateStaticParams REMOVED — stop pre-building pages at build time.
 
 export async function generateMetadata({

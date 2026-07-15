@@ -1,6 +1,6 @@
 import { RecommendedClient } from './RecommendedClient';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export async function generateMetadata({ params }: { params: Promise<{ type: string }> }) {
   const resolvedParams = await params;
   const titles: Record<string, string> = {

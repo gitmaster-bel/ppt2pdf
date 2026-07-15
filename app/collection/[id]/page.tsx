@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { BackButton } from '@/components/ui/BackButton';
 import { CollectionShareButton } from '@/components/ui/CollectionShareButton';
 import { COLLECTION_CATEGORIES } from '@/lib/collectionsData';
-export const runtime = 'edge'; // Edge Runtime for zero ISR writes
+export const runtime = 'nodejs'; // Edge Runtime for zero ISR writes
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const rawId = id.split('-')[0];

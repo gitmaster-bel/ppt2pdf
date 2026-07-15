@@ -9,6 +9,8 @@ import { WelcomeModal } from '@/components/ui/WelcomeModal';
 import { NotificationToaster } from '@/components/ui/NotificationToaster';
 import { GlobalLoader } from '@/components/ui/GlobalLoader';
 import Script from 'next/script';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 import { SecurityGuard } from '@/components/ui/SecurityGuard';
 import { ThemePromptModal } from "@/components/ui/ThemePromptModal";
@@ -239,6 +241,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GlobalDonationVerifier />
         <NotificationToaster />
         <SecurityGuard />
+        <Analytics />
+        <SpeedInsights />
         <Script
           defer
           src="https://static.cloudflareinsights.com/beacon.min.js"

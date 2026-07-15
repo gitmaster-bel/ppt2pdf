@@ -7,7 +7,7 @@ import nextDynamic from 'next/dynamic';
 const HorizontalRow = nextDynamic(() => import('@/components/media/HorizontalRow').then(mod => mod.HorizontalRow));
 const Top10Row = nextDynamic(() => import('@/components/media/Top10Row').then(mod => mod.Top10Row));
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const MOODS_MAP: Record<string, { label: string, genre: string, image: string, color: string, desc: string }> = {
   'feel-good': { label: 'Feel Good', genre: '35', image: '/lgotja3xMoJZbynwHfcQcJAEMWH.jpg', color: '#f59e0b', desc: 'Comedy & Laughter' },

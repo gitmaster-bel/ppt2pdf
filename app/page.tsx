@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { HeroSkeleton } from '@/components/ui/HeroSkeleton';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const revalidate = 0;
 import { tmdb, getHeroItemsWithLogos } from '@/lib/tmdb';
 import { HeroSlider } from '@/components/media/HeroSlider';

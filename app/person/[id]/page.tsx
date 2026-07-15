@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { BackButton } from '@/components/ui/BackButton';
 
-export const runtime = 'edge'; // Edge Runtime for zero ISR writes
+export const runtime = 'nodejs'; // Edge Runtime for zero ISR writes
 // generateStaticParams REMOVED — no pre-building, zero build-time ISR Writes.
 
 // ─── Metadata (title only — no SEO) ──────────────────────────────────────────

@@ -5,9 +5,7 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   compress: true,
   images: {
-    // ✅ CRITICAL: Bypass Vercel Image Optimization entirely.
-    // We fetch pre-compressed TMDB CDN images (w500/w1280) directly,
-    // resulting in 0 Vercel compute and 0 Vercel bandwidth for images.
+    // ✅ Unoptimized: serve TMDB CDN images (w500/w1280) directly to avoid compute costs on both Netlify and Vercel.
     unoptimized: true,
     remotePatterns: [
       { protocol: 'https', hostname: 'media.themoviedb.org' },

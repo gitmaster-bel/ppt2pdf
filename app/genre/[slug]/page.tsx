@@ -4,7 +4,7 @@ import { getGenreBySlug } from '@/lib/genres';
 import { MediaGrid } from '@/components/media/MediaGrid';
 import { BackButton } from '@/components/ui/BackButton';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
